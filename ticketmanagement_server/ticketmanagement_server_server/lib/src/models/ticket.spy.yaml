@@ -1,0 +1,17 @@
+class: Ticket
+table: tickets
+fields:
+  subject: String
+  description: String?
+  status: String
+  priority: String
+  createdAt: DateTime
+  requesterId: int, relation(parent=app_users)
+  assigneeId: int?
+  categoryId: int, relation(parent=categories)
+  assetId: int?
+  proposedDeadline: DateTime?
+  finalDeadline: DateTime?
+  deadlineStatus: String?
+  adminNote: String?
+  proposedByUserId: int?

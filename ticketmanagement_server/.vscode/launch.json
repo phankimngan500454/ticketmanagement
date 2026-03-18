@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ticketmanagement_server_flutter",
+            "cwd": "${workspaceFolder}/ticketmanagement_server_flutter",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "ticketmanagement_server_server",
+            "cwd": "${workspaceFolder}/ticketmanagement_server_server",
+            "request": "launch",
+            "type": "dart",
+            "preLaunchTask": "docker_compose_up",
+            "program": "bin/main.dart",
+            "env": {
+                "SERVERPOD_PASSWORD_database": "9-0-qNvHZWF21k38HxbIdEK48QV_Hq_C"
+            },
+            "args": [
+                "--apply-migrations"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "ticketmanagement_server (full stack)",
+            "configurations": [
+                "ticketmanagement_server_server",
+                "ticketmanagement_server_flutter"
+            ],
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}

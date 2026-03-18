@@ -1,0 +1,13 @@
+name: _
+publish_to: none
+
+environment:
+  sdk: '^3.8.0'
+
+workspace:
+  - ticketmanagement_server_client
+  - ticketmanagement_server_server
+  - ticketmanagement_server_flutter
+dependency_overrides:
+  flutter_secure_storage: ^10.0.0
+

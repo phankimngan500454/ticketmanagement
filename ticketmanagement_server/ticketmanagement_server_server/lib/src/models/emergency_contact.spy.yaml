@@ -1,0 +1,8 @@
+class: EmergencyContact
+table: emergency_contacts
+fields:
+  userId: int?, relation(parent=app_users)
+  name: String
+  phoneNumber: String
+  description: String?
+  sortOrder: int

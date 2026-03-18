@@ -1,0 +1,9 @@
+class: Asset
+table: assets
+fields:
+  assetName: String
+  assetType: String?
+  serialNumber: String?
+  categoryId: int?
+  assetGroup: String?
+  assetModel: String?

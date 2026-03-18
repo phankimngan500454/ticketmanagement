@@ -1,0 +1,10 @@
+class: AppUser
+table: app_users
+fields:
+  username: String
+  passwordHash: String
+  fullName: String?
+  phone: String?
+  roleId: int
+  createdAt: DateTime
+  deptId: int?

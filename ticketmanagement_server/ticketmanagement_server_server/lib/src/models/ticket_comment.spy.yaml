@@ -1,0 +1,7 @@
+class: TicketComment
+table: ticket_comments
+fields:
+  ticketId: int, relation(parent=tickets)
+  userId: int, relation(parent=app_users)
+  commentText: String
+  createdAt: DateTime

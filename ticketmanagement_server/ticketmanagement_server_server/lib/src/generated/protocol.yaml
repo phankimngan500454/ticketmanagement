@@ -1,0 +1,49 @@
+emailIdp:
+  - login:
+  - startRegistration:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - startPasswordReset:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+attachment:
+  - uploadAttachment:
+  - getAttachments:
+  - deleteAttachment:
+auth:
+  - login:
+  - getUsers:
+  - getITStaff:
+  - register:
+  - updateUser:
+  - resetPassword:
+  - deleteUser:
+comment:
+  - getComments:
+  - addComment:
+reference:
+  - getCategories:
+  - upsertCategory:
+  - deleteCategory:
+  - getAssets:
+  - upsertAsset:
+  - deleteAsset:
+  - getDepartments:
+  - getEmergencyContacts:
+  - upsertEmergencyContact:
+  - deleteEmergencyContact:
+ticket:
+  - getTickets:
+  - getUnassignedTickets:
+  - getTicketById:
+  - createTicket:
+  - assignTicket:
+  - updateStatus:
+  - proposeDeadline:
+  - approveDeadline:
+  - confirmDeadline:
+greeting:
+  - hello:

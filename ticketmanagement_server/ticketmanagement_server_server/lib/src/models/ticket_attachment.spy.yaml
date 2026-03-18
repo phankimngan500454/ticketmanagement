@@ -1,0 +1,10 @@
+class: TicketAttachment
+table: ticket_attachments
+fields:
+  ticketId: int, relation(parent=tickets)
+  uploaderId: int
+  fileName: String
+  mimeType: String
+  fileData: String  # base64-encoded content
+  fileSize: int
+  uploadedAt: DateTime
