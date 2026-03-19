@@ -28,18 +28,18 @@ void main() async {
 
   await conn.execute('''
     INSERT INTO departments (id, "deptName") VALUES
-      (1, 'IT Department'),
-      (2, 'HR Department'),
-      (3, 'Finance')
+      (1, 'Bộ phận IT'),
+      (2, 'Nhân sự'),
+      (3, 'Tài chính')
     ON CONFLICT (id) DO NOTHING;
   ''');
 
   await conn.execute('''
     INSERT INTO categories (id, "categoryName") VALUES
-      (1, 'Hardware'),
-      (2, 'Software'),
-      (3, 'Network'),
-      (4, 'Other')
+      (1, 'Lỗi phần cứng'),
+      (2, 'Lỗi phần mềm'),
+      (3, 'Lỗi mạng'),
+      (4, 'Khác')
     ON CONFLICT (id) DO NOTHING;
   ''');
 

@@ -23,12 +23,14 @@ import 'package:ticketmanagement_server_server/src/generated/category.dart'
     as _i10;
 import 'package:ticketmanagement_server_server/src/generated/asset.dart'
     as _i11;
-import 'package:ticketmanagement_server_server/src/generated/emergency_contact.dart'
+import 'package:ticketmanagement_server_server/src/generated/department.dart'
     as _i12;
-import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
+import 'package:ticketmanagement_server_server/src/generated/emergency_contact.dart'
     as _i13;
-import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
+import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _i14;
+import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
+    as _i15;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -560,6 +562,30 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['userId'],
               ),
         ),
+        'updateFcmToken': _i1.MethodConnector(
+          name: 'updateFcmToken',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'token': _i1.ParameterDescription(
+              name: 'token',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['auth'] as _i5.AuthEndpoint).updateFcmToken(
+                session,
+                params['userId'],
+                params['token'],
+              ),
+        ),
       },
     );
     connectors['comment'] = _i1.EndpointConnector(
@@ -728,6 +754,44 @@ class Endpoints extends _i1.EndpointDispatch {
               ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
                   .getDepartments(session),
         ),
+        'upsertDepartment': _i1.MethodConnector(
+          name: 'upsertDepartment',
+          params: {
+            'dept': _i1.ParameterDescription(
+              name: 'dept',
+              type: _i1.getType<_i12.Department>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+                  .upsertDepartment(
+                    session,
+                    params['dept'],
+                  ),
+        ),
+        'deleteDepartment': _i1.MethodConnector(
+          name: 'deleteDepartment',
+          params: {
+            'id': _i1.ParameterDescription(
+              name: 'id',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+                  .deleteDepartment(
+                    session,
+                    params['id'],
+                  ),
+        ),
         'getEmergencyContacts': _i1.MethodConnector(
           name: 'getEmergencyContacts',
           params: {},
@@ -743,7 +807,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'contact': _i1.ParameterDescription(
               name: 'contact',
-              type: _i1.getType<_i12.EmergencyContact>(),
+              type: _i1.getType<_i13.EmergencyContact>(),
               nullable: false,
             ),
           },
@@ -1053,9 +1117,9 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
-    modules['serverpod_auth_idp'] = _i13.Endpoints()
+    modules['serverpod_auth_idp'] = _i14.Endpoints()
       ..initializeEndpoints(server);
-    modules['serverpod_auth_core'] = _i14.Endpoints()
+    modules['serverpod_auth_core'] = _i15.Endpoints()
       ..initializeEndpoints(server);
   }
 }

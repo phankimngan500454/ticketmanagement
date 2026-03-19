@@ -10,7 +10,7 @@ import '../auth/login_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
   final User currentUser;
-  const CustomerDashboard({Key? key, required this.currentUser}) : super(key: key);
+  const CustomerDashboard({super.key, required this.currentUser});
 
   @override
   State<CustomerDashboard> createState() => _CustomerDashboardState();
@@ -20,7 +20,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   final _repo = TicketRepository.instance;
   List<Ticket> _tickets = [];
   bool _loading = true;
-  int _navIndex = 0;       // 0=Tất cả, 1=Đang xử lý, 2=Đã xong
+  int _navIndex = 1;       // 0=Tất cả, 1=Đang xử lý, 2=Đã xong
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
 
@@ -53,6 +53,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       case 'Pending': return const Color(0xFFFB8C00);
       case 'WaitingConfirmation': return const Color(0xFFF59E0B);
       case 'Resolved': return const Color(0xFF43A047);
+      case 'Cancelled': return const Color(0xFF78909C);
       default: return const Color(0xFF3949AB);
     }
   }
@@ -63,6 +64,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       case 'Pending': return 'Chờ xử lý';
       case 'WaitingConfirmation': return 'Chờ xác nhận';
       case 'Resolved': return 'Đã xong';
+      case 'Cancelled': return 'Đã hủy';
       default: return s;
     }
   }
@@ -73,6 +75,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     switch (_navIndex) {
       case 1: base = base.where((t) => t.status == 'Open' || t.status == 'Pending' || t.status == 'WaitingConfirmation'); break;
       case 2: base = base.where((t) => t.status == 'Resolved'); break;
+      case 3: base = base.where((t) => t.status == 'Cancelled'); break;
     }
     if (q.isEmpty) return base.toList();
     return base.where((t) =>
@@ -85,6 +88,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget build(BuildContext context) {
     final openCount = _tickets.where((t) => t.status == 'Open' || t.status == 'Pending' || t.status == 'WaitingConfirmation').length;
     final resolvedCount = _tickets.where((t) => t.status == 'Resolved').length;
+    final cancelledCount = _tickets.where((t) => t.status == 'Cancelled').length;
     final filtered = _filtered;
 
     return Scaffold(
@@ -128,7 +132,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     PopupMenuItem(
                       value: 'logout',
                       child: Row(children: [
-                        CircleAvatar(radius: 14, backgroundColor: _blue.withOpacity(0.1),
+                        CircleAvatar(radius: 14, backgroundColor: _blue.withValues(alpha: 0.1),
                           child: Text(widget.currentUser.fullName[0],
                               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _blue))),
                         const SizedBox(width: 10),
@@ -144,7 +148,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     padding: const EdgeInsets.fromLTRB(0, 8, 12, 8),
                     child: CircleAvatar(
                       radius: 15,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       child: Text(widget.currentUser.fullName[0],
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
@@ -156,7 +160,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
               child: Row(children: [
-                _statCard('Tổng', '${_tickets.length}', const Color(0xFF90CAF9)),
+                _statCard('Tổng', '${_tickets.where((t) => t.status != 'Cancelled').length}', const Color(0xFF90CAF9)),
                 const SizedBox(width: 8),
                 _statCard('Đang xử lý', '$openCount', const Color(0xFFFFCC80)),
                 const SizedBox(width: 8),
@@ -181,12 +185,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   colors: [Color(0xFFB71C1C), Color(0xFFE53935)],
                   begin: Alignment.centerLeft, end: Alignment.centerRight),
               borderRadius: BorderRadius.circular(13),
-              boxShadow: [BoxShadow(color: const Color(0xFFE53935).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))],
+              boxShadow: [BoxShadow(color: const Color(0xFFE53935).withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))],
             ),
             child: Row(children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 16),
               ),
               const SizedBox(width: 10),
@@ -194,7 +198,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                 child: const Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.phone_in_talk_rounded, size: 13, color: Colors.white),
                   SizedBox(width: 4),
@@ -232,13 +236,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
           child: Row(children: [
             Text(
-              _navIndex == 0 ? 'Tất cả yêu cầu' : _navIndex == 1 ? 'Đang xử lý' : 'Đã giải quyết',
+              _navIndex == 0 ? 'Tất cả yêu cầu' : _navIndex == 1 ? 'Đang xử lý' : _navIndex == 2 ? 'Đã giải quyết' : 'Đã hủy',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: _blueDark),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(color: _blue.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: _blue.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
               child: Text('${filtered.length}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _blue)),
             ),
           ]),
@@ -273,13 +277,15 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, -4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, -4))],
         ),
         child: SafeArea(top: false, child: Row(children: [
           _bottomNavItem(0, Icons.list_alt_rounded, Icons.list_alt_outlined, 'Tất cả'),
           _bottomNavItem(1, Icons.pending_actions_rounded, Icons.pending_actions_outlined, 'Đang xử lý',
               badge: openCount > 0 ? '$openCount' : null),
           _bottomNavItem(2, Icons.check_circle_rounded, Icons.check_circle_outline, 'Đã xong'),
+          _bottomNavItem(3, Icons.cancel_rounded, Icons.cancel_outlined, 'Đã hủy',
+              badge: cancelledCount > 0 ? '$cancelledCount' : null),
           // Create ticket button
           Expanded(child: GestureDetector(
             onTap: () async {
@@ -294,7 +300,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [_blueDark, _blue]),
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: _blue.withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 2))],
+                  boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 2))],
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
                   const Icon(Icons.add_rounded, color: Colors.white, size: 16),
@@ -325,7 +331,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: selected ? _blue.withOpacity(0.12) : Colors.transparent,
+                  color: selected ? _blue.withValues(alpha: 0.12) : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(selected ? iconOn : iconOff, size: 22, color: selected ? _blue : Colors.grey[500]),
@@ -354,14 +360,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Column(children: [
         Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
       ]),
     ));
   }
@@ -380,7 +386,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.white, borderRadius: BorderRadius.circular(16),
-        elevation: 1, shadowColor: Colors.black.withOpacity(0.07),
+        elevation: 1, shadowColor: Colors.black.withValues(alpha: 0.07),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
@@ -425,7 +431,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         const SizedBox(width: 3),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                           child: Text(isOverdue ? 'QUÁ HẠN $dlStr' : 'SẮP HẼT $dlStr',
                             style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
                         ),
@@ -470,13 +476,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
   Widget _statusBadge(String status, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(color: color.withOpacity(0.13), borderRadius: BorderRadius.circular(20)),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(20)),
     child: Text(_statusLabel(status), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
   );
 
   Widget _emptyState() => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
     Container(padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: _blue.withOpacity(0.08), shape: BoxShape.circle),
+        decoration: BoxDecoration(color: _blue.withValues(alpha: 0.08), shape: BoxShape.circle),
         child: Icon(Icons.inbox_outlined, size: 64, color: Colors.blue[300])),
     const SizedBox(height: 16),
     const Text('Chưa có yêu cầu nào', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),

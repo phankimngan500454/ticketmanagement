@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../shared/ticket_detail_screen.dart';
 import '../shared/notifications_screen.dart';
@@ -8,7 +9,7 @@ import '../auth/login_screen.dart';
 
 class ITAgentDashboard extends StatefulWidget {
   final User currentUser;
-  const ITAgentDashboard({Key? key, required this.currentUser}) : super(key: key);
+  const ITAgentDashboard({super.key, required this.currentUser});
 
   @override
   State<ITAgentDashboard> createState() => _ITAgentDashboardState();
@@ -22,6 +23,11 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
   int _navIndex = 0; // 0=Chờ, 1=Việc của tôi, 2=Hôm nay
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
+
+  // Real-time: track new unassigned tickets since last bell-tap
+  final Set<int> _knownUnassignedIds = {};
+  int _newNotifCount = 0;
+  Timer? _refreshTimer;
 
   static const _green = Color(0xFF00897B);
   static const _greenDark = Color(0xFF004D40);
@@ -39,22 +45,40 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
   }
 
   @override
-  void initState() { super.initState(); _loadData(); }
+  void initState() {
+    super.initState();
+    _loadData();
+    // Auto-refresh every 15 seconds to detect new unassigned tickets
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
+  }
 
   Future<void> _loadData() async {
     final results = await Future.wait([
       _repo.getUnassignedTickets(),
       _repo.getTicketsByAssignee(widget.currentUser.userId),
     ]);
-    if (mounted) setState(() {
-      _unassigned = List.from(results[0]);
-      _myTickets = List.from(results[1]);
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        final newUnassigned = List<Ticket>.from(results[0]);
+        // Detect new unassigned tickets not seen before
+        if (_knownUnassignedIds.isNotEmpty) {
+          final newOnes = newUnassigned.where((t) => !_knownUnassignedIds.contains(t.ticketId)).length;
+          if (newOnes > 0) _newNotifCount += newOnes;
+        }
+        _knownUnassignedIds.addAll(newUnassigned.map((t) => t.ticketId));
+        _unassigned = newUnassigned;
+        _myTickets = List.from(results[1]);
+        _loading = false;
+      });
+    }
   }
 
   @override
-  void dispose() { _searchCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _refreshTimer?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   List<Ticket> _applySearch(List<Ticket> list) {
     final q = _searchQuery.toLowerCase().trim();
@@ -113,6 +137,39 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     return '${dt.day}/${dt.month}';
   }
 
+  // ── SLA helpers: High=4h, Medium=24h, Low=72h ───────────
+  DateTime _slaDeadline(Ticket t) {
+    final hours = t.priority == 'High' ? 4
+        : t.priority == 'Medium' ? 24
+        : 72;
+    return t.createdAt.add(Duration(hours: hours));
+  }
+
+  DateTime? _effectiveDl(Ticket t) {
+    if (t.status == 'Resolved' || t.status == 'Cancelled') return null;
+    if (t.finalDeadline != null) return t.finalDeadline;
+    return _slaDeadline(t);
+  }
+
+  // Returns a short SLA countdown string e.g. 'SLA: 2h 30p' or 'QUÁ HẠN 3h'
+  String? _slaCountdown(Ticket t) {
+    final dl = _effectiveDl(t);
+    if (dl == null) return null;
+    final diff = dl.difference(DateTime.now());
+    if (diff.isNegative) {
+      final abs = diff.abs();
+      final h = abs.inHours;
+      final m = abs.inMinutes % 60;
+      return h > 0 ? 'QUÁ HẠN ${h}h${m > 0 ? ' ${m}p' : ''}' : 'QUÁ HẠN ${m}p';
+    }
+    if (diff.inHours <= 4) {
+      final h = diff.inHours;
+      final m = diff.inMinutes % 60;
+      return 'SLA: ${h > 0 ? '${h}h ' : ''}${m}p';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final myPending = _myTickets.where((t) => t.status == 'Pending').length;
@@ -157,15 +214,19 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                 Stack(children: [
                   IconButton(
                     icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => NotificationsScreen(currentUser: widget.currentUser))),
+                    onPressed: () {
+                      setState(() => _newNotifCount = 0); // clear badge
+                      Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => NotificationsScreen(currentUser: widget.currentUser)));
+                    },
                   ),
-                  if (_unassigned.isNotEmpty) Positioned(
+                  if (_newNotifCount > 0) Positioned(
                     right: 8, top: 8,
                     child: Container(
                       width: 16, height: 16,
                       decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
-                      child: Center(child: Text('${_unassigned.length}',
+                      child: Center(child: Text(
+                          _newNotifCount > 9 ? '9+' : '$_newNotifCount',
                           style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold))),
                     ),
                   ),
@@ -184,7 +245,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                     PopupMenuItem(
                       value: 'logout',
                       child: Row(children: [
-                        CircleAvatar(radius: 14, backgroundColor: _green.withOpacity(0.1),
+                        CircleAvatar(radius: 14, backgroundColor: _green.withValues(alpha: 0.1),
                           child: Text(widget.currentUser.fullName[0],
                               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _green))),
                         const SizedBox(width: 10),
@@ -200,7 +261,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                     padding: const EdgeInsets.fromLTRB(0, 8, 12, 8),
                     child: CircleAvatar(
                       radius: 15,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       child: Text(widget.currentUser.fullName[0],
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
@@ -260,7 +321,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, -4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, -4))],
         ),
         child: SafeArea(top: false, child: Row(children: [
           _bottomNavItem(0, Icons.inbox_rounded, Icons.inbox_rounded, 'Chờ nhận',
@@ -288,7 +349,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: selected ? _green.withOpacity(0.12) : Colors.transparent,
+                  color: selected ? _green.withValues(alpha: 0.12) : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(selected ? iconActive : iconInactive,
@@ -323,8 +384,8 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     if (list.isEmpty) {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(color: _green.withOpacity(0.07), shape: BoxShape.circle),
-          child: Icon(Icons.check_circle_outline, size: 56, color: _green.withOpacity(0.5))),
+          decoration: BoxDecoration(color: _green.withValues(alpha: 0.07), shape: BoxShape.circle),
+          child: Icon(Icons.check_circle_outline, size: 56, color: _green.withValues(alpha: 0.5))),
         const SizedBox(height: 16),
         const Text('Không có yêu cầu tồn đọng!', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey)),
         const SizedBox(height: 6),
@@ -361,8 +422,8 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     if (list.isEmpty) {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(color: _green.withOpacity(0.07), shape: BoxShape.circle),
-          child: Icon(Icons.inbox_outlined, size: 56, color: _green.withOpacity(0.5))),
+          decoration: BoxDecoration(color: _green.withValues(alpha: 0.07), shape: BoxShape.circle),
+          child: Icon(Icons.inbox_outlined, size: 56, color: _green.withValues(alpha: 0.5))),
         const SizedBox(height: 16),
         const Text('Bạn chưa nhận việc nào.', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey)),
         const SizedBox(height: 6),
@@ -433,8 +494,8 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
       if (tickets.isEmpty)
         SliverFillRemaining(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: _green.withOpacity(0.07), shape: BoxShape.circle),
-            child: Icon(Icons.today_rounded, size: 56, color: _green.withOpacity(0.4))),
+            decoration: BoxDecoration(color: _green.withValues(alpha: 0.07), shape: BoxShape.circle),
+            child: Icon(Icons.today_rounded, size: 56, color: _green.withValues(alpha: 0.4))),
           const SizedBox(height: 16),
           const Text('Chưa có việc nào hôm nay', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey)),
           const SizedBox(height: 6),
@@ -462,7 +523,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         elevation: isHigh ? 2 : 1,
-        shadowColor: isHigh ? const Color(0xFFE53935).withOpacity(0.2) : Colors.black.withOpacity(0.06),
+        shadowColor: isHigh ? const Color(0xFFE53935).withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
@@ -486,7 +547,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: priorityColor.withOpacity(0.12), borderRadius: BorderRadius.circular(5)),
+                        decoration: BoxDecoration(color: priorityColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(5)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(t.priority == 'High' ? Icons.keyboard_double_arrow_up
                               : t.priority == 'Medium' ? Icons.drag_handle : Icons.keyboard_double_arrow_down,
@@ -506,25 +567,24 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                     Text(t.subject,
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E), height: 1.3),
                         maxLines: compact ? 1 : 2, overflow: TextOverflow.ellipsis),
-                    // Deadline warning
+                    // SLA / Deadline warning badge
                     Builder(builder: (_) {
-                      final dl = t.finalDeadline ?? t.proposedDeadline;
-                      if (dl == null || t.status == 'Resolved') return const SizedBox.shrink();
-                      final diff = dl.difference(DateTime.now());
-                      final isOverdue = diff.isNegative;
-                      final isSoon = !isOverdue && diff.inHours <= 24;
-                      if (!isOverdue && !isSoon) return const SizedBox.shrink();
+                      final slaText = _slaCountdown(t);
+                      if (slaText == null) return const SizedBox.shrink();
+                      final isOverdue = slaText.startsWith('QUÁ');
                       final color = isOverdue ? Colors.red : Colors.orange;
-                      final dlStr = '${dl.day.toString().padLeft(2,'0')}/${dl.month.toString().padLeft(2,'0')}';
                       return Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(isOverdue ? Icons.warning_rounded : Icons.timer_outlined, size: 11, color: color),
+                          Icon(isOverdue ? Icons.warning_rounded : Icons.timer_outlined,
+                              size: 11, color: color),
                           const SizedBox(width: 3),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
-                            child: Text(isOverdue ? 'QUÁ HẠN $dlStr' : 'SẮP HẼT $dlStr',
+                            decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(5)),
+                            child: Text(slaText,
                               style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
                           ),
                         ]),
@@ -560,6 +620,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     );
   }
 
+
   Widget _statusBadge(String status) {
     Color c;
     String label;
@@ -571,7 +632,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     }
     return Align(alignment: Alignment.centerRight, child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: c.withOpacity(0.3))),
+      decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: c.withValues(alpha: 0.3))),
       child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: c)),
     ));
   }
@@ -580,7 +641,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     decoration: BoxDecoration(
       color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
     ),
     child: const Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(Icons.hourglass_top_rounded, size: 13, color: Color(0xFFF59E0B)),
@@ -593,14 +654,14 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: Column(children: [
         Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
       ]),
     ));
   }

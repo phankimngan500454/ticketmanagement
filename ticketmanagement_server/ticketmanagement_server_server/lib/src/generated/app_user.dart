@@ -23,6 +23,7 @@ abstract class AppUser
     required this.roleId,
     required this.createdAt,
     this.deptId,
+    this.fcmToken,
   });
 
   factory AppUser({
@@ -34,6 +35,7 @@ abstract class AppUser
     required int roleId,
     required DateTime createdAt,
     int? deptId,
+    String? fcmToken,
   }) = _AppUserImpl;
 
   factory AppUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -48,6 +50,7 @@ abstract class AppUser
         jsonSerialization['createdAt'],
       ),
       deptId: jsonSerialization['deptId'] as int?,
+      fcmToken: jsonSerialization['fcmToken'] as String?,
     );
   }
 
@@ -72,6 +75,8 @@ abstract class AppUser
 
   int? deptId;
 
+  String? fcmToken;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -87,6 +92,7 @@ abstract class AppUser
     int? roleId,
     DateTime? createdAt,
     int? deptId,
+    String? fcmToken,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -100,6 +106,7 @@ abstract class AppUser
       'roleId': roleId,
       'createdAt': createdAt.toJson(),
       if (deptId != null) 'deptId': deptId,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 
@@ -115,6 +122,7 @@ abstract class AppUser
       'roleId': roleId,
       'createdAt': createdAt.toJson(),
       if (deptId != null) 'deptId': deptId,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 
@@ -160,6 +168,7 @@ class _AppUserImpl extends AppUser {
     required int roleId,
     required DateTime createdAt,
     int? deptId,
+    String? fcmToken,
   }) : super._(
          id: id,
          username: username,
@@ -169,6 +178,7 @@ class _AppUserImpl extends AppUser {
          roleId: roleId,
          createdAt: createdAt,
          deptId: deptId,
+         fcmToken: fcmToken,
        );
 
   /// Returns a shallow copy of this [AppUser]
@@ -184,6 +194,7 @@ class _AppUserImpl extends AppUser {
     int? roleId,
     DateTime? createdAt,
     Object? deptId = _Undefined,
+    Object? fcmToken = _Undefined,
   }) {
     return AppUser(
       id: id is int? ? id : this.id,
@@ -194,6 +205,7 @@ class _AppUserImpl extends AppUser {
       roleId: roleId ?? this.roleId,
       createdAt: createdAt ?? this.createdAt,
       deptId: deptId is int? ? deptId : this.deptId,
+      fcmToken: fcmToken is String? ? fcmToken : this.fcmToken,
     );
   }
 }
@@ -236,6 +248,11 @@ class AppUserUpdateTable extends _i1.UpdateTable<AppUserTable> {
     table.deptId,
     value,
   );
+
+  _i1.ColumnValue<String, String> fcmToken(String? value) => _i1.ColumnValue(
+    table.fcmToken,
+    value,
+  );
 }
 
 class AppUserTable extends _i1.Table<int?> {
@@ -269,6 +286,10 @@ class AppUserTable extends _i1.Table<int?> {
       'deptId',
       this,
     );
+    fcmToken = _i1.ColumnString(
+      'fcmToken',
+      this,
+    );
   }
 
   late final AppUserUpdateTable updateTable;
@@ -287,6 +308,8 @@ class AppUserTable extends _i1.Table<int?> {
 
   late final _i1.ColumnInt deptId;
 
+  late final _i1.ColumnString fcmToken;
+
   @override
   List<_i1.Column> get columns => [
     id,
@@ -297,6 +320,7 @@ class AppUserTable extends _i1.Table<int?> {
     roleId,
     createdAt,
     deptId,
+    fcmToken,
   ];
 }
 

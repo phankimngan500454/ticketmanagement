@@ -1,5 +1,6 @@
 import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
+import '../services/fcm_service.dart';
 
 /// Handles all ticket CRUD operations and workflow.
 /// Access via `client.ticket` on the Flutter client.
@@ -49,7 +50,8 @@ class TicketEndpoint extends Endpoint {
     return Ticket.db.findById(session, ticketId);
   }
 
-  /// Create a new ticket.
+  // ── CREATE ───────────────────────────────────────────────────
+  /// Create a new ticket. Sends push notification to all Admins.
   Future<Ticket> createTicket(
     Session session,
     int requesterId,
@@ -69,10 +71,23 @@ class TicketEndpoint extends Endpoint {
       categoryId: categoryId,
       assetId: assetId,
     );
-    return Ticket.db.insertRow(session, ticket);
+    final saved = await Ticket.db.insertRow(session, ticket);
+
+    // 🔔 Notify all Admins about the new ticket
+    await FcmService.sendToRole(
+      session,
+      roleId: 1, // Admin
+      title: '🎫 Ticket mới cần xử lý',
+      body: '#${saved.id?.toString().padLeft(4, '0') ?? '0000'}: $subject',
+      data: {'ticketId': '${saved.id}', 'screen': 'ticket_detail'},
+    );
+
+    return saved;
   }
 
+  // ── ASSIGN ───────────────────────────────────────────────────
   /// Assign (or unassign) a ticket to an IT staff member.
+  /// Sends push notification to the assigned IT staff.
   Future<Ticket?> assignTicket(
     Session session,
     int ticketId,
@@ -84,13 +99,27 @@ class TicketEndpoint extends Endpoint {
     final newStatus =
         assigneeId != null && ticket.status == 'Open' ? 'Pending' : ticket.status;
 
-    return Ticket.db.updateRow(
+    final updated = await Ticket.db.updateRow(
       session,
       ticket.copyWith(assigneeId: assigneeId, status: newStatus),
     );
+
+    // 🔔 Notify the IT staff member who was assigned
+    if (assigneeId != null) {
+      await FcmService.sendToUser(
+        session,
+        targetUserId: assigneeId,
+        title: '📋 Ticket được giao cho bạn',
+        body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
+    }
+
+    return updated;
   }
 
-  /// Update ticket status.
+  // ── UPDATE STATUS ────────────────────────────────────────────
+  /// Update ticket status. Sends context-driven push notifications.
   Future<Ticket?> updateStatus(
     Session session,
     int ticketId,
@@ -98,10 +127,55 @@ class TicketEndpoint extends Endpoint {
   ) async {
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket == null) return null;
-    return Ticket.db.updateRow(session, ticket.copyWith(status: status));
+    final updated = await Ticket.db.updateRow(session, ticket.copyWith(status: status));
+
+    // 🔔 WaitingConfirmation → notify Customer (requester)
+    if (status == 'WaitingConfirmation') {
+      await FcmService.sendToUser(
+        session,
+        targetUserId: ticket.requesterId,
+        title: '✅ IT đã xử lý xong',
+        body: 'Vui lòng xác nhận hoàn thành: ${ticket.subject}',
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
+    }
+
+    // 🔔 Resolved → notify Customer + IT
+    if (status == 'Resolved') {
+      await FcmService.sendToUser(
+        session,
+        targetUserId: ticket.requesterId,
+        title: '🎉 Yêu cầu đã được giải quyết',
+        body: ticket.subject,
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
+      if (ticket.assigneeId != null) {
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.assigneeId!,
+          title: '🎉 Ticket đã được xác nhận xong',
+          body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      }
+    }
+
+    // 🔔 Cancelled → notify IT staff (if assigned)
+    if (status == 'Cancelled' && ticket.assigneeId != null) {
+      await FcmService.sendToUser(
+        session,
+        targetUserId: ticket.assigneeId!,
+        title: '❌ Ticket đã bị hủy',
+        body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
+    }
+
+    return updated;
   }
 
-  /// Propose a deadline for a ticket.
+  // ── DEADLINE ─────────────────────────────────────────────────
+  /// Propose a deadline for a ticket. Notifies Admins.
   Future<Ticket?> proposeDeadline(
     Session session,
     int ticketId,
@@ -110,7 +184,7 @@ class TicketEndpoint extends Endpoint {
   ) async {
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket == null) return null;
-    return Ticket.db.updateRow(
+    final updated = await Ticket.db.updateRow(
       session,
       ticket.copyWith(
         proposedDeadline: proposedDeadline,
@@ -118,9 +192,20 @@ class TicketEndpoint extends Endpoint {
         deadlineStatus: 'Pending',
       ),
     );
+
+    // 🔔 Notify Admins about proposed deadline
+    await FcmService.sendToRole(
+      session,
+      roleId: 1,
+      title: '📅 Đề xuất deadline mới',
+      body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+      data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+    );
+
+    return updated;
   }
 
-  /// Admin approves or adjusts a proposed deadline.
+  /// Admin approves or adjusts a proposed deadline. Notifies Requester.
   Future<Ticket?> approveDeadline(
     Session session,
     int ticketId,
@@ -135,7 +220,7 @@ class TicketEndpoint extends Endpoint {
         action == 'approve' ? ticket.proposedDeadline : adjustedDeadline;
     final deadlineStatus = action == 'approve' ? 'Approved' : 'Adjusted';
 
-    return Ticket.db.updateRow(
+    final updated = await Ticket.db.updateRow(
       session,
       ticket.copyWith(
         finalDeadline: finalDeadline,
@@ -143,6 +228,18 @@ class TicketEndpoint extends Endpoint {
         adminNote: adminNote,
       ),
     );
+
+    // 🔔 Notify the requester their deadline was approved/adjusted
+    final actionLabel = action == 'approve' ? 'đã duyệt' : 'đã điều chỉnh';
+    await FcmService.sendToUser(
+      session,
+      targetUserId: ticket.requesterId,
+      title: '📅 Deadline $actionLabel',
+      body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+      data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+    );
+
+    return updated;
   }
 
   /// Requester confirms or rejects the approved deadline.

@@ -4,6 +4,7 @@ import '../it/it_agent_dashboard.dart';
 import '../customer/customer_dashboard.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/user.dart';
+import '../../services/notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,6 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateByRole(User user) {
+    // 🔔 Register FCM token for push notifications (runs in background)
+    NotificationService.init(user.userId);
+
     Widget screen;
     switch (user.role) {
       case 'Admin':
@@ -102,10 +106,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         width: 2,
                       ),
                     ),
@@ -130,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Hệ thống quản lý yêu cầu hỗ trợ',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -140,10 +144,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.25),
+                        color: Colors.white.withValues(alpha: 0.25),
                         width: 1.5,
                       ),
                     ),
@@ -166,20 +170,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             labelText: 'Tên đăng nhập',
-                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+                            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
                             hintText: 'admin / it / khach',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                            prefixIcon: Icon(Icons.person_outline, color: Colors.white.withOpacity(0.7)),
+                            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                            prefixIcon: Icon(Icons.person_outline, color: Colors.white.withValues(alpha: 0.7)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide: const BorderSide(color: Colors.white, width: 1.5),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.08),
+                            fillColor: Colors.white.withValues(alpha: 0.08),
                             contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                           ),
                         ),
@@ -192,27 +196,27 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             labelText: 'Mật khẩu',
-                            labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+                            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
                             hintText: '••••••',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                            prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.7)),
+                            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                            prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withValues(alpha: 0.7)),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                               ),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide: const BorderSide(color: Colors.white, width: 1.5),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.08),
+                            fillColor: Colors.white.withValues(alpha: 0.08),
                             contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                           ),
                         ),
@@ -227,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF3949AB).withOpacity(0.5),
+                                color: const Color(0xFF3949AB).withValues(alpha: 0.5),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -267,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'ĐĂNG NHẬP NHANH',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2,
                     ),
@@ -298,9 +302,9 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.85),
+          color: color.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Text(
           label,

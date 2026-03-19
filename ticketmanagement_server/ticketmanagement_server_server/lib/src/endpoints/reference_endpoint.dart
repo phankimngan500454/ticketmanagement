@@ -40,6 +40,18 @@ class ReferenceEndpoint extends Endpoint {
     return Department.db.find(session);
   }
 
+  /// Admin: create or update a department.
+  Future<Department> upsertDepartment(Session session, Department dept) async {
+    if (dept.id == null) return Department.db.insertRow(session, dept);
+    return Department.db.updateRow(session, dept);
+  }
+
+  /// Admin: delete a department by id.
+  Future<void> deleteDepartment(Session session, int id) async {
+    final dept = await Department.db.findById(session, id);
+    if (dept != null) await Department.db.deleteRow(session, dept);
+  }
+
   // ── Emergency Contacts ──────────────────────────────────────────
 
   /// Public: any authenticated user can fetch Emergency Contacts.

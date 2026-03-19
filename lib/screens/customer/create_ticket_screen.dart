@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/category.dart';
 import '../../models/asset.dart';
@@ -8,7 +11,7 @@ import '../../models/user.dart';
 class CreateTicketScreen extends StatefulWidget {
   final User currentUser;
   final bool isEmergency;
-  const CreateTicketScreen({Key? key, required this.currentUser, this.isEmergency = false}) : super(key: key);
+  const CreateTicketScreen({super.key, required this.currentUser, this.isEmergency = false});
 
   @override
   State<CreateTicketScreen> createState() => _CreateTicketScreenState();
@@ -22,6 +25,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final _descriptionController = TextEditingController();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+
+  // Pending attachments (picked before submit)
+  final List<({String name, String mime, Uint8List bytes})> _pendingFiles = [];
 
   List<Category> _categories = [];
   List<Asset>    _assets     = [];
@@ -55,11 +61,46 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   Future<void> _loadOptions() async {
     final categories = await _repo.getCategories();
     final assets     = await _repo.getAssets();
-    if (mounted) setState(() {
-      _categories     = categories;
-      _assets         = assets;
-      _loadingOptions = false;
-    });
+    if (mounted) {
+      setState(() {
+        _categories     = categories;
+        _assets         = assets;
+        _loadingOptions = false;
+      });
+    }
+  }
+
+  // ── Pick image/file attachments ─────────────────────────────
+  Future<void> _pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'],
+      withData: true,
+    );
+    if (result == null) return;
+    for (final f in result.files) {
+      if (f.bytes == null) continue;
+      if (f.size > 5 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('⚠️ ${f.name} vượt quá 5MB, bỏ qua'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+        continue;
+      }
+      final ext = (f.extension ?? 'bin').toLowerCase();
+      String mime = 'application/octet-stream';
+      if (['jpg', 'jpeg'].contains(ext)) mime = 'image/jpeg';
+      else if (ext == 'png') mime = 'image/png';
+      else if (ext == 'gif') mime = 'image/gif';
+      else if (ext == 'webp') mime = 'image/webp';
+      else if (ext == 'pdf') mime = 'application/pdf';
+      else if (['doc', 'docx'].contains(ext)) mime = 'application/msword';
+      setState(() => _pendingFiles.add((name: f.name, mime: mime, bytes: f.bytes!)));
+    }
   }
 
   Future<void> _pickDeadline() async {
@@ -112,6 +153,20 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
             ));
           }
         }
+      }
+
+      // Bước 3: Upload ảnh/file đính kèm (nếu có)
+      for (final pf in _pendingFiles) {
+        try {
+          await _repo.uploadAttachment(
+            ticketId: newTicket.ticketId,
+            uploaderId: widget.currentUser.userId,
+            fileName: pf.name,
+            mimeType: pf.mime,
+            fileData: base64Encode(pf.bytes),
+            fileSize: pf.bytes.length,
+          );
+        } catch (_) { /* best-effort, ticket đã tạo thành công */ }
       }
 
       if (mounted) {
@@ -170,7 +225,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
               child: Row(children: [
                 CircleAvatar(radius: 20,
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
                     child: widget.isEmergency
                         ? const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20)
                         : Text(widget.currentUser.fullName[0],
@@ -180,11 +235,11 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   Text(widget.currentUser.fullName,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
                   Text(widget.currentUser.role,
-                      style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
                 ])),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
                   child: Text(
                     widget.isEmergency ? '🚨 Khẩn cấp' : 'Yêu cầu mới',
                     style: const TextStyle(fontSize: 11, color: Colors.white)),
@@ -216,7 +271,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                             decoration: BoxDecoration(
                               color: _editingInfo
                                   ? const Color(0xFF5C6BC0)
-                                  : const Color(0xFF5C6BC0).withOpacity(0.1),
+                                  : const Color(0xFF5C6BC0).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -262,27 +317,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // ── 3. Danh mục ──────────────────────────
-                      _buildCard(
-                        icon: Icons.category_rounded,
-                        iconColor: const Color(0xFF7B1FA2),
-                        label: 'Danh mục lỗi',
-                        required: true,
-                        child: DropdownButtonFormField<Category>(
-                          value: _selectedCategory,
-                          hint: Text('Chọn danh mục lỗi',
-                              style: TextStyle(color: Colors.grey[400], fontSize: 14)),
-                          decoration: _inputDecoration(''),
-                          dropdownColor: Colors.white,
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF7B1FA2)),
-                          items: _categories.map((cat) => DropdownMenuItem(
-                            value: cat,
-                            child: Text(cat.categoryName, style: const TextStyle(fontSize: 14)),
-                          )).toList(),
-                          onChanged: (val) => setState(() => _selectedCategory = val),
-                          validator: (v) => v == null ? 'Vui lòng chọn danh mục' : null,
-                        ),
-                      ),
+                      // ── 3. Danh mục + Thiết bị (cascade) ───
+                      _buildCategoryAssetCard(),
                       const SizedBox(height: 14),
 
                       // ── 4. Độ ưu tiên ────────────────────────
@@ -291,12 +327,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white, borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
                           ),
                           child: Row(children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: const Color(0xFFE53935).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                              decoration: BoxDecoration(color: const Color(0xFFE53935).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                               child: const Icon(Icons.flag_rounded, color: Color(0xFFE53935), size: 16),
                             ),
                             const SizedBox(width: 8),
@@ -334,10 +370,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                                     duration: const Duration(milliseconds: 200),
                                     padding: const EdgeInsets.symmetric(vertical: 10),
                                     decoration: BoxDecoration(
-                                      color: selected ? color : color.withOpacity(0.08),
+                                      color: selected ? color : color.withValues(alpha: 0.08),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                          color: selected ? color : color.withOpacity(0.3), width: 1.5),
+                                          color: selected ? color : color.withValues(alpha: 0.3), width: 1.5),
                                     ),
                                     child: Column(children: [
                                       Icon(
@@ -431,38 +467,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // ── 6. Thiết bị (nếu có) ──────────────────
-                      if (_assets.isNotEmpty) ...[
-                        _buildCard(
-                          icon: Icons.devices_rounded,
-                          iconColor: const Color(0xFF6D4C41),
-                          label: 'Thiết bị liên quan',
-                          badge: 'TÙY CHỌN',
-                          child: DropdownButtonFormField<Asset?>(
-                            value: _selectedAsset,
-                            hint: Text('Không liên quan đến thiết bị cụ thể',
-                                style: TextStyle(color: Colors.grey[400], fontSize: 14)),
-                            decoration: _inputDecoration(''),
-                            dropdownColor: Colors.white,
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                                color: Color(0xFF6D4C41)),
-                            items: [
-                              DropdownMenuItem<Asset?>(
-                                  value: null,
-                                  child: Text('-- Không chọn --',
-                                      style: TextStyle(color: Colors.grey[500], fontSize: 14))),
-                              ..._assets.map((a) => DropdownMenuItem<Asset?>(
-                                value: a,
-                                child: Text('${a.assetName}  (${a.assetCode})',
-                                    style: const TextStyle(fontSize: 13),
-                                    overflow: TextOverflow.ellipsis),
-                              )),
-                            ],
-                            onChanged: (val) => setState(() => _selectedAsset = val),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
 
                       // ── 7. Mô tả ─────────────────────────────
                       _buildCard(
@@ -479,9 +483,96 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                               ? 'Vui lòng nhập mô tả chi tiết' : null,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      // ── 8. Ảnh / File đính kèm ───────────────
+                      _buildCard(
+                        icon: Icons.image_rounded,
+                        iconColor: const Color(0xFF00897B),
+                        label: 'Ảnh / File đính kèm',
+                        badge: 'TÙY CHỌN',
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          if (_pendingFiles.isNotEmpty) ...[
+                            SizedBox(
+                              height: 90,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _pendingFiles.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                itemBuilder: (_, i) {
+                                  final pf = _pendingFiles[i];
+                                  final isImg = pf.mime.startsWith('image/');
+                                  return Stack(clipBehavior: Clip.none, children: [
+                                    Container(
+                                      width: 80, height: 80,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE8F5E9),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFF00897B).withValues(alpha: 0.3)),
+                                      ),
+                                      child: isImg
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(10),
+                                              child: Image.memory(pf.bytes, fit: BoxFit.cover))
+                                          : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                              const Icon(Icons.insert_drive_file_rounded,
+                                                  color: Color(0xFF00897B), size: 28),
+                                              const SizedBox(height: 4),
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                                child: Text(pf.name,
+                                                  style: const TextStyle(fontSize: 8, color: Color(0xFF1C1C2E)),
+                                                  maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                                              ),
+                                            ]),
+                                    ),
+                                    Positioned(
+                                      top: -6, right: -6,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _pendingFiles.removeAt(i)),
+                                        child: Container(
+                                          width: 20, height: 20,
+                                          decoration: const BoxDecoration(
+                                              color: Color(0xFFE53935), shape: BoxShape.circle),
+                                          child: const Icon(Icons.close, size: 12, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ]);
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          GestureDetector(
+                            onTap: _pickFiles,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00897B).withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: const Color(0xFF00897B).withValues(alpha: 0.3),
+                                    style: BorderStyle.solid),
+                              ),
+                              child: const Column(children: [
+                                Icon(Icons.add_photo_alternate_rounded,
+                                    size: 28, color: Color(0xFF00897B)),
+                                SizedBox(height: 6),
+                                Text('Chọn ảnh hoặc file',
+                                    style: TextStyle(fontSize: 13,
+                                        fontWeight: FontWeight.w600, color: Color(0xFF00897B))),
+                                SizedBox(height: 2),
+                                Text('JPG · PNG · GIF · PDF · DOC — tối đa 5MB/file',
+                                    style: TextStyle(fontSize: 10, color: Color(0xFF888888))),
+                              ]),
+                            ),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 14),
 
                       // ── Submit ───────────────────────────────
+
                       Container(
                         width: double.infinity, height: 54,
                         decoration: BoxDecoration(
@@ -489,7 +580,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                               colors: [Color(0xFF0D47A1), Color(0xFF1976D2)]),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [BoxShadow(
-                              color: const Color(0xFF1976D2).withOpacity(0.4),
+                              color: const Color(0xFF1976D2).withValues(alpha: 0.4),
                               blurRadius: 12, offset: const Offset(0, 4))],
                         ),
                         child: ElevatedButton.icon(
@@ -532,7 +623,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.05), blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.05), blurRadius: 8,
             offset: const Offset(0, 2))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -540,7 +631,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: iconColor, size: 16),
           ),
@@ -601,7 +692,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
                   color: enabled
-                      ? const Color(0xFF5C6BC0).withOpacity(0.4)
+                      ? const Color(0xFF5C6BC0).withValues(alpha: 0.4)
                       : Colors.grey.shade200)),
           disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -635,4 +726,180 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
   );
+
+  // ── Combined Category + Asset card ──────────────────────────────────────
+  Widget _buildCategoryAssetCard() {
+    const purple = Color(0xFF7B1FA2);
+    const brown  = Color(0xFF6D4C41);
+    final filteredAssets = _selectedCategory == null
+        ? _assets
+        : _assets.where((a) => a.categoryId == _selectedCategory!.categoryId).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(color: purple.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
+              child: const Icon(Icons.category_rounded, color: purple, size: 17),
+            ),
+            const SizedBox(width: 9),
+            const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Text('Phân loại yêu cầu',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1C1C2E))),
+                SizedBox(width: 5),
+                Text('*', style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.bold, fontSize: 16)),
+              ]),
+              Text('Chọn danh mục → thiết bị liên quan',
+                style: TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+            ]),
+          ]),
+        ),
+
+        const Divider(height: 1, indent: 16, endIndent: 16),
+
+        // Bước 1: Danh mục
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(children: [
+            Container(
+              width: 22, height: 22,
+              decoration: const BoxDecoration(color: purple, shape: BoxShape.circle),
+              child: const Center(child: Text('1',
+                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)))),
+            const SizedBox(width: 8),
+            const Text('Danh mục lỗi',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 12),
+          child: _categories.isEmpty
+              ? Text('Không có danh mục', style: TextStyle(color: Colors.grey[400], fontSize: 13))
+              : Wrap(spacing: 8, runSpacing: 8,
+                  children: _categories.map((cat) {
+                    final sel = _selectedCategory?.categoryId == cat.categoryId;
+                    return GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedCategory = sel ? null : cat;
+                        _selectedAsset = null;
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: sel ? purple : const Color(0xFFF5F0FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: sel ? purple : Colors.transparent, width: 1.5),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(sel ? Icons.check_circle_rounded : Icons.circle_outlined,
+                            size: 14, color: sel ? Colors.white : purple),
+                          const SizedBox(width: 6),
+                          Text(cat.categoryName,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                              color: sel ? Colors.white : const Color(0xFF4A148C))),
+                        ]),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+
+        // Bước 2: Thiết bị
+        if (_assets.isNotEmpty) ...[
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(children: [
+              Container(
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  color: _selectedCategory != null ? brown : Colors.grey.shade300,
+                  shape: BoxShape.circle),
+                child: const Center(child: Text('2',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)))),
+              const SizedBox(width: 8),
+              Text('Thiết bị liên quan',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                  color: _selectedCategory != null ? const Color(0xFF424242) : Colors.grey[400])),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(5)),
+                child: Text('TÙY CHỌN',
+                  style: TextStyle(fontSize: 9, color: Colors.grey[500], fontWeight: FontWeight.bold))),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+            child: _selectedCategory == null
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F8F8), borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200)),
+                    child: Row(children: [
+                      Icon(Icons.info_outline_rounded, size: 15, color: Colors.grey[400]),
+                      const SizedBox(width: 8),
+                      Text('Chọn danh mục trước để lọc thiết bị',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+                    ]))
+                : filteredAssets.isEmpty
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F8F8), borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade200)),
+                        child: Row(children: [
+                          Icon(Icons.devices_outlined, size: 15, color: Colors.grey[400]),
+                          const SizedBox(width: 8),
+                          Text('Không có thiết bị trong danh mục này',
+                            style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+                        ]))
+                    : DropdownButtonFormField<Asset?>(
+                        value: _selectedAsset,
+                        hint: Text('-- Không chọn thiết bị --',
+                          style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                        decoration: InputDecoration(
+                          filled: true, fillColor: const Color(0xFFF8F9FF),
+                          prefixIcon: const Icon(Icons.devices_rounded, size: 16, color: brown),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.grey.shade200)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: brown, width: 1.5)),
+                          isDense: true,
+                        ),
+                        dropdownColor: Colors.white,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: brown),
+                        items: [
+                          DropdownMenuItem<Asset?>(
+                            value: null,
+                            child: Text('-- Không chọn --',
+                              style: TextStyle(color: Colors.grey[500], fontSize: 13))),
+                          ...filteredAssets.map((a) => DropdownMenuItem<Asset?>(
+                            value: a,
+                            child: Text(
+                              a.assetCode.isNotEmpty ? '${a.assetName} (${a.assetCode})' : a.assetName,
+                              style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                          )),
+                        ],
+                        onChanged: (val) => setState(() => _selectedAsset = val),
+                      ),
+          ),
+        ],
+      ]),
+    );
+  }
 }

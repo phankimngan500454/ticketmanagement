@@ -1,11 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
+import 'services/notification_service.dart';
 import 'services/sp_client.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   initServerpodClient();
+  // Initialise Firebase (required for FCM push notifications)
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
@@ -14,13 +19,14 @@ void main() {
 }
 
 class HelpdeskApp extends StatelessWidget {
-  const HelpdeskApp({Key? key}) : super(key: key);
+  const HelpdeskApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IT Helpdesk',
       debugShowCheckedModeBanner: false,
+      navigatorKey: NotificationService.navigatorKey,
       theme: ThemeData(
         useMaterial3: false,
         primaryColor: const Color(0xFF3949AB),
@@ -30,7 +36,7 @@ class HelpdeskApp extends StatelessWidget {
         // Card theme
         cardTheme: CardThemeData(
           elevation: 1,
-          shadowColor: Colors.black.withOpacity(0.08),
+          shadowColor: Colors.black.withValues(alpha: 0.08),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           color: Colors.white,
         ),
@@ -100,7 +106,7 @@ class HelpdeskApp extends StatelessWidget {
         popupMenuTheme: PopupMenuThemeData(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.12),
+          shadowColor: Colors.black.withValues(alpha: 0.12),
         ),
         // Bottom sheet theme
         bottomSheetTheme: const BottomSheetThemeData(

@@ -22,6 +22,7 @@ abstract class AppUser implements _i1.SerializableModel {
     required this.roleId,
     required this.createdAt,
     this.deptId,
+    this.fcmToken,
   });
 
   factory AppUser({
@@ -33,6 +34,7 @@ abstract class AppUser implements _i1.SerializableModel {
     required int roleId,
     required DateTime createdAt,
     int? deptId,
+    String? fcmToken,
   }) = _AppUserImpl;
 
   factory AppUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -47,6 +49,7 @@ abstract class AppUser implements _i1.SerializableModel {
         jsonSerialization['createdAt'],
       ),
       deptId: jsonSerialization['deptId'] as int?,
+      fcmToken: jsonSerialization['fcmToken'] as String?,
     );
   }
 
@@ -69,6 +72,8 @@ abstract class AppUser implements _i1.SerializableModel {
 
   int? deptId;
 
+  String? fcmToken;
+
   /// Returns a shallow copy of this [AppUser]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -81,6 +86,7 @@ abstract class AppUser implements _i1.SerializableModel {
     int? roleId,
     DateTime? createdAt,
     int? deptId,
+    String? fcmToken,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -94,6 +100,7 @@ abstract class AppUser implements _i1.SerializableModel {
       'roleId': roleId,
       'createdAt': createdAt.toJson(),
       if (deptId != null) 'deptId': deptId,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 
@@ -115,6 +122,7 @@ class _AppUserImpl extends AppUser {
     required int roleId,
     required DateTime createdAt,
     int? deptId,
+    String? fcmToken,
   }) : super._(
          id: id,
          username: username,
@@ -124,6 +132,7 @@ class _AppUserImpl extends AppUser {
          roleId: roleId,
          createdAt: createdAt,
          deptId: deptId,
+         fcmToken: fcmToken,
        );
 
   /// Returns a shallow copy of this [AppUser]
@@ -139,6 +148,7 @@ class _AppUserImpl extends AppUser {
     int? roleId,
     DateTime? createdAt,
     Object? deptId = _Undefined,
+    Object? fcmToken = _Undefined,
   }) {
     return AppUser(
       id: id is int? ? id : this.id,
@@ -149,6 +159,7 @@ class _AppUserImpl extends AppUser {
       roleId: roleId ?? this.roleId,
       createdAt: createdAt ?? this.createdAt,
       deptId: deptId is int? ? deptId : this.deptId,
+      fcmToken: fcmToken is String? ? fcmToken : this.fcmToken,
     );
   }
 }

@@ -6,7 +6,7 @@ import '../shared/ticket_detail_screen.dart';
 
 class ITWorkloadScreen extends StatefulWidget {
   final User currentUser;
-  const ITWorkloadScreen({Key? key, required this.currentUser}) : super(key: key);
+  const ITWorkloadScreen({super.key, required this.currentUser});
 
   @override
   State<ITWorkloadScreen> createState() => _ITWorkloadScreenState();
@@ -55,6 +55,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
       case 'Pending': return const Color(0xFFFB8C00);
       case 'WaitingConfirmation': return const Color(0xFFF59E0B);
       case 'Resolved': return const Color(0xFF43A047);
+      case 'Cancelled': return const Color(0xFF78909C);
       default: return Colors.grey;
     }
   }
@@ -65,6 +66,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
       case 'Pending': return 'Chờ xử lý';
       case 'WaitingConfirmation': return 'Chờ xác nhận';
       case 'Resolved': return 'Đã xong';
+      case 'Cancelled': return 'Đã hủy';
       default: return s;
     }
   }
@@ -124,9 +126,9 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.15),
+                  fillColor: Colors.white.withValues(alpha: 0.15),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
                 ),
               ),
             ),
@@ -163,14 +165,14 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isFree ? _green.withOpacity(0.35) : _indigo.withOpacity(0.15), width: isFree ? 1.5 : 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(color: isFree ? _green.withValues(alpha: 0.35) : _indigo.withValues(alpha: 0.15), width: isFree ? 1.5 : 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Row(children: [
-            CircleAvatar(radius: 20, backgroundColor: isFree ? _green.withOpacity(0.12) : _indigo.withOpacity(0.12),
+            CircleAvatar(radius: 20, backgroundColor: isFree ? _green.withValues(alpha: 0.12) : _indigo.withValues(alpha: 0.12),
                 child: Text(staff.fullName[0], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isFree ? _green : _indigo))),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -179,7 +181,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: isFree ? _green.withOpacity(0.12) : _indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: isFree ? _green.withValues(alpha: 0.12) : _indigo.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                   child: Text(isFree ? '✓ Trống' : '${activeTickets.length} việc', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isFree ? _green : _indigo)),
                 ),
               ]),
@@ -193,7 +195,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
             child: Container(
               width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(color: _green.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: _green.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
               child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.sentiment_satisfied_alt_rounded, size: 16, color: _green),
                 SizedBox(width: 6),
@@ -230,7 +232,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: sc.withOpacity(0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: sc.withOpacity(0.4))),
+            decoration: BoxDecoration(color: sc.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: sc.withValues(alpha: 0.4))),
             child: Text(_statusLabel(t.status), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: sc)),
           ),
           const SizedBox(width: 6),
@@ -248,9 +250,9 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: selected ? Colors.white.withOpacity(0.30) : Colors.white.withOpacity(0.13),
+          color: selected ? Colors.white.withValues(alpha: 0.30) : Colors.white.withValues(alpha: 0.13),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? Colors.white.withOpacity(0.9) : Colors.white.withOpacity(0.2), width: selected ? 2 : 1),
+          border: Border.all(color: selected ? Colors.white.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.2), width: selected ? 2 : 1),
         ),
         child: Column(children: [
           Icon(icon, color: color, size: 16),

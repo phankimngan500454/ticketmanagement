@@ -127,7 +127,7 @@ class Ticket {
     finalDeadline:    finalDeadline ?? this.finalDeadline,
     deadlineStatus:   deadlineStatus ?? this.deadlineStatus,
     requesterName:    requesterName,
-    requesterPhone:   requesterPhone ?? this.requesterPhone,
+    requesterPhone:   requesterPhone ?? requesterPhone,
     assigneeName:     assigneeName ?? this.assigneeName,
     categoryName:     categoryName,
     assetName:        assetName,

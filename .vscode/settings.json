@@ -1,0 +1,7 @@
+{
+  "java.import.exclusions": [
+    "**/ticketmanagement_server/ticketmanagement_server_flutter/android/**",
+    "**/ticketmanagement_server/ticketmanagement_server_flutter/ios/**"
+  ],
+  "java.configuration.updateBuildConfiguration": "automatic"
+}

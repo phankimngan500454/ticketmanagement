@@ -8,7 +8,7 @@ class NotificationsScreen extends StatefulWidget {
   final User currentUser;
   final bool isAdmin;
 
-  const NotificationsScreen({Key? key, required this.currentUser, this.isAdmin = false}) : super(key: key);
+  const NotificationsScreen({super.key, required this.currentUser, this.isAdmin = false});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -46,6 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'Pending': return const Color(0xFFFB8C00);
       case 'WaitingConfirmation': return const Color(0xFFF59E0B);
       case 'Resolved': return const Color(0xFF43A047);
+      case 'Cancelled': return const Color(0xFF78909C);
       default: return Colors.grey;
     }
   }
@@ -56,6 +57,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'Pending': return 'Chờ xử lý';
       case 'WaitingConfirmation': return 'Chờ xác nhận';
       case 'Resolved': return 'Đã xong';
+      case 'Cancelled': return 'Đã hủy';
       default: return s;
     }
   }
@@ -108,7 +110,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (!_loading)
             Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Center(child: Text('${_notifications.length} thông báo', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13))),
+              child: Center(child: Text('${_notifications.length} thông báo', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13))),
             ),
         ],
       ),
@@ -145,13 +147,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Container(width: 44, height: 44, decoration: BoxDecoration(color: notifIconColor.withOpacity(0.12), shape: BoxShape.circle), child: Icon(notifIcon, size: 20, color: notifIconColor)),
+                            Container(width: 44, height: 44, decoration: BoxDecoration(color: notifIconColor.withValues(alpha: 0.12), shape: BoxShape.circle), child: Icon(notifIcon, size: 20, color: notifIconColor)),
                             const SizedBox(width: 12),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
                                 Text('#TKT-${ticket.ticketId.toString().padLeft(4, '0')}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF3949AB))),
                                 const SizedBox(width: 8),
-                                Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2), decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                                Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2), decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                                     child: Text(_statusLabel(ticket.status), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor))),
                               ]),
                               const SizedBox(height: 3),

@@ -14,10 +14,15 @@ add_executable(${BINARY_NAME} WIN32
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
   "runner.exe.manifest"
+  # Stub implementations of VS2022 STL intrinsics required by Firebase SDK prebuilt libs
+  "msvc_stl_stubs.c"
 )
 
-# Apply the standard set of build settings. This can be removed for applications
-# that need different build settings.
+# Compile the Firebase STL stub as plain C and relax warnings
+set_source_files_properties("msvc_stl_stubs.c" PROPERTIES LANGUAGE C COMPILE_FLAGS "/W0")
+
+
+# Apply the standard set of build settings.
 apply_standard_settings(${BINARY_NAME})
 
 # Add preprocessor definitions for the build version.

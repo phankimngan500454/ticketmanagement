@@ -21,6 +21,7 @@ auth:
   - updateUser:
   - resetPassword:
   - deleteUser:
+  - updateFcmToken:
 comment:
   - getComments:
   - addComment:
@@ -32,6 +33,8 @@ reference:
   - upsertAsset:
   - deleteAsset:
   - getDepartments:
+  - upsertDepartment:
+  - deleteDepartment:
   - getEmergencyContacts:
   - upsertEmergencyContact:
   - deleteEmergencyContact:

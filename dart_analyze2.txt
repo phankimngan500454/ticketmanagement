@@ -1,0 +1,28 @@
+﻿INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_assets_screen.dart|83|18|138|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_assets_screen.dart|280|36|263|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_assets_screen.dart|284|36|135|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_assets_screen.dart|315|20|180|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_assets_screen.dart|319|20|119|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_emergency_contacts_screen.dart|32|20|152|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|51|18|139|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|219|32|283|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|224|32|131|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|276|32|228|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|281|32|131|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|317|20|181|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\admin\\admin_users_screen.dart|321|20|119|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\customer\\create_ticket_screen.dart|58|18|120|Statements in an if should be enclosed in a block.
+INFO|LINT|USE_BUILD_CONTEXT_SYNCHRONOUSLY|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\customer\\emergency_call_screen.dart|148|35|7|Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\it\\it_agent_dashboard.dart|49|18|130|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\shared\\ticket_detail_screen.dart|209|28|340|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\shared\\ticket_detail_screen.dart|376|32|129|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\shared\\ticket_detail_screen.dart|748|20|117|Statements in an if should be enclosed in a block.
+INFO|LINT|CURLY_BRACES_IN_FLOW_CONTROL_STRUCTURES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\shared\\ticket_detail_screen.dart|859|32|129|Statements in an if should be enclosed in a block.
+INFO|LINT|USE_KEY_IN_WIDGET_CONSTRUCTORS|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\widgets\\admin_sidebar.dart|14|9|12|Constructors for public widgets should have a named 'key' parameter.
+INFO|LINT|USE_KEY_IN_WIDGET_CONSTRUCTORS|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\widgets\\dashboard_header.dart|18|9|15|Constructors for public widgets should have a named 'key' parameter.
+INFO|LINT|PACKAGE_NAMES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\pubspec.yaml|1|7|1|The package name '_' isn't a lower_case_with_underscores identifier.
+INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\checkpw.dart|5|3|5|Don't invoke 'print' in production code.
+INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\checkpw.dart|6|3|5|Don't invoke 'print' in production code.
+INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\checkpw.dart|7|3|5|Don't invoke 'print' in production code.
+INFO|LINT|DEPEND_ON_REFERENCED_PACKAGES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\seed.dart|3|8|32|The imported package 'postgres' isn't a dependency of the importing package.
+INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\seed_tickets.dart|25|3|5|Don't invoke 'print' in production code.

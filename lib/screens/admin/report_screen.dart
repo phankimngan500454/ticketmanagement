@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
@@ -6,7 +6,7 @@ import '../../models/user.dart';
 
 class ReportScreen extends StatefulWidget {
   final User currentUser;
-  const ReportScreen({Key? key, required this.currentUser}) : super(key: key);
+  const ReportScreen({super.key, required this.currentUser});
 
   @override
   State<ReportScreen> createState() => _ReportScreenState();
@@ -270,7 +270,7 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1C1C2E))),
         const SizedBox(height: 16),
@@ -284,9 +284,9 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2))]),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))]),
       child: Column(children: [
-        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 18)),
         const SizedBox(height: 6),
         Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),

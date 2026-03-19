@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../shared/ticket_detail_screen.dart';
 import '../shared/notifications_screen.dart';
@@ -12,7 +13,7 @@ import '../../models/user.dart';
 
 class AdminDashboard extends StatefulWidget {
   final User currentUser;
-  const AdminDashboard({Key? key, required this.currentUser}) : super(key: key);
+  const AdminDashboard({super.key, required this.currentUser});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -34,6 +35,11 @@ class _AdminDashboardState extends State<AdminDashboard>
   int _currentPage = 0;
   static const int _pageSize = 15;
 
+  // Real-time: track new tickets since last bell-tap
+  final Set<int> _knownTicketIds = {};
+  int _newNotifCount = 0;
+  Timer? _refreshTimer;
+
   static const _softwareCats = {
     'Lỗi phần mềm',
     'Yêu cầu cấp quyền',
@@ -50,10 +56,13 @@ class _AdminDashboardState extends State<AdminDashboard>
       setState(() { _searchQuery = _searchCtrl.text; _currentPage = 0; });
     });
     _loadData();
+    // Auto-refresh every 15 seconds to detect new tickets
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _tabController.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -64,14 +73,21 @@ class _AdminDashboardState extends State<AdminDashboard>
       _repo.getAllTickets(),
       _repo.getITStaff(),
     ]);
-    if (mounted)
+    if (mounted) {
       setState(() {
         final rawTickets = List<Ticket>.from(results[0]);
         rawTickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        // Detect genuinely new tickets (unknown IDs)
+        if (_knownTicketIds.isNotEmpty) {
+          final newOnes = rawTickets.where((t) => !_knownTicketIds.contains(t.ticketId)).length;
+          if (newOnes > 0) _newNotifCount += newOnes;
+        }
+        _knownTicketIds.addAll(rawTickets.map((t) => t.ticketId));
         _tickets = rawTickets;
         _itStaff = List<User>.from(results[1]);
         _loading = false;
       });
+    }
   }
 
   List<Ticket> get _filtered {
@@ -107,14 +123,28 @@ class _AdminDashboardState extends State<AdminDashboard>
     return all.sublist(start, (start + _pageSize).clamp(0, all.length));
   }
 
+  // ── SLA rules: High=4h, Medium=24h, Low=72h ────────────────────
+  DateTime _slaDeadline(Ticket t) {
+    final hours = t.priority == 'High' ? 4
+        : t.priority == 'Medium' ? 24
+        : 72;
+    return t.createdAt.add(Duration(hours: hours));
+  }
+
+  // effective deadline: manual first, then SLA
+  DateTime? _effectiveDeadline(Ticket t) {
+    if (t.status == 'Resolved' || t.status == 'Cancelled') return null;
+    if (t.finalDeadline != null) return t.finalDeadline;
+    return _slaDeadline(t);
+  }
+
   // deadline warning: null | 'overdue' | 'soon'
   String? _dlWarning(Ticket t) {
-    final dl = t.finalDeadline ?? t.proposedDeadline;
+    final dl = _effectiveDeadline(t);
     if (dl == null) return null;
-    if (t.status == 'Resolved') return null;
     final diff = dl.difference(DateTime.now());
     if (diff.isNegative) return 'overdue';
-    if (diff.inHours <= 24) return 'soon';
+    if (diff.inHours <= 4) return 'soon';
     return null;
   }
 
@@ -124,6 +154,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       case 'Pending': return const Color(0xFFFB8C00);
       case 'WaitingConfirmation': return const Color(0xFFF59E0B);
       case 'Resolved': return const Color(0xFF43A047);
+      case 'Cancelled': return const Color(0xFF78909C);
       default: return Colors.grey;
     }
   }
@@ -142,6 +173,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       case 'Pending': return 'Chờ xử lý';
       case 'WaitingConfirmation': return 'Chờ xác nhận';
       case 'Resolved': return 'Đã xong';
+      case 'Cancelled': return 'Đã hủy';
       default: return s;
     }
   }
@@ -170,6 +202,8 @@ class _AdminDashboardState extends State<AdminDashboard>
     final pendingCount = _tickets.where((t) => t.status == 'Pending').length;
     final resolvedCount = _tickets.where((t) => t.status == 'Resolved').length;
     final unassigned = _tickets.where((t) => t.assigneeId == null).length;
+    final slaOverdue = _tickets.where((t) => _dlWarning(t) == 'overdue').length;
+    final slaSoon = _tickets.where((t) => _dlWarning(t) == 'soon').length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F8),
@@ -199,9 +233,12 @@ class _AdminDashboardState extends State<AdminDashboard>
               greeting: '',
               gradientColors: const [Color(0xFF1A237E), Color(0xFF3949AB)],
               showGreeting: false,
-              notificationCount: unassigned,
-              onNotificationTap: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => NotificationsScreen(currentUser: widget.currentUser, isAdmin: true))),
+              notificationCount: _newNotifCount,
+              onNotificationTap: () {
+                setState(() => _newNotifCount = 0); // clear badge
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => NotificationsScreen(currentUser: widget.currentUser, isAdmin: true)));
+              },
               leadingAction: IconButton(
                 icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 24),
                 onPressed: () => Scaffold.of(scaffoldCtx).openDrawer(),
@@ -224,7 +261,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                   Container(
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: TabBar(
@@ -260,11 +297,19 @@ class _AdminDashboardState extends State<AdminDashboard>
               child: Column(children: [
                 // Status summary chips row
                 Row(children: [
-                  _summaryChip('${openCount} Đang mở', const Color(0xFFE53935)),
+                  _summaryChip('$openCount Đang mở', const Color(0xFFE53935)),
                   const SizedBox(width: 8),
-                  _summaryChip('${pendingCount} Chờ xử lý', const Color(0xFFFB8C00)),
+                  _summaryChip('$pendingCount Chờ xử lý', const Color(0xFFFB8C00)),
                   const SizedBox(width: 8),
-                  _summaryChip('${resolvedCount} Đã xong', const Color(0xFF43A047)),
+                  _summaryChip('$resolvedCount Đã xong', const Color(0xFF43A047)),
+                  if (slaOverdue > 0) ...[
+                    const SizedBox(width: 8),
+                    _summaryChip('$slaOverdue SLA QH', const Color(0xFFB71C1C), icon: Icons.warning_rounded),
+                  ],
+                  if (slaSoon > 0 && slaOverdue == 0) ...[
+                    const SizedBox(width: 8),
+                    _summaryChip('$slaSoon SLA Sắp hết', Colors.orange, icon: Icons.timer_outlined),
+                  ],
                   const Spacer(),
                   // Priority filter
                   PopupMenuButton<String>(
@@ -280,7 +325,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                       decoration: BoxDecoration(
                         border: Border.all(color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB) : Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(20),
-                        color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB).withOpacity(0.08) : Colors.transparent,
+                        color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB).withValues(alpha: 0.08) : Colors.transparent,
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(Icons.filter_list, size: 13, color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB) : Colors.grey[600]),
@@ -305,11 +350,12 @@ class _AdminDashboardState extends State<AdminDashboard>
                     const SizedBox(width: 6),
                     _catChip('Phần cứng', Icons.memory_rounded, const Color(0xFF0277BD)),
                     Container(margin: const EdgeInsets.symmetric(horizontal: 10), width: 1, height: 22, color: Colors.grey.shade300),
-                    ...['Tất cả', 'Open', 'Pending', 'Resolved'].map((s) {
+                     ...['Tất cả', 'Open', 'Pending', 'Resolved', 'Cancelled'].map((s) {
                       final selected = _filterStatus == s;
                       final color = s == 'Open' ? const Color(0xFFE53935)
                           : s == 'Pending' ? const Color(0xFFFB8C00)
                           : s == 'Resolved' ? const Color(0xFF43A047)
+                          : s == 'Cancelled' ? const Color(0xFF78909C)
                           : const Color(0xFF3949AB);
                       return GestureDetector(
                         onTap: () => setState(() { _filterStatus = s; _currentPage = 0; }),
@@ -426,7 +472,7 @@ class _AdminDashboardState extends State<AdminDashboard>
     child: Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: enabled ? const Color(0xFF3949AB).withOpacity(0.08) : Colors.grey.withOpacity(0.05),
+        color: enabled ? const Color(0xFF3949AB).withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, size: 18, color: enabled ? const Color(0xFF3949AB) : Colors.grey[300]),
@@ -436,17 +482,22 @@ class _AdminDashboardState extends State<AdminDashboard>
 
 
 
-  Widget _summaryChip(String label, Color color) {
+  Widget _summaryChip(String label, Color color, {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 5),
+        if (icon != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Icon(icon, size: 11, color: color),
+          )
+        else
+          Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 5), decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
       ]),
     );
@@ -459,7 +510,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: const Color(0xFF3949AB).withOpacity(0.07), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.07), shape: BoxShape.circle),
             child: Icon(Icons.check_circle_outline, size: 56, color: Colors.grey[400]),
           ),
           const SizedBox(height: 16),
@@ -483,6 +534,12 @@ class _AdminDashboardState extends State<AdminDashboard>
     final isAssigned = ticket.assigneeId != null;
     final requesterInitial = (ticket.requesterName?.isNotEmpty == true)
         ? ticket.requesterName![0].toUpperCase() : '?';
+    final slaWarn = _dlWarning(ticket);
+    final rowBg = slaWarn == 'overdue'
+        ? const Color(0xFFFFEBEE)
+        : slaWarn == 'soon'
+            ? const Color(0xFFFFF8E1)
+            : Colors.white;
 
     return InkWell(
       onTap: () async {
@@ -492,6 +549,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       },
       child: Container(
         decoration: BoxDecoration(
+          color: rowBg,
           border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
         ),
         child: IntrinsicHeight(
@@ -507,7 +565,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 child: Container(
                   width: 20, height: 20,
                   decoration: BoxDecoration(
-                    color: priorityColor.withOpacity(0.15),
+                    color: priorityColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(
@@ -560,7 +618,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                         const SizedBox(width: 3),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: warnColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                          decoration: BoxDecoration(color: warnColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                           child: Text(
                             isOverdue ? 'QUÁ HẠN $dlStr' : 'SẮP HẼT $dlStr',
                             style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: warnColor),
@@ -581,7 +639,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 child: Row(children: [
                   CircleAvatar(
                     radius: 13,
-                    backgroundColor: const Color(0xFF3949AB).withOpacity(0.1),
+                    backgroundColor: const Color(0xFF3949AB).withValues(alpha: 0.1),
                     child: Text(requesterInitial,
                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3949AB))),
                   ),
@@ -604,7 +662,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                       ? Row(children: [
                           CircleAvatar(
                             radius: 13,
-                            backgroundColor: const Color(0xFF00897B).withOpacity(0.1),
+                            backgroundColor: const Color(0xFF00897B).withValues(alpha: 0.1),
                             child: Text(ticket.assigneeName![0].toUpperCase(),
                               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00897B))),
                           ),
@@ -616,9 +674,9 @@ class _AdminDashboardState extends State<AdminDashboard>
                       : Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
+                            color: Colors.orange.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.orange.withOpacity(0.35)),
+                            border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
                           ),
                           child: const Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.person_add_outlined, size: 12, color: Colors.orange),
@@ -640,9 +698,9 @@ class _AdminDashboardState extends State<AdminDashboard>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: statusColor.withOpacity(0.3)),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                     ),
                     child: Text(_statusLabel(ticket.status).toUpperCase(),
                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
@@ -690,7 +748,7 @@ class _AdminDashboardState extends State<AdminDashboard>
           const Divider(height: 24),
           Expanded(child: ListView(controller: scrollCtrl, children: [
             ListTile(
-              leading: CircleAvatar(radius: 20, backgroundColor: Colors.red.withOpacity(0.1),
+              leading: CircleAvatar(radius: 20, backgroundColor: Colors.red.withValues(alpha: 0.1),
                 child: const Icon(Icons.person_off_outlined, size: 18, color: Colors.red)),
               title: const Text('Bỏ phân công'),
               subtitle: const Text('Chuyển về trạng thái chờ', style: TextStyle(fontSize: 11)),
@@ -701,7 +759,7 @@ class _AdminDashboardState extends State<AdminDashboard>
             ..._itStaff.map((staff) => ListTile(
               leading: CircleAvatar(
                 radius: 20,
-                backgroundColor: const Color(0xFF3949AB).withOpacity(0.1),
+                backgroundColor: const Color(0xFF3949AB).withValues(alpha: 0.1),
                 child: Text(staff.fullName[0], style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF3949AB))),
               ),
               title: Text(staff.fullName, style: TextStyle(fontWeight: ticket.assigneeId == staff.userId ? FontWeight.bold : FontWeight.normal)),
@@ -714,115 +772,25 @@ class _AdminDashboardState extends State<AdminDashboard>
         ]),
       ),
     );
-    if (selected != null || (selected == null && ticket.assigneeId != null)) {
+    if (selected != null || ticket.assigneeId != null) {
       await _assignTicket(ticket, selected);
     }
   }
 
-  // ── DEADLINE SHEET ────────────────────────────────────────────
-  Future<void> _approveDeadline(Ticket ticket, String action, {DateTime? finalDeadline}) async {
-    try {
-      await _repo.approveDeadline(ticket.ticketId, action, finalDeadline: finalDeadline);
-      await _loadData();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.redAccent));
-    }
-  }
-
-  void _showDeadlineSheet(Ticket ticket) {
-    DateTime? adjustDate;
-    final proposed = ticket.proposedDeadline!;
-    final fmt = (DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 16),
-            const Text('Phê duyệt Deadline', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Ticket #${ticket.ticketId.toString().padLeft(4, '0')} · ${ticket.subject}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.orange.shade200)),
-              child: Row(children: [
-                Icon(Icons.person_outline, size: 16, color: Colors.orange[700]),
-                const SizedBox(width: 8),
-                Text('User đề xuất: ', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-                Text(fmt(proposed), style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.orange[800])),
-              ]),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              icon: const Icon(Icons.check_circle_outline, size: 18),
-              label: Text('Đồng ý (${fmt(proposed)})', style: const TextStyle(fontWeight: FontWeight.bold)),
-              onPressed: () { Navigator.pop(ctx); _approveDeadline(ticket, 'approve'); },
-            )),
-            const SizedBox(height: 10),
-            GestureDetector(
-              onTap: () async {
-                final now = DateTime.now();
-                final picked = await showDatePicker(
-                  context: ctx, initialDate: proposed.add(const Duration(days: 1)),
-                  firstDate: now, lastDate: now.add(const Duration(days: 365)),
-                  builder: (c, child) => Theme(data: Theme.of(c).copyWith(colorScheme: const ColorScheme.light(primary: Color(0xFF1976D2))), child: child!),
-                );
-                if (picked != null) setSheetState(() => adjustDate = picked);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                decoration: BoxDecoration(
-                  color: adjustDate != null ? const Color(0xFFE3F2FD) : const Color(0xFFF8F9FF),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: adjustDate != null ? const Color(0xFF1976D2) : Colors.grey.shade200, width: adjustDate != null ? 1.5 : 1),
-                ),
-                child: Row(children: [
-                  Icon(Icons.calendar_month_rounded, size: 18, color: adjustDate != null ? const Color(0xFF1976D2) : Colors.grey[400]),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(adjustDate != null ? 'Điều chỉnh: ${fmt(adjustDate!)}' : 'Hoặc chọn ngày mới...',
-                    style: TextStyle(fontSize: 13, color: adjustDate != null ? const Color(0xFF1C1C2E) : Colors.grey[500]))),
-                ]),
-              ),
-            ),
-            if (adjustDate != null) ...[
-              const SizedBox(height: 10),
-              SizedBox(width: double.infinity, child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1976D2), foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                icon: const Icon(Icons.tune_rounded, size: 18),
-                label: Text('Xác nhận (${fmt(adjustDate!)})', style: const TextStyle(fontWeight: FontWeight.bold)),
-                onPressed: () { Navigator.pop(ctx); _approveDeadline(ticket, 'adjust', finalDeadline: adjustDate); },
-              )),
-            ],
-          ]),
-        );
-      }),
-    );
-  }
 
   // ── HELPERS ───────────────────────────────────────────────────
   Widget _statCard(String label, String value, Color color) {
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: Column(children: [
         Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
       ]),
     ));
   }
@@ -830,9 +798,13 @@ class _AdminDashboardState extends State<AdminDashboard>
   Widget _catChip(String label, IconData icon, Color color) {
     final selected = (_categoryFilter ?? 'Tất cả') == label;
     int count;
-    if (label == 'Tất cả') count = _tickets.length;
-    else if (label == 'Phần mềm') count = _tickets.where((t) => _softwareCats.contains(t.categoryName ?? '')).length;
-    else count = _tickets.where((t) => _hardwareCats.contains(t.categoryName ?? '')).length;
+    if (label == 'Tất cả') {
+      count = _tickets.length;
+    } else if (label == 'Phần mềm') {
+      count = _tickets.where((t) => _softwareCats.contains(t.categoryName ?? '')).length;
+    } else {
+      count = _tickets.where((t) => _hardwareCats.contains(t.categoryName ?? '')).length;
+    }
     return GestureDetector(
       onTap: () => setState(() { _categoryFilter = label; _currentPage = 0; }),
       child: AnimatedContainer(

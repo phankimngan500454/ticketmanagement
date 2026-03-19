@@ -5,7 +5,7 @@ import '../../models/department.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   final User currentUser;
-  const AdminUsersScreen({Key? key, required this.currentUser}) : super(key: key);
+  const AdminUsersScreen({super.key, required this.currentUser});
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -48,11 +48,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _repo.getUsers(),
       _repo.getDepartments(),
     ]);
-    if (mounted) setState(() {
-      _users = results[0] as List<User>;
-      _departments = results[1] as List<Department>;
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _users = results[0] as List<User>;
+        _departments = results[1] as List<Department>;
+        _loading = false;
+      });
+    }
   }
 
   List<User> get _filtered {
@@ -164,7 +166,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             Text('Phòng ban', style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
             DropdownButtonFormField<int?>(
-              value: deptId,
+              initialValue: deptId,
               decoration: InputDecoration(
                 filled: true, fillColor: const Color(0xFFF4F5F9),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -216,13 +218,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     );
                   }
                   _load();
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(existing == null ? '✅ Đã tạo tài khoản $name' : '✅ Đã cập nhật thông tin'),
-                    backgroundColor: const Color(0xFF43A047),
-                    behavior: SnackBarBehavior.floating));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(existing == null ? '✅ Đã tạo tài khoản $name' : '✅ Đã cập nhật thông tin'),
+                      backgroundColor: const Color(0xFF43A047),
+                      behavior: SnackBarBehavior.floating));
+                  }
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                  }
                 }
               },
             ),
@@ -273,13 +279,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 Navigator.pop(ctx);
                 try {
                   await _repo.resetPassword(user.userId, pw);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('🔑 Đã reset mật khẩu'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('🔑 Đã reset mật khẩu'),
+                      backgroundColor: Colors.orange,
+                      behavior: SnackBarBehavior.floating));
+                  }
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                  }
                 }
               },
             ),
@@ -314,12 +324,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     try {
       await _repo.deleteUser(user.userId);
       _load();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('🗑️ Đã xoá tài khoản'),
-        backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('🗑️ Đã xoá tài khoản'),
+          backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -365,7 +379,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 const Expanded(child: Text('Quản lý Người dùng',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
                 Text('${_users.length} tài khoản',
-                  style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13)),
               ]),
             ),
             // Search bar
@@ -376,14 +390,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
                   hintText: 'Tìm theo tên, SĐT...',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
-                  prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withOpacity(0.7), size: 18),
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                  prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.7), size: 18),
                   suffixIcon: _searchQuery.isNotEmpty
                     ? GestureDetector(
                         onTap: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); },
-                        child: Icon(Icons.close, color: Colors.white.withOpacity(0.7), size: 16))
+                        child: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.7), size: 16))
                     : null,
-                  filled: true, fillColor: Colors.white.withOpacity(0.15),
+                  filled: true, fillColor: Colors.white.withValues(alpha: 0.15),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   isDense: true,
@@ -435,7 +449,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.white.withOpacity(0.15),
+            color: selected ? Colors.white : Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(label, style: TextStyle(
@@ -455,7 +469,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -463,7 +477,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           // Avatar
           CircleAvatar(
             radius: 24,
-            backgroundColor: roleColor.withOpacity(0.12),
+            backgroundColor: roleColor.withValues(alpha: 0.12),
             child: Text(user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: roleColor)),
           ),
@@ -477,7 +491,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                   child: const Text('Bạn', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.blue)),
                 ),
               ],
@@ -486,7 +500,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               Container(
                 margin: const EdgeInsets.only(top: 3, right: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(color: roleColor.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                 child: Text(roleLabel, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: roleColor)),
               ),
               if (user.phone.isNotEmpty)

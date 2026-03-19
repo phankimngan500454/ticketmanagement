@@ -8,3 +8,4 @@ fields:
   roleId: int
   createdAt: DateTime
   deptId: int?
+  fcmToken: String?

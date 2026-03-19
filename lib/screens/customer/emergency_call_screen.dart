@@ -7,7 +7,7 @@ import 'create_ticket_screen.dart';
 
 class EmergencyCallScreen extends StatefulWidget {
   final User currentUser;
-  const EmergencyCallScreen({Key? key, required this.currentUser}) : super(key: key);
+  const EmergencyCallScreen({super.key, required this.currentUser});
 
   @override
   State<EmergencyCallScreen> createState() => _EmergencyCallScreenState();
@@ -87,7 +87,7 @@ class _EmergencyCallScreenState extends State<EmergencyCallScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
@@ -139,12 +139,15 @@ class _EmergencyCallScreenState extends State<EmergencyCallScreen> {
                     elevation: 0,
                   ),
                   onPressed: () async {
-                    final result = await Navigator.push(context, MaterialPageRoute(
+                    final nav = Navigator.of(context);
+                    final result = await nav.push(MaterialPageRoute(
                         builder: (_) => CreateTicketScreen(
                               currentUser: widget.currentUser,
                               isEmergency: true,
                             )));
-                    if (result == true && mounted) Navigator.pop(context, true);
+                  if (mounted && result == true) {
+                    nav.pop(true);
+                  }
                   },
                   icon: const Icon(Icons.add_circle_outline, size: 20),
                   label: const Text('Tạo Ticket Sự Cố', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
@@ -162,14 +165,14 @@ class _EmergencyCallScreenState extends State<EmergencyCallScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.07),
+      shadowColor: Colors.black.withValues(alpha: 0.07),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         child: Row(children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFE53935).withOpacity(0.1),
+              color: const Color(0xFFE53935).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.phone_in_talk_rounded, color: Color(0xFFE53935), size: 22),
@@ -212,7 +215,7 @@ class _EmergencyCallScreenState extends State<EmergencyCallScreen> {
     return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: const Color(0xFFE53935).withOpacity(0.08), shape: BoxShape.circle),
+        decoration: BoxDecoration(color: const Color(0xFFE53935).withValues(alpha: 0.08), shape: BoxShape.circle),
         child: Icon(Icons.phone_disabled_rounded, size: 48, color: Colors.red[200]),
       ),
       const SizedBox(height: 16),

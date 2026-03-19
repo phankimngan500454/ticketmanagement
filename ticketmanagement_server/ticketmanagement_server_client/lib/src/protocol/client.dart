@@ -400,6 +400,20 @@ class EndpointAuth extends _i2.EndpointRef {
     'deleteUser',
     {'userId': userId},
   );
+
+  /// Store the device's FCM token for push notifications.
+  /// Called by the Flutter app after Firebase initializes.
+  _i3.Future<void> updateFcmToken(
+    int userId,
+    String token,
+  ) => caller.callServerEndpoint<void>(
+    'auth',
+    'updateFcmToken',
+    {
+      'userId': userId,
+      'token': token,
+    },
+  );
 }
 
 /// Handles ticket comments.
@@ -419,7 +433,7 @@ class EndpointComment extends _i2.EndpointRef {
         {'ticketId': ticketId},
       );
 
-  /// Add a comment to a ticket.
+  /// Add a comment to a ticket. Sends push notification to the other party.
   _i3.Future<_i7.TicketComment> addComment(
     int ticketId,
     int userId,
@@ -495,6 +509,21 @@ class EndpointReference extends _i2.EndpointRef {
         {},
       );
 
+  /// Admin: create or update a department.
+  _i3.Future<_i10.Department> upsertDepartment(_i10.Department dept) =>
+      caller.callServerEndpoint<_i10.Department>(
+        'reference',
+        'upsertDepartment',
+        {'dept': dept},
+      );
+
+  /// Admin: delete a department by id.
+  _i3.Future<void> deleteDepartment(int id) => caller.callServerEndpoint<void>(
+    'reference',
+    'deleteDepartment',
+    {'id': id},
+  );
+
   /// Public: any authenticated user can fetch Emergency Contacts.
   _i3.Future<List<_i11.EmergencyContact>> getEmergencyContacts() =>
       caller.callServerEndpoint<List<_i11.EmergencyContact>>(
@@ -560,7 +589,7 @@ class EndpointTicket extends _i2.EndpointRef {
         {'ticketId': ticketId},
       );
 
-  /// Create a new ticket.
+  /// Create a new ticket. Sends push notification to all Admins.
   _i3.Future<_i12.Ticket> createTicket(
     int requesterId,
     int categoryId,
@@ -582,6 +611,7 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Assign (or unassign) a ticket to an IT staff member.
+  /// Sends push notification to the assigned IT staff.
   _i3.Future<_i12.Ticket?> assignTicket(
     int ticketId,
     int? assigneeId,
@@ -594,7 +624,7 @@ class EndpointTicket extends _i2.EndpointRef {
     },
   );
 
-  /// Update ticket status.
+  /// Update ticket status. Sends context-driven push notifications.
   _i3.Future<_i12.Ticket?> updateStatus(
     int ticketId,
     String status,
@@ -607,7 +637,7 @@ class EndpointTicket extends _i2.EndpointRef {
     },
   );
 
-  /// Propose a deadline for a ticket.
+  /// Propose a deadline for a ticket. Notifies Admins.
   _i3.Future<_i12.Ticket?> proposeDeadline(
     int ticketId,
     int proposedByUserId,
@@ -622,7 +652,7 @@ class EndpointTicket extends _i2.EndpointRef {
     },
   );
 
-  /// Admin approves or adjusts a proposed deadline.
+  /// Admin approves or adjusts a proposed deadline. Notifies Requester.
   _i3.Future<_i12.Ticket?> approveDeadline(
     int ticketId,
     String action,

@@ -96,4 +96,12 @@ class AuthEndpoint extends Endpoint {
     await AppUser.db.deleteRow(session, user);
     return true;
   }
+
+  /// Store the device's FCM token for push notifications.
+  /// Called by the Flutter app after Firebase initializes.
+  Future<void> updateFcmToken(Session session, int userId, String token) async {
+    final user = await AppUser.db.findById(session, userId);
+    if (user == null) return;
+    await AppUser.db.updateRow(session, user.copyWith(fcmToken: token));
+  }
 }

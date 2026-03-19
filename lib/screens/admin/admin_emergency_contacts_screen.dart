@@ -5,7 +5,7 @@ import '../../models/user.dart';
 import '../../data/ticket_repository.dart';
 
 class AdminEmergencyContactsScreen extends StatefulWidget {
-  const AdminEmergencyContactsScreen({Key? key}) : super(key: key);
+  const AdminEmergencyContactsScreen({super.key});
 
   @override
   State<AdminEmergencyContactsScreen> createState() => _AdminEmergencyContactsScreenState();
@@ -29,11 +29,13 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
         _repo.getEmergencyContacts(),
         _repo.getITStaff(),
       ]);
-      if (mounted) setState(() {
-        _contacts = results[0] as List<EmergencyContact>;
-        _itStaff = results[1] as List<User>;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _contacts = results[0] as List<EmergencyContact>;
+          _itStaff = results[1] as List<User>;
+          _loading = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
@@ -133,7 +135,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
                             child: Row(children: [
                               CircleAvatar(
                                 radius: 14,
-                                backgroundColor: const Color(0xFF1976D2).withOpacity(0.1),
+                                backgroundColor: const Color(0xFF1976D2).withValues(alpha: 0.1),
                                 child: Text(u.fullName[0],
                                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1976D2))),
                               ),
@@ -340,7 +342,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
                         elevation: 1,
-                        shadowColor: Colors.black.withOpacity(0.06),
+                        shadowColor: Colors.black.withValues(alpha: 0.06),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
                           child: Row(children: [
@@ -349,8 +351,8 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
                               width: 42, height: 42,
                               decoration: BoxDecoration(
                                 color: isStaffLinked
-                                    ? const Color(0xFF1976D2).withOpacity(0.1)
-                                    : const Color(0xFFE53935).withOpacity(0.1),
+                                    ? const Color(0xFF1976D2).withValues(alpha: 0.1)
+                                    : const Color(0xFFE53935).withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: isStaffLinked
@@ -368,7 +370,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF1976D2).withOpacity(0.1),
+                                      color: const Color(0xFF1976D2).withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text('IT Staff', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF1976D2))),

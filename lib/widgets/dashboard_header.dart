@@ -16,7 +16,7 @@ class DashboardHeader extends StatelessWidget {
   final bool showGreeting;
 
   const DashboardHeader({
-    Key? key,
+    super.key,
     required this.title,
     required this.userName,
     required this.greeting,
@@ -26,7 +26,7 @@ class DashboardHeader extends StatelessWidget {
     this.notificationCount = 0,
     this.onNotificationTap,
     this.showGreeting = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +106,7 @@ class DashboardHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(greeting, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
+                    Text(greeting, style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13)),
                     const SizedBox(height: 2),
                     Text(userName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
                   ],
@@ -159,7 +159,7 @@ class _LogoutAvatar extends StatelessWidget {
             Row(children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF3949AB).withOpacity(0.12),
+                backgroundColor: const Color(0xFF3949AB).withValues(alpha: 0.12),
                 child: Text(initial,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF3949AB))),
               ),
@@ -188,7 +188,7 @@ class _LogoutAvatar extends StatelessWidget {
       ],
       child: CircleAvatar(
         radius: 18,
-        backgroundColor: Colors.white.withOpacity(0.25),
+        backgroundColor: Colors.white.withValues(alpha: 0.25),
         child: Text(initial,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
       ),

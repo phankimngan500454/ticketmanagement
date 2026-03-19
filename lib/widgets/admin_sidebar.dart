@@ -3,6 +3,8 @@ import '../models/user.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_assets_screen.dart';
+import '../screens/admin/admin_departments_screen.dart';
+import '../screens/admin/admin_categories_screen.dart';
 
 /// Sidebar navigation giống Jira Service Management.
 /// Dùng như Drawer trong AdminDashboard.
@@ -12,11 +14,11 @@ class AdminSidebar extends StatelessWidget {
   final ValueChanged<int> onItemSelected;
 
   const AdminSidebar({
-    Key? key,
+    super.key,
     required this.currentUser,
     required this.selectedIndex,
     required this.onItemSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +72,7 @@ class AdminSidebar extends StatelessWidget {
                         Text(
                           'Admin Project',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.65),
+                            color: Colors.white.withValues(alpha: 0.65),
                             fontSize: 11,
                           ),
                         ),
@@ -82,67 +84,42 @@ class AdminSidebar extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 8),
+          // ── SCROLLABLE NAV ITEMS ────────────────────────────────────────────
+          Expanded(child: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const SizedBox(height: 8),
 
-          // ── MAIN NAVIGATION ────────────────────────────────────────────────
-          _sectionLabel('CHÍNH'),
-          _navItem(
-            context,
-            index: 0,
-            icon: Icons.queue_rounded,
-            label: 'Quản lý hàng đợi',
-          ),
-          _navItem(
-            context,
-            index: 1,
-            icon: Icons.bar_chart_rounded,
-            label: 'Báo cáo & Thống kê',
-          ),
+              // CHÍNH
+              _sectionLabel('CHÍNH'),
+              _navItem(context, index: 0, icon: Icons.queue_rounded, label: 'Quản lý hàng đợi'),
+              _navItem(context, index: 1, icon: Icons.bar_chart_rounded, label: 'Báo cáo & Thống kê'),
 
-          const SizedBox(height: 8),
-          const Divider(indent: 16, endIndent: 16),
+              const SizedBox(height: 8),
+              const Divider(indent: 16, endIndent: 16),
 
-          // ── PEOPLE ─────────────────────────────────────────────────────────
-          _sectionLabel('QUẢN LÝ'),
-          _navItem(
-            context,
-            index: 2,
-            icon: Icons.notifications_outlined,
-            label: 'Thông báo',
-          ),
-          _navItem(
-            context,
-            index: 3,
-            icon: Icons.monitor_heart_rounded,
-            label: 'Theo dõi IT',
-          ),
-          _navItem(
-            context,
-            index: 4,
-            icon: Icons.phone_in_talk_rounded,
-            label: 'Danh Bạ Khẩn Cấp',
-          ),
+              // QUẢN LÝ
+              _sectionLabel('QUẢN LÝ'),
+              _navItem(context, index: 2, icon: Icons.notifications_outlined, label: 'Thông báo'),
+              _navItem(context, index: 3, icon: Icons.monitor_heart_rounded, label: 'Theo dõi IT'),
+              _navItem(context, index: 4, icon: Icons.phone_in_talk_rounded, label: 'Danh Bạ Khẩn Cấp'),
 
-          const SizedBox(height: 4),
-          const Divider(indent: 16, endIndent: 16),
-          _sectionLabel('CÀI ĐẶT'),
-          // Navigate full-screen (not index-based) to avoid rebuilding whole dashboard
+              const SizedBox(height: 4),
+              const Divider(indent: 16, endIndent: 16),
 
-          _directNavItem(
-            context,
-            icon: Icons.manage_accounts_rounded,
-            label: 'Tài khoản người dùng',
-            screen: AdminUsersScreen(currentUser: currentUser),
-          ),
-          _directNavItem(
-            context,
-            icon: Icons.devices_rounded,
-            label: 'Thiết bị',
-            screen: AdminAssetsScreen(currentUser: currentUser),
-          ),
+              // CÀI ĐẶT
+              _sectionLabel('CÀI ĐẶT'),
+              _directNavItem(context, icon: Icons.manage_accounts_rounded, label: 'Tài khoản người dùng',
+                  screen: AdminUsersScreen(currentUser: currentUser)),
+              _directNavItem(context, icon: Icons.devices_rounded, label: 'Thiết bị',
+                  screen: AdminAssetsScreen(currentUser: currentUser)),
+              _directNavItem(context, icon: Icons.business_rounded, label: 'Phòng ban',
+                  screen: AdminDepartmentsScreen(currentUser: currentUser)),
+              _directNavItem(context, icon: Icons.category_rounded, label: 'Danh mục',
+                  screen: AdminCategoriesScreen(currentUser: currentUser)),
 
-          // _navItem(context, index: 4, icon: Icons.people_outline_rounded, label: 'Khách hàng'),
-          const Spacer(),
+              const SizedBox(height: 8),
+            ]),
+          )),
           const Divider(indent: 16, endIndent: 16),
 
           // ── USER INFO ──────────────────────────────────────────────────────
@@ -152,7 +129,7 @@ class AdminSidebar extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: const Color(0xFF3949AB).withOpacity(0.15),
+                  backgroundColor: const Color(0xFF3949AB).withValues(alpha: 0.15),
                   child: Text(
                     currentUser.fullName[0],
                     style: const TextStyle(
@@ -201,7 +178,7 @@ class AdminSidebar extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.07),
+                  color: Colors.red.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(children: const [
@@ -248,7 +225,7 @@ class AdminSidebar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF3949AB).withOpacity(0.12)
+              ? const Color(0xFF3949AB).withValues(alpha: 0.12)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),

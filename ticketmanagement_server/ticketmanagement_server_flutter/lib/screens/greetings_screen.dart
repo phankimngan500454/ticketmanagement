@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 
 const _primaryColor = Color(0xFF6366F1);
-const _accentColor = Color(0xFF8B5CF6);
 const _successColor = Color(0xFF10B981);
 const _errorColor = Color(0xFFF87171);
 const _backgroundColor = Color(0xFFFCFCFC);
@@ -18,20 +17,17 @@ class GreetingsScreen extends StatefulWidget {
 }
 
 class _GreetingsScreenState extends State<GreetingsScreen> {
-  String? _resultMessage;
-  String? _errorMessage;
   final _textEditingController = TextEditingController();
 
   void _callHello() async {
     try {
-      final result = await client.greeting.hello(_textEditingController.text);
+      await client.greeting.hello(_textEditingController.text);
       setState(() {
-        _errorMessage = null;
-        _resultMessage = result.message;
+        // result received
       });
     } catch (e) {
       setState(() {
-        _errorMessage = '$e';
+        // error occurred
       });
     }
   }
@@ -59,7 +55,7 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -87,7 +83,7 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
                     'Enter your name to get a personalized greeting',
                     style: TextStyle(
                       fontSize: 16,
-                      color: const Color(0xFF666666),
+                      color: Color(0xFF666666),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -99,7 +95,7 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -119,7 +115,7 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
 
                   const SizedBox(height: 24),
 
-                  Container(
+                  SizedBox(
                     height: 50,
                     child: ElevatedButton(
                       onPressed: _callHello,
@@ -143,7 +139,7 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
 
                   if (widget.onSignOut != null) ...[
                     const SizedBox(height: 24),
-                    Container(
+                    SizedBox(
                       height: 50,
                       child: ElevatedButton(
                         onPressed: widget.onSignOut,
@@ -193,12 +189,12 @@ class ResultDisplay extends StatelessWidget {
     IconData icon;
 
     if (errorMessage != null) {
-      backgroundColor = _errorColor.withOpacity(0.1);
+      backgroundColor = _errorColor.withValues(alpha: 0.1);
       textColor = _errorColor;
       icon = Icons.error;
       text = 'Error: $errorMessage';
     } else if (resultMessage != null) {
-      backgroundColor = _successColor.withOpacity(0.1);
+      backgroundColor = _successColor.withValues(alpha: 0.1);
       textColor = _successColor;
       icon = Icons.check_circle;
       text = resultMessage!;
@@ -214,7 +210,7 @@ class ResultDisplay extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: textColor.withOpacity(0.3), width: 1),
+        border: Border.all(color: textColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         children: [

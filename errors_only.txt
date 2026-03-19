@@ -1,0 +1,16 @@
+﻿warning - The declaration '_showDeadlineSheet' isn't referenced - lib\screens\admin\admin_dashboard.dart:733:8 - unused_element
+warning - Dead code - lib\screens\shared\ticket_detail_screen.dart:206:48 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\shared\ticket_detail_screen.dart:206:51 - dead_null_aware_expression
+warning - Dead code - lib\screens\shared\ticket_detail_screen.dart:243:42 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\shared\ticket_detail_screen.dart:243:45 - dead_null_aware_expression
+warning - Dead code - lib\screens\shared\ticket_detail_screen.dart:269:42 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\shared\ticket_detail_screen.dart:269:45 - dead_null_aware_expression
+warning - Dead code - lib\screens\shared\ticket_detail_screen.dart:365:54 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\shared\ticket_detail_screen.dart:365:57 - dead_null_aware_expression
+warning - Dead code - lib\screens\shared\ticket_detail_screen.dart:738:42 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\shared\ticket_detail_screen.dart:738:45 - dead_null_aware_expression
+warning - Dead code - lib\screens\shared\ticket_detail_screen.dart:849:54 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\shared\ticket_detail_screen.dart:849:57 - dead_null_aware_expression
+warning - The declaration '_accentColor' isn't referenced - ticketmanagement_server\ticketmanagement_server_flutter\lib\screens\greetings_screen.dart:6:7 - unused_element
+warning - The value of the field '_resultMessage' isn't used - ticketmanagement_server\ticketmanagement_server_flutter\lib\screens\greetings_screen.dart:21:11 - unused_field
+warning - The value of the field '_errorMessage' isn't used - ticketmanagement_server\ticketmanagement_server_flutter\lib\screens\greetings_screen.dart:22:11 - unused_field
