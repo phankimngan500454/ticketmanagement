@@ -16,10 +16,10 @@ void main() async {
   final conn = await Connection.open(
     Endpoint(
       host: '127.0.0.1',
-      port: 5433,
+      port: 5432,
       database: 'ticketmanagement_server',
       username: 'postgres',
-      password: '9-0-qNvHZWF21k38HxbIdEK48QV_Hq_C',
+      password: 'postgres',
     ),
     settings: const ConnectionSettings(sslMode: SslMode.disable),
   );

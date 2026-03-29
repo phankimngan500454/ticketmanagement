@@ -25,6 +25,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final _descriptionController = TextEditingController();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _locationController; // Số phòng / vị trí cụ thể
 
   // Pending attachments (picked before submit)
   final List<({String name, String mime, Uint8List bytes})> _pendingFiles = [];
@@ -45,6 +46,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     super.initState();
     _nameController  = TextEditingController(text: widget.currentUser.fullName);
     _phoneController = TextEditingController(text: widget.currentUser.phone);
+    _locationController = TextEditingController();
     if (widget.isEmergency) _priority = 'High';
     _loadOptions();
   }
@@ -55,12 +57,16 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     _descriptionController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
   Future<void> _loadOptions() async {
     final categories = await _repo.getCategories();
-    final assets     = await _repo.getAssets();
+    final rawAssets  = await _repo.getAssets();
+    // Deduplicate by assetId (prevents DropdownButton assertion if DB has duplicate rows)
+    final seen      = <int>{};
+    final assets    = rawAssets.where((a) => seen.add(a.assetId)).toList();
     if (mounted) {
       setState(() {
         _categories     = categories;
@@ -130,7 +136,11 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         requesterId:   widget.currentUser.userId,
         categoryId:    _selectedCategory!.categoryId,
         subject:       _subjectController.text.trim(),
-        description:   _descriptionController.text.trim(),
+        description:   [
+          if (_locationController.text.trim().isNotEmpty)
+            '📍 Vị trí: ${_locationController.text.trim()}',
+          _descriptionController.text.trim(),
+        ].join('\n\n'),
         priority:      _priority,
         assetId:       _selectedAsset?.assetId,
       );
@@ -234,7 +244,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(widget.currentUser.fullName,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                  Text(widget.currentUser.role,
+                  Text(widget.currentUser.deptName ?? widget.currentUser.role,
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
                 ])),
                 Container(
@@ -298,7 +308,44 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           _infoField(label: 'Số điện thoại', icon: Icons.phone_outlined,
                               controller: _phoneController, enabled: _editingInfo,
                               keyboard: TextInputType.phone),
+                          const SizedBox(height: 10),
+                          // ── UI Phòng ban đã bị xóa theo yêu cầu ──
+                          const SizedBox(height: 10),
+                          // ── Số phòng / Vị trí cụ thể ──────────────────────────
+                          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('Số phòng / Vị trí cụ thể', style: TextStyle(
+                                fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 4),
+                            TextField(
+                              controller: _locationController,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFF1C1C2E)),
+                              decoration: InputDecoration(
+                                hintText: 'VD: P.203 - Tầng 2, Dãy A...',
+                                hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                                prefixIcon: const Icon(Icons.location_on_outlined, size: 16,
+                                    color: Color(0xFF5C6BC0)),
+                                filled: true,
+                                fillColor: const Color(0xFFF8F9FF),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none),
+                                enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide(color: Colors.grey.shade200)),
+                                focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFF5C6BC0), width: 1.5)),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('IT sẽ dùng vị trí này để đến hỗ trợ trực tiếp',
+                              style: TextStyle(fontSize: 10, color: Colors.grey[400],
+                                  fontStyle: FontStyle.italic)),
+                          ]),
                         ]),
+
                       ),
                       const SizedBox(height: 14),
 
@@ -358,10 +405,13 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           label: 'Độ ưu tiên',
                           required: true,
                           child: Row(
-                            children: ['Low', 'Medium'].map((p) {
+                            children: ['Low', 'Medium', 'High'].map((p) {
                               final selected = _priority == p;
-                              final color = p == 'Medium' ? const Color(0xFFFB8C00)
-                                  : const Color(0xFF29B6F6);
+                              final color = p == 'High'
+                                  ? const Color(0xFFE53935)
+                                  : p == 'Medium'
+                                      ? const Color(0xFFFB8C00)
+                                      : const Color(0xFF29B6F6);
                               return Expanded(child: Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 4),
                                 child: GestureDetector(
@@ -377,14 +427,17 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                                     ),
                                     child: Column(children: [
                                       Icon(
-                                        p == 'Medium' ? Icons.drag_handle
-                                            : Icons.keyboard_double_arrow_down,
+                                        p == 'High'
+                                            ? Icons.keyboard_double_arrow_up
+                                            : p == 'Medium'
+                                                ? Icons.drag_handle
+                                                : Icons.keyboard_double_arrow_down,
                                         size: 18,
                                         color: selected ? Colors.white : color,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        p == 'Medium' ? 'Trung bình' : 'Thấp',
+                                        p == 'High' ? 'Cao' : p == 'Medium' ? 'Trung bình' : 'Thấp',
                                         style: TextStyle(
                                           fontSize: 11, fontWeight: FontWeight.bold,
                                           color: selected ? Colors.white : color,
@@ -733,7 +786,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     const brown  = Color(0xFF6D4C41);
     final filteredAssets = _selectedCategory == null
         ? _assets
-        : _assets.where((a) => a.categoryId == _selectedCategory!.categoryId).toList();
+        : _assets.where((a) => a.categoryId == _selectedCategory!.categoryId || a.categoryId == null).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -888,12 +941,50 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                             value: null,
                             child: Text('-- Không chọn --',
                               style: TextStyle(color: Colors.grey[500], fontSize: 13))),
-                          ...filteredAssets.map((a) => DropdownMenuItem<Asset?>(
-                            value: a,
-                            child: Text(
-                              a.assetCode.isNotEmpty ? '${a.assetName} (${a.assetCode})' : a.assetName,
-                              style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-                          )),
+                          
+                          // Nhóm thuộc danh mục
+                          if (filteredAssets.any((a) => a.categoryId != null)) ...[
+                            DropdownMenuItem<Asset?>(
+                              value: const Asset(assetId: -1, assetName: '', assetCode: '', assetGroup: '', assetType: '', assetModel: '', status: ''),
+                              enabled: false,
+                              child: Container(
+                                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                child: Text('► THUỘC DANH MỤC "${_selectedCategory?.categoryName.toUpperCase()}"',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: brown, letterSpacing: 0.5)),
+                              )),
+                            ...filteredAssets.where((a) => a.categoryId != null).map((a) => DropdownMenuItem<Asset?>(
+                              value: a,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Text(a.assetCode.isNotEmpty ? '${a.assetName} (${a.assetCode})' : a.assetName,
+                                  style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                              ),
+                            )),
+                          ],
+
+                          // Nhóm dùng chung
+                          if (filteredAssets.any((a) => a.categoryId == null)) ...[
+                            if (filteredAssets.any((a) => a.categoryId != null))
+                              DropdownMenuItem<Asset?>(
+                                value: const Asset(assetId: -2, assetName: '', assetCode: '', assetGroup: '', assetType: '', assetModel: '', status: ''),
+                                enabled: false, child: const Divider(height: 1)),
+                            DropdownMenuItem<Asset?>(
+                              value: const Asset(assetId: -3, assetName: '', assetCode: '', assetGroup: '', assetType: '', assetModel: '', status: ''),
+                              enabled: false,
+                              child: Container(
+                                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                child: Text('► THIẾT BỊ DÙNG CHUNG (KHÁC)',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 0.5)),
+                              )),
+                            ...filteredAssets.where((a) => a.categoryId == null).map((a) => DropdownMenuItem<Asset?>(
+                              value: a,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Text(a.assetCode.isNotEmpty ? '${a.assetName} (${a.assetCode})' : a.assetName,
+                                  style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                              ),
+                            )),
+                          ],
                         ],
                         onChanged: (val) => setState(() => _selectedAsset = val),
                       ),

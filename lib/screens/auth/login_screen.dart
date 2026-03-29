@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../admin/admin_dashboard.dart';
-import '../it/it_agent_dashboard.dart';
-import '../customer/customer_dashboard.dart';
+import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/user.dart';
 import '../../services/notification_service.dart';
@@ -31,36 +29,43 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     setState(() => _isLoading = true);
-    final User? user = await _repo.login(username, password);
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (!mounted) return;
-    if (user == null) {
+    try {
+      final User? user = await _repo.login(username, password);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tên đăng nhập hoặc mật khẩu không đúng'), backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+      _navigateByRole(user);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tên đăng nhập hoặc mật khẩu không đúng'), backgroundColor: Colors.redAccent),
+        const SnackBar(
+          content: Text('⚠️ Không kết nối được máy chủ. Kiểm tra lại WiFi!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 5),
+        ),
       );
-      return;
     }
-    _navigateByRole(user);
+
   }
 
   void _navigateByRole(User user) {
     // 🔔 Register FCM token for push notifications (runs in background)
     NotificationService.init(user.userId);
-
-    Widget screen;
-    switch (user.role) {
-      case 'Admin':
-        screen = AdminDashboard(currentUser: user);
-        break;
-      case 'IT':
-        screen = ITAgentDashboard(currentUser: user);
-        break;
-      default:
-        screen = CustomerDashboard(currentUser: user);
+    
+    if (user.role == 'Admin') {
+      context.go('/admin');
+    } else if (user.role == 'IT') {
+      context.go('/it');
+    } else {
+      context.go('/customer');
     }
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   /// Quick login (chỉ dùng để test / demo)

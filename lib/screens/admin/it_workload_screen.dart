@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
-import '../shared/ticket_detail_screen.dart';
 
 class ITWorkloadScreen extends StatefulWidget {
   final User currentUser;
@@ -95,7 +95,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
               child: Row(children: [
-                IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.pop()),
                 const Expanded(child: Text('Theo dõi IT', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
                 IconButton(icon: const Icon(Icons.refresh_rounded, color: Colors.white), onPressed: () { setState(() => _loading = true); _loadData(); }),
               ]),
@@ -217,7 +217,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
     final pc = _priorityColor(t.priority);
     return InkWell(
       onTap: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => TicketDetailScreen(ticket: t, isAdmin: true, currentUser: widget.currentUser)));
+        await context.push('/ticket/${t.ticketId}', extra: t);
         _loadData();
       },
       child: Container(

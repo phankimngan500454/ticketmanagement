@@ -1,4 +1,4 @@
-package com.example.ticketmanagement
+package com.bvdkkh.ticketmanagement
 
 import io.flutter.embedding.android.FlutterActivity
 

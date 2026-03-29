@@ -2,7 +2,7 @@
     <!-- Required for push notifications on Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="ticketmanagement"
+        android:label="HelpDesk"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

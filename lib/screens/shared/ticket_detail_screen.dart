@@ -4,7 +4,9 @@
 // =============================================================
 
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
+import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
@@ -49,6 +51,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   bool _loadingComments = true;                // Đang tải dữ liệu ban đầu?
   bool _uploadingFile = false;                 // Đang upload file?
   Asset? _linkedAsset;                         // Thông tin thiết bị liên kết đầy đủ
+  Timer? _refreshTimer;                        // Auto-refresh realtime
 
   // ── Theme  ───────────────────────────────────────────────────
   static const Color _themeColor = Color(0xFF3949AB); // Màu chủ đạo (indigo)
@@ -58,6 +61,16 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     super.initState();
     _ticket = widget.ticket;
     _loadData();
+    // Auto-refresh mỗi 10s để cập nhật comments và trạng thái mới nhất
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _loadData());
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _chatController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // ════════════════════════════════════════════════════════════
@@ -576,7 +589,24 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
                   child: Row(children: [
-                    IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          // Fallback về dashboard theo role
+                          final user = TicketRepository.instance.currentUser;
+                          if (user?.role == 'Admin') {
+                            context.go('/admin');
+                          } else if (user?.role == 'IT') {
+                            context.go('/it');
+                          } else {
+                            context.go('/customer');
+                          }
+                        }
+                      },
+                    ),
                     const Expanded(child: Text('Chi tiết yêu cầu', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
                   ]),
                 ),
@@ -640,9 +670,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 2),
-                        // SĐT + Category + Thời gian
+                        // Phòng ban + SĐT + Category + Thời gian
                         Text(
                           [
+                            _ticket.requesterDeptName ?? widget.currentUser.deptName ?? '',
                             _ticket.requesterPhone ?? widget.currentUser.phone,
                             _ticket.categoryName ?? '',
                             _formatExactTime(_ticket.createdAt),
@@ -757,6 +788,60 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   );
                 }),
 
+                // ── Card: Vị trí hỗ trợ (Phòng ban + Số phòng) ──────────
+                Builder(builder: (ctx) {
+                  final dept = _ticket.requesterDeptName;
+                  // Parse số phòng từ description (dòng đầu dạng "📍 Vị trí: ...")
+                  final lines = _ticket.description.split('\n');
+                  String? locationLine;
+                  for (final line in lines) {
+                    if (line.trimLeft().startsWith('📍 Vị trí:')) {
+                      locationLine = line.replaceFirst(RegExp(r'^📍 Vị trí:\s*'), '').trim();
+                      break;
+                    }
+                  }
+                  if (dept == null && locationLine == null) return const SizedBox.shrink();
+                  return Container(
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF43A047).withValues(alpha: 0.4)),
+                      boxShadow: [BoxShadow(color: const Color(0xFF43A047).withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
+                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Row(children: [
+                        Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF2E7D32)),
+                        SizedBox(width: 6),
+                        Text('Vị trí hỗ trợ',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2E7D32))),
+                        SizedBox(width: 6),
+                        Text('— IT đến đây để hỗ trợ',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF388E3C))),
+                      ]),
+                      const SizedBox(height: 10),
+                      if (dept != null)
+                        Row(children: [
+                          const Icon(Icons.business_rounded, size: 14, color: Color(0xFF388E3C)),
+                          const SizedBox(width: 8),
+                          Text('Phòng ban: ', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Expanded(child: Text(dept,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)))),
+                        ]),
+                      if (dept != null && locationLine != null) const SizedBox(height: 6),
+                      if (locationLine != null)
+                        Row(children: [
+                          const Icon(Icons.meeting_room_rounded, size: 14, color: Color(0xFF388E3C)),
+                          const SizedBox(width: 8),
+                          Text('Số phòng: ', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Expanded(child: Text(locationLine,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)))),
+                        ]),
+                    ]),
+                  );
+                }),
+
                 Container(
                   margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   padding: const EdgeInsets.all(14),
@@ -769,7 +854,16 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       Text('Mô tả', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF3949AB))),
                     ]),
                     const SizedBox(height: 8),
-                    Text(_ticket.description, style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.5)),
+                    // Lọc bỏ dòng "📍 Vị trí:" khỏi mô tả (đã hiển thị riêng ở card trên)
+                    Builder(builder: (ctx) {
+                      final cleaned = _ticket.description
+                          .split('\n')
+                          .where((l) => !l.trimLeft().startsWith('📍 Vị trí:'))
+                          .join('\n')
+                          .trim();
+                      return Text(cleaned.isNotEmpty ? cleaned : _ticket.description,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.5));
+                    }),
                   ]),
                 ),
 

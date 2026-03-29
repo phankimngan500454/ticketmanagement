@@ -49,9 +49,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _repo.getDepartments(),
     ]);
     if (mounted) {
+      // Deduplicate departments by deptId to prevent DropdownButton assertion error
+      final rawDepts = results[1] as List<Department>;
+      final seenDepts = <int>{};
       setState(() {
         _users = results[0] as List<User>;
-        _departments = results[1] as List<Department>;
+        _departments = rawDepts.where((d) => seenDepts.add(d.deptId)).toList();
         _loading = false;
       });
     }
@@ -166,7 +169,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             Text('Phòng ban', style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
             DropdownButtonFormField<int?>(
-              initialValue: deptId,
+              value: _departments.any((d) => d.deptId == deptId) ? deptId : null,
               decoration: InputDecoration(
                 filled: true, fillColor: const Color(0xFFF4F5F9),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),

@@ -73,8 +73,11 @@ mixin ReferenceRepository on RepositoryBase {
 
   Future<List<Department>> getDepartments() async {
     final depts = await client.reference.getDepartments();
+    final seen = <int>{};
     return depts
-        .map((d) => Department(deptId: d.id ?? 0, deptName: d.name))
+        .where((d) => d.id != null && d.id! > 0)
+        .map((d) => Department(deptId: d.id!, deptName: d.name))
+        .where((d) => seen.add(d.deptId))
         .toList();
   }
 

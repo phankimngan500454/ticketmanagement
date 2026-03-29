@@ -113,6 +113,15 @@ class TicketEndpoint extends Endpoint {
         body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
         data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
       );
+
+      // 🔔 Notify the requester that IT has taken the job
+      await FcmService.sendToUser(
+        session,
+        targetUserId: ticket.requesterId,
+        title: '👨‍🔧 IT đã tiếp nhận yêu cầu',
+        body: 'Ticket #${ticketId.toString().padLeft(4, '0')} của bạn đang được xử lý',
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
     }
 
     return updated;
@@ -128,6 +137,17 @@ class TicketEndpoint extends Endpoint {
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket == null) return null;
     final updated = await Ticket.db.updateRow(session, ticket.copyWith(status: status));
+
+    // 🔔 In Progress / Pending → notify Customer (requester)
+    if (status == 'In Progress' || status == 'Pending') {
+      await FcmService.sendToUser(
+        session,
+        targetUserId: ticket.requesterId,
+        title: '👨‍🔧 IT đang xử lý',
+        body: 'Yêu cầu của bạn đang được tiến hành: ${ticket.subject}',
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
+    }
 
     // 🔔 WaitingConfirmation → notify Customer (requester)
     if (status == 'WaitingConfirmation') {

@@ -1,12 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
-import 'create_ticket_screen.dart';
-import 'emergency_call_screen.dart';
-import '../shared/ticket_detail_screen.dart';
-import '../shared/notifications_screen.dart';
-import '../auth/login_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
   final User currentUser;
@@ -23,12 +20,17 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   int _navIndex = 1;       // 0=Tất cả, 1=Đang xử lý, 2=Đã xong
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _refreshTimer;
 
   static const _blue = Color(0xFF1976D2);
   static const _blueDark = Color(0xFF1A237E);
 
   @override
-  void initState() { super.initState(); _loadData(); }
+  void initState() {
+    super.initState();
+    _loadData();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
+  }
 
   Future<void> _loadData() async {
     try {
@@ -45,7 +47,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   @override
-  void dispose() { _searchCtrl.dispose(); super.dispose(); }
+  void dispose() { _refreshTimer?.cancel(); _searchCtrl.dispose(); super.dispose(); }
 
   Color _statusColor(String s) {
     switch (s) {
@@ -115,8 +117,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ])),
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => NotificationsScreen(currentUser: widget.currentUser))),
+                  onPressed: () => context.push('/notifications'),
                 ),
                 PopupMenuButton<String>(
                   tooltip: '',
@@ -124,8 +125,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   onSelected: (v) {
                     if (v == 'logout') {
-                      Navigator.pushAndRemoveUntil(context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
+                      context.go('/login');
                     }
                   },
                   itemBuilder: (_) => [
@@ -173,8 +173,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         // ── EMERGENCY BANNER ───────────────────────────────────
         GestureDetector(
           onTap: () async {
-            await Navigator.push(context, MaterialPageRoute(
-                builder: (_) => EmergencyCallScreen(currentUser: widget.currentUser)));
+            await context.push('/emergency');
             _loadData();
           },
           child: Container(
@@ -289,26 +288,32 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           // Create ticket button
           Expanded(child: GestureDetector(
             onTap: () async {
-              final result = await Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => CreateTicketScreen(currentUser: widget.currentUser)));
+              final result = await context.push('/create-ticket');
               if (result == true) _loadData();
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 9),
+                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [_blueDark, _blue]),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 2))],
                 ),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 16),
-                  const SizedBox(width: 3),
-                  const Flexible(child: Text('Tạo mới',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                    overflow: TextOverflow.ellipsis, maxLines: 1)),
-                ]),
+                child: LayoutBuilder(
+                  builder: (ctx, constraints) {
+                    final showText = constraints.maxWidth > 60;
+                    return Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                      if (showText) ...[
+                        const SizedBox(width: 4),
+                        const Text('Tạo mới',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                          overflow: TextOverflow.ellipsis, maxLines: 1),
+                      ],
+                    ]);
+                  },
+                ),
               ),
             ),
           )),
@@ -390,9 +395,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
-            await Navigator.push(ctx, MaterialPageRoute(
-                builder: (_) => TicketDetailScreen(ticket: ticket, isAdmin: false, currentUser: widget.currentUser)));
+            // Tạm dừng auto-refresh để tránh setState khi navigator đang chuyển trang
+            _refreshTimer?.cancel();
+            await context.push('/ticket/${ticket.ticketId}', extra: ticket);
             _loadData();
+            // Khởi động lại timer sau khi quay về
+            _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),

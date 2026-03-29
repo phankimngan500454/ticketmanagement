@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../screens/auth/login_screen.dart';
+import 'package:go_router/go_router.dart';
+import '../data/ticket_repository.dart';
 
 /// Widget header dùng chung cho tất cả các Dashboard.
 /// Nhận vào: tiêu đề, tên người dùng, lời chào,
@@ -143,11 +144,8 @@ class _LogoutAvatar extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       onSelected: (value) {
         if (value == 'logout') {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-          );
+          TicketRepository.instance.logout();
+          context.go('/login');
         }
       },
       itemBuilder: (_) => [

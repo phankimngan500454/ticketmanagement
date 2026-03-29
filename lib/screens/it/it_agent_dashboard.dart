@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../shared/ticket_detail_screen.dart';
-import '../shared/notifications_screen.dart';
+import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
-import '../auth/login_screen.dart';
 
 class ITAgentDashboard extends StatefulWidget {
   final User currentUser;
@@ -216,8 +214,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                     icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
                     onPressed: () {
                       setState(() => _newNotifCount = 0); // clear badge
-                      Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => NotificationsScreen(currentUser: widget.currentUser)));
+                      context.push('/notifications');
                     },
                   ),
                   if (_newNotifCount > 0) Positioned(
@@ -237,8 +234,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   onSelected: (v) {
                     if (v == 'logout') {
-                      Navigator.pushAndRemoveUntil(context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
+                      context.go('/login');
                     }
                   },
                   itemBuilder: (_) => [
@@ -451,9 +447,10 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                 textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
               onPressed: () async {
-                await Navigator.push(ctx, MaterialPageRoute(
-                    builder: (_) => TicketDetailScreen(ticket: t, isAdmin: false, currentUser: widget.currentUser)));
+                _refreshTimer?.cancel();
+                await context.push('/ticket/${t.ticketId}', extra: t);
                 _loadData();
+                _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
               },
             )),
             const SizedBox(width: 8),
@@ -527,9 +524,10 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
-            await Navigator.push(ctx, MaterialPageRoute(
-                builder: (_) => TicketDetailScreen(ticket: t, isAdmin: false, currentUser: widget.currentUser)));
+            _refreshTimer?.cancel();
+            await context.push('/ticket/${t.ticketId}', extra: t);
             _loadData();
+            _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),

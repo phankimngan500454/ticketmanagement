@@ -1,16 +1,22 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'firebase_options.dart';
-import 'screens/auth/login_screen.dart';
-import 'services/notification_service.dart';
+import 'app_router.dart';
+import 'package:go_router/go_router.dart';
 import 'services/sp_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Buộc URL trình duyệt cập nhật khi dùng context.push() (không chỉ context.go())
+  GoRouter.optionURLReflectsImperativeAPIs = true;
   initServerpodClient();
   // Initialise Firebase (required for FCM push notifications)
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Web chưa có cấu hình Firebase nên ta skip để tránh FirebaseOptions ném lỗi
+  if (!kIsWeb) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  }
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
@@ -23,10 +29,10 @@ class HelpdeskApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'IT Helpdesk',
       debugShowCheckedModeBanner: false,
-      navigatorKey: NotificationService.navigatorKey,
+      routerConfig: appRouter,
       theme: ThemeData(
         useMaterial3: false,
         primaryColor: const Color(0xFF3949AB),
@@ -116,7 +122,6 @@ class HelpdeskApp extends StatelessWidget {
           backgroundColor: Colors.white,
         ),
       ),
-      home: const LoginScreen(),
     );
   }
 }

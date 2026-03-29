@@ -12,6 +12,7 @@ import '../models/ticket_attachment.dart';
 import '../models/user.dart';
 import '../models/category.dart';
 import '../models/asset.dart';
+import '../models/department.dart';
 import '../services/sp_client.dart';
 
 abstract class RepositoryBase {
@@ -19,6 +20,10 @@ abstract class RepositoryBase {
   List<User> userCache = [];
   List<Category> categoryCache = [];
   List<Asset> assetCache = [];
+  List<Department> deptCache = [];
+
+  // ── Session ──────────────────────────────────────────────────
+  User? currentUser;
 
   // ── Helpers ─────────────────────────────────────────────────
   String roleFromId(int id) {
@@ -29,15 +34,19 @@ abstract class RepositoryBase {
 
   // ── Mappers: SP model → App model ───────────────────────────
 
-  User mapUser(sp.AppUser u) => User(
-        userId: u.id ?? 0,
-        fullName: u.fullName?.isNotEmpty == true ? u.fullName! : u.username,
-        phone: u.phone ?? '',
-        role: roleFromId(u.roleId),
-        createdAt: u.createdAt,
-        deptId: u.deptId ?? 0,
-        deptName: null,
-      );
+  User mapUser(sp.AppUser u) {
+    final deptId = u.deptId ?? 0;
+    final dept = deptCache.where((d) => d.deptId == deptId).firstOrNull;
+    return User(
+      userId: u.id ?? 0,
+      fullName: u.fullName?.isNotEmpty == true ? u.fullName! : u.username,
+      phone: u.phone ?? '',
+      role: roleFromId(u.roleId),
+      createdAt: u.createdAt,
+      deptId: deptId,
+      deptName: dept?.deptName,
+    );
+  }
 
   Ticket mapTicket(sp.Ticket t) {
     final requester = userCache.where((u) => u.userId == t.requesterId).firstOrNull;
@@ -56,6 +65,7 @@ abstract class RepositoryBase {
       createdAt: t.createdAt,
       requesterId: t.requesterId,
       requesterName: requester?.fullName,
+      requesterDeptName: requester?.deptName,
       assigneeId: t.assigneeId,
       assigneeName: assignee?.fullName,
       categoryId: t.categoryId,
@@ -108,6 +118,11 @@ abstract class RepositoryBase {
 
   // ── Warm cache (gọi trước mỗi query cần join tên) ──────────
   Future<void> warmCache() async {
+    // Load departments first (needed by mapUser for deptName join)
+    if (deptCache.isEmpty) {
+      final depts = await client.reference.getDepartments();
+      deptCache = depts.map((d) => Department(deptId: d.id ?? 0, deptName: d.name)).toList();
+    }
     await Future.wait([
       if (userCache.isEmpty)
         client.auth.getUsers().then((us) {

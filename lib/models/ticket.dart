@@ -21,6 +21,7 @@ class Ticket {
   final String? assigneeName;
   final String? categoryName;
   final String? assetName;
+  final String? requesterDeptName; // Phòng ban của người tạo ticket
 
   const Ticket({
     required this.ticketId,
@@ -41,6 +42,7 @@ class Ticket {
     this.assigneeName,
     this.categoryName,
     this.assetName,
+    this.requesterDeptName,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -89,6 +91,7 @@ class Ticket {
       assigneeName:   assigneeName,
       categoryName:   categoryName,
       assetName:      (json['assetName'] ?? json['AssetName']) as String?,
+      requesterDeptName: (json['requesterDeptName'] ?? json['RequesterDeptName']) as String?,
     );
   }
 
@@ -131,5 +134,6 @@ class Ticket {
     assigneeName:     assigneeName ?? this.assigneeName,
     categoryName:     categoryName,
     assetName:        assetName,
+    requesterDeptName: requesterDeptName,
   );
 }

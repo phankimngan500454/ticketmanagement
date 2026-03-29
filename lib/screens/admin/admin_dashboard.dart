@@ -1,10 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../shared/ticket_detail_screen.dart';
-import '../shared/notifications_screen.dart';
-import 'report_screen.dart';
-import 'it_workload_screen.dart';
-import 'admin_emergency_contacts_screen.dart';
+import 'package:go_router/go_router.dart';
 import '../../widgets/dashboard_header.dart';
 import '../../widgets/admin_sidebar.dart';
 import '../../data/ticket_repository.dart';
@@ -213,13 +209,13 @@ class _AdminDashboardState extends State<AdminDashboard>
         onItemSelected: (index) {
           setState(() => _sidebarIndex = index);
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ReportScreen(currentUser: widget.currentUser)));
+            context.push('/admin/reports');
           } else if (index == 2) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen(currentUser: widget.currentUser, isAdmin: true)));
+            context.push('/notifications');
           } else if (index == 3) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ITWorkloadScreen(currentUser: widget.currentUser)));
+            context.push('/admin/it-workload');
           } else if (index == 4) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminEmergencyContactsScreen()));
+            context.push('/admin/emergency-contacts');
           }
         },
       ),
@@ -236,8 +232,7 @@ class _AdminDashboardState extends State<AdminDashboard>
               notificationCount: _newNotifCount,
               onNotificationTap: () {
                 setState(() => _newNotifCount = 0); // clear badge
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => NotificationsScreen(currentUser: widget.currentUser, isAdmin: true)));
+                context.push('/notifications');
               },
               leadingAction: IconButton(
                 icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 24),
@@ -409,12 +404,16 @@ class _AdminDashboardState extends State<AdminDashboard>
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator(color: Color(0xFF3949AB)))
-                  : TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildTableList(_paginatedTickets),
-                        _buildTableList(_paginatedTickets.where((t) => t.assigneeId == null).toList()),
-                      ],
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
+                      color: const Color(0xFF3949AB),
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildTableList(_paginatedTickets),
+                          _buildTableList(_paginatedTickets.where((t) => t.assigneeId == null).toList()),
+                        ],
+                      ),
                     ),
             ),
 
@@ -543,9 +542,10 @@ class _AdminDashboardState extends State<AdminDashboard>
 
     return InkWell(
       onTap: () async {
-        await Navigator.push(ctx, MaterialPageRoute(
-          builder: (_) => TicketDetailScreen(ticket: ticket, isAdmin: true, currentUser: widget.currentUser)));
+        _refreshTimer?.cancel();
+        await context.push('/ticket/${ticket.ticketId}', extra: ticket);
         _loadData();
+        _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
       },
       child: Container(
         decoration: BoxDecoration(

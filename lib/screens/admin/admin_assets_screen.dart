@@ -86,11 +86,15 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final r = await Future.wait([_repo.getAssets(), _repo.getCategories()]);
-    if (mounted) setState(() {
-      _assets     = r[0] as List<Asset>;
-      _categories = r[1] as List<Category>;
-      _loading    = false;
-    });
+    if (mounted) {
+      final seenA = <int>{};
+      final seenC = <int>{};
+      setState(() {
+        _assets     = (r[0] as List<Asset>).where((a) => seenA.add(a.assetId)).toList();
+        _categories = (r[1] as List<Category>).where((c) => seenC.add(c.categoryId)).toList();
+        _loading    = false;
+      });
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────

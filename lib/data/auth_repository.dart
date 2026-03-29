@@ -5,7 +5,10 @@
 // ============================================================
 import 'repository_base.dart';
 import '../models/user.dart';
+import '../models/department.dart';
 import '../services/sp_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 mixin AuthRepository on RepositoryBase {
   // ── Đăng nhập ───────────────────────────────────────────────
@@ -13,19 +16,48 @@ mixin AuthRepository on RepositoryBase {
     try {
       final u = await client.auth.login(username, password);
       if (u == null) return null;
-      userCache = []; // reset cache sau khi đổi phiên
-      return mapUser(u);
+      userCache = [];
+      deptCache = []; // reset để load lại departments mới nhất
+      // Load departments trước để mapUser join được deptName
+      final depts = await client.reference.getDepartments();
+      deptCache = depts.map((d) => Department(deptId: d.id ?? 0, deptName: d.name)).toList();
+      
+      // Save credentials for auto-login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_username', username);
+      await prefs.setString('saved_password', password);
+
+      currentUser = mapUser(u);
+      return currentUser;
     } catch (e) {
       print('[Auth] login error: $e');
-      return null;
+      rethrow; // Ném lại để UI phân biệt "lỗi mạng" vs "sai mật khẩu"
     }
   }
+
+  // ── Auto Login (khi mở app hoặc F5 trang web) ────────────────
+  Future<User?> tryAutoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('saved_username');
+    final password = prefs.getString('saved_password');
+    if (username != null && password != null) {
+      return await login(username, password);
+    }
+    return null;
+  }
+
 
   // ── Đăng xuất (xóa cache) ───────────────────────────────────
   Future<void> logout() async {
     userCache = [];
     categoryCache = [];
     assetCache = [];
+    currentUser = null;
+    
+    // Xóa session F5
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('saved_username');
+    await prefs.remove('saved_password');
   }
 
   // ── Đăng ký tài khoản mới (Admin only) ──────────────────────

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/user.dart';
-import '../screens/auth/login_screen.dart';
 import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_assets_screen.dart';
 import '../screens/admin/admin_departments_screen.dart';
-import '../screens/admin/admin_categories_screen.dart';
 
 /// Sidebar navigation giống Jira Service Management.
 /// Dùng như Drawer trong AdminDashboard.
@@ -114,8 +113,7 @@ class AdminSidebar extends StatelessWidget {
                   screen: AdminAssetsScreen(currentUser: currentUser)),
               _directNavItem(context, icon: Icons.business_rounded, label: 'Phòng ban',
                   screen: AdminDepartmentsScreen(currentUser: currentUser)),
-              _directNavItem(context, icon: Icons.category_rounded, label: 'Danh mục',
-                  screen: AdminCategoriesScreen(currentUser: currentUser)),
+              // Đã ẩn quản lý Danh mục theo yêu cầu
 
               const SizedBox(height: 8),
             ]),
@@ -169,11 +167,7 @@ class AdminSidebar extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 Navigator.pop(context); // close drawer
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
+                context.go('/login');
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -271,7 +265,13 @@ class AdminSidebar extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
-        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+        switch (label) {
+          case 'Người dùng (Nhân viên)': context.push('/admin/users'); break;
+          case 'Danh mục': context.push('/admin/categories'); break;
+          case 'Phòng ban': context.push('/admin/departments'); break;
+          case 'Thiết bị': context.push('/admin/assets'); break;
+          default: break;
+        }
       },
       child: Container(
         margin: const EdgeInsets.fromLTRB(8, 2, 8, 2),
