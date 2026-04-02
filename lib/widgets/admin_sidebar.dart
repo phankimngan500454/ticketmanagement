@@ -266,7 +266,7 @@ class AdminSidebar extends StatelessWidget {
       onTap: () {
         Navigator.pop(context);
         switch (label) {
-          case 'Người dùng (Nhân viên)': context.push('/admin/users'); break;
+          case 'Tài khoản người dùng': context.push('/admin/users'); break;
           case 'Danh mục': context.push('/admin/categories'); break;
           case 'Phòng ban': context.push('/admin/departments'); break;
           case 'Thiết bị': context.push('/admin/assets'); break;

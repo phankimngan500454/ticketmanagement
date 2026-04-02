@@ -22,6 +22,7 @@ import 'screens/admin/admin_assets_screen.dart';
 import 'screens/admin/admin_emergency_contacts_screen.dart';
 import 'screens/admin/it_workload_screen.dart';
 import 'screens/admin/report_screen.dart';
+import 'screens/shared/profile_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -167,7 +168,7 @@ final GoRouter appRouter = GoRouter(
           ticket: ticket,
           ticketId: ticketId,
           currentUser: user,
-          isAdmin: user.role == 'Admin' || user.role == 'IT',
+          isAdmin: user.role == 'Admin',
         );
       },
     ),
@@ -182,6 +183,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/notifications',
       builder: (context, state) => NotificationsScreen(currentUser: TicketRepository.instance.currentUser!),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => ProfileScreen(currentUser: TicketRepository.instance.currentUser!),
     ),
 
     // ── Admin only routes ─────────────────────────────────────────

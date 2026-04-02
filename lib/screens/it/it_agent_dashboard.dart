@@ -30,16 +30,12 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
   static const _green = Color(0xFF00897B);
   static const _greenDark = Color(0xFF004D40);
 
-  List<Ticket> get _todayWork {
-    final now = DateTime.now();
-    return _myTickets.where((t) {
-      final createdToday = t.createdAt.year == now.year &&
-          t.createdAt.month == now.month &&
-          t.createdAt.day == now.day;
-      final isDone = t.status == 'Resolved' || t.status == 'WaitingConfirmation';
-      return createdToday || isDone;
-    }).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  List<Ticket> get _activeTasks {
+    return _myTickets.where((t) => t.status != 'Resolved' && t.status != 'Cancelled').toList();
+  }
+
+  List<Ticket> get _allMyTickets {
+    return _myTickets;
   }
 
   @override
@@ -88,15 +84,24 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
       t.ticketId.toString().contains(q)).toList();
   }
 
+  int? _processingId; // Dùng để chặn double-click khi đang nhận ticket
+
   Future<void> _acceptTicket(Ticket ticket) async {
-    await _repo.assignTicket(ticket.ticketId, widget.currentUser.userId);
-    await _loadData();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('✅ Đã nhận Ticket #${ticket.ticketId}!'),
-        backgroundColor: _green, behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
-      setState(() => _navIndex = 1); // switch to "Việc của tôi"
+    if (_processingId != null) return;
+    setState(() => _processingId = ticket.ticketId);
+
+    try {
+      await _repo.assignTicket(ticket.ticketId, widget.currentUser.userId);
+      await _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('✅ Đã nhận Ticket #${ticket.ticketId}!'),
+          backgroundColor: _green, behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
+        setState(() => _navIndex = 1); // switch to "Việc của tôi"
+      }
+    } finally {
+      if (mounted) setState(() => _processingId = null);
     }
   }
 
@@ -173,7 +178,8 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     final myPending = _myTickets.where((t) => t.status == 'Pending').length;
     final myWaiting = _myTickets.where((t) => t.status == 'WaitingConfirmation').length;
     final myResolved = _myTickets.where((t) => t.status == 'Resolved').length;
-    final todayWork = _todayWork;
+    final activeTasks = _activeTasks;
+    final allTix = _allMyTickets;
 
     Widget body;
     if (_loading) {
@@ -181,9 +187,9 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     } else if (_navIndex == 0) {
       body = _buildUnassignedTab();
     } else if (_navIndex == 1) {
-      body = _buildMyTicketsTab();
+      body = _buildMyTicketsTab(activeTasks);
     } else {
-      body = _buildTodayTab(todayWork);
+      body = _buildAllTab(allTix);
     }
 
     return Scaffold(
@@ -232,14 +238,16 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                   tooltip: '',
                   offset: const Offset(0, 44),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  onSelected: (v) {
+                  onSelected: (v) async {
                     if (v == 'logout') {
                       context.go('/login');
+                    } else if (v == 'profile') {
+                      await context.push('/profile');
                     }
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(
-                      value: 'logout',
+                      value: 'profile',
                       child: Row(children: [
                         CircleAvatar(radius: 14, backgroundColor: _green.withValues(alpha: 0.1),
                           child: Text(widget.currentUser.fullName[0],
@@ -248,8 +256,17 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(widget.currentUser.fullName,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          const Text('Đăng xuất', style: TextStyle(fontSize: 11, color: Colors.redAccent)),
+                          const Text('Hồ sơ & đổi mật khẩu', style: TextStyle(fontSize: 11, color: Color(0xFF00897B))),
                         ]),
+                      ]),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: const Row(children: [
+                        Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                        SizedBox(width: 10),
+                        Text('Đăng xuất', style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.w600)),
                       ]),
                     ),
                   ],
@@ -324,8 +341,8 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
               badge: _unassigned.isNotEmpty ? '${_unassigned.length}' : null),
           _bottomNavItem(1, Icons.assignment_rounded, Icons.assignment_outlined, 'Việc của tôi',
               badge: myPending > 0 ? '$myPending' : null),
-          _bottomNavItem(2, Icons.today_rounded, Icons.today_outlined, 'Hôm nay',
-              badge: todayWork.isNotEmpty ? '${todayWork.length}' : null),
+          _bottomNavItem(2, Icons.list_alt_rounded, Icons.list_alt_outlined, 'Tất cả',
+              badge: allTix.isNotEmpty ? '${allTix.length}' : null),
         ])),
       ),
     );
@@ -394,27 +411,32 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
       itemCount: list.length,
       itemBuilder: (ctx, i) => _ticketCard(
         ctx, list[i],
-        actionBuilder: (t) => SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.pan_tool_alt_outlined, size: 16),
-            label: const Text('Nhận xử lý ngay'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _green, foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(vertical: 11),
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), elevation: 0,
+        actionBuilder: (t) {
+          final isProcessing = _processingId == t.ticketId;
+          return SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: isProcessing 
+                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                 : const Icon(Icons.pan_tool_alt_outlined, size: 16),
+              label: Text(isProcessing ? 'Đang xử lý...' : 'Nhận xử lý ngay'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _green, foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), elevation: 0,
+              ),
+              onPressed: isProcessing ? null : () => _acceptTicket(t),
             ),
-            onPressed: () => _acceptTicket(t),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  // ── TAB: Việc của tôi ─────────────────────────────────────────
-  Widget _buildMyTicketsTab() {
-    final list = _applySearch(_myTickets);
+  // ── TAB: Việc của tôi (Chỉ hiện việc đang xử lý/chờ xác nhận) ───
+  Widget _buildMyTicketsTab(List<Ticket> activeTasks) {
+    final list = _applySearch(activeTasks);
     if (list.isEmpty) {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(padding: const EdgeInsets.all(28),
@@ -471,39 +493,38 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     );
   }
 
-  // ── TAB: Hôm nay ─────────────────────────────────────────────
-  Widget _buildTodayTab(List<Ticket> tickets) {
-    final now = DateTime.now();
-    final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+  // ── TAB: Tất cả ─────────────────────────────────────────────
+  Widget _buildAllTab(List<Ticket> tickets) {
+    final list = _applySearch(tickets);
 
     return CustomScrollView(slivers: [
       SliverToBoxAdapter(child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
         child: Row(children: [
-          const Icon(Icons.calendar_today_rounded, size: 15, color: _green),
+          const Icon(Icons.list_alt_rounded, size: 15, color: _green),
           const SizedBox(width: 6),
-          Text('Công việc ngày $dateStr',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _greenDark)),
+          const Text('Tất cả yêu cầu',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _greenDark)),
           const Spacer(),
-          Text('${tickets.length} ticket', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+          Text('${list.length} phiếu', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
         ]),
       )),
-      if (tickets.isEmpty)
+      if (list.isEmpty)
         SliverFillRemaining(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(color: _green.withValues(alpha: 0.07), shape: BoxShape.circle),
-            child: Icon(Icons.today_rounded, size: 56, color: _green.withValues(alpha: 0.4))),
+            child: Icon(Icons.history_rounded, size: 56, color: _green.withValues(alpha: 0.4))),
           const SizedBox(height: 16),
-          const Text('Chưa có việc nào hôm nay', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey)),
+          const Text('Chưa có lịch sử công việc', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey)),
           const SizedBox(height: 6),
-          Text('Nhận ticket từ tab "Chờ nhận"', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+          Text('Phiếu bạn nhận sẽ lưu ở đây', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
         ])))
       else
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 24),
           sliver: SliverList(delegate: SliverChildBuilderDelegate(
-            (ctx, i) => _ticketCard(ctx, tickets[i], compact: true),
-            childCount: tickets.length,
+            (ctx, i) => _ticketCard(ctx, list[i], compact: true),
+            childCount: list.length,
           )),
         ),
     ]);

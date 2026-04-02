@@ -39,7 +39,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        _showError('Không tải được dữ liệu: $e');
+        _showError('Không tải được dữ liệu!');
       }
     }
   }
@@ -240,7 +240,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
         _showSuccess(existing == null ? 'Đã thêm số khẩn cấp' : 'Đã cập nhật');
         _loadAll();
       } catch (e) {
-        _showError('Lỗi: $e');
+        _showError('Đã xảy ra lỗi, vui lòng thử lại!');
       }
     }
   }
@@ -286,7 +286,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
         _showSuccess('Đã xóa "${contact.name}"');
         _loadAll();
       } catch (e) {
-        _showError('Lỗi khi xóa: $e');
+        _showError('Lỗi khi xóa!');
       }
     }
   }

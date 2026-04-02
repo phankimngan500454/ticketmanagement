@@ -130,7 +130,7 @@ class DashboardHeader extends StatelessWidget {
   }
 }
 
-/// Avatar bấm vào → popup menu Đăng xuất.
+/// Avatar bấm vào → popup menu Hồ sơ + Đăng xuất.
 /// Dùng Builder để lấy đúng context cho Navigator + PopupMenu.
 class _LogoutAvatar extends StatelessWidget {
   final String userName;
@@ -142,10 +142,12 @@ class _LogoutAvatar extends StatelessWidget {
     return PopupMenuButton<String>(
       offset: const Offset(0, 44),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      onSelected: (value) {
+      onSelected: (value) async {
         if (value == 'logout') {
           TicketRepository.instance.logout();
           context.go('/login');
+        } else if (value == 'profile') {
+          await context.push('/profile');
         }
       },
       itemBuilder: (_) => [
@@ -170,18 +172,26 @@ class _LogoutAvatar extends StatelessWidget {
             const Divider(height: 1),
           ]),
         ),
+        // Hồ sơ
+        const PopupMenuItem(
+          value: 'profile',
+          child: Row(children: [
+            Icon(Icons.manage_accounts_rounded, color: Color(0xFF3949AB), size: 18),
+            SizedBox(width: 10),
+            Text('Hồ sơ & đổi mật khẩu',
+                style: TextStyle(color: Color(0xFF3949AB), fontWeight: FontWeight.w600)),
+          ]),
+        ),
+        const PopupMenuDivider(),
+        // Đăng xuất
         const PopupMenuItem(
           value: 'logout',
-          child: Row(
-            children: [
-              Icon(Icons.logout, color: Colors.red, size: 18),
-              SizedBox(width: 10),
-              Text(
-                'Đăng xuất',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
+          child: Row(children: [
+            Icon(Icons.logout_rounded, color: Colors.red, size: 18),
+            SizedBox(width: 10),
+            Text('Đăng xuất',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+          ]),
         ),
       ],
       child: CircleAvatar(

@@ -45,7 +45,7 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        _showError('Không tải được dữ liệu: $e');
+        _showError('Không tải được dữ liệu!');
       }
     }
   }
@@ -172,7 +172,7 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
             existing == null ? '✅ Đã thêm phòng ban' : '✅ Đã cập nhật');
         _load();
       } catch (e) {
-        _showError('❌ Lỗi: $e');
+        _showError('❌ Đã xảy ra lỗi, vui lòng thử lại!');
       }
     }
   }
@@ -222,7 +222,7 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
         _showSuccess('🗑️ Đã xóa "${dept.deptName}"');
         _load();
       } catch (e) {
-        _showError('❌ Lỗi khi xóa: $e');
+        _showError('❌ Lỗi khi xóa!');
       }
     }
   }

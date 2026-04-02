@@ -32,7 +32,7 @@ class _EmergencyCallScreenState extends State<EmergencyCallScreen> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Không tải được danh bạ: $e'),
+          content: Text('Không tải được danh bạ!'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ));

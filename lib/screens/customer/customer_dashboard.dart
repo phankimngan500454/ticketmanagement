@@ -40,7 +40,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Không tải được danh sách: $e'),
+          content: Text('Không tải được danh sách!'),
           backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
       }
     }
@@ -123,14 +123,16 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   tooltip: '',
                   offset: const Offset(0, 44),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  onSelected: (v) {
+                  onSelected: (v) async {
                     if (v == 'logout') {
                       context.go('/login');
+                    } else if (v == 'profile') {
+                      await context.push('/profile');
                     }
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(
-                      value: 'logout',
+                      value: 'profile',
                       child: Row(children: [
                         CircleAvatar(radius: 14, backgroundColor: _blue.withValues(alpha: 0.1),
                           child: Text(widget.currentUser.fullName[0],
@@ -139,8 +141,17 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(widget.currentUser.fullName,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          const Text('Đăng xuất', style: TextStyle(fontSize: 11, color: Colors.redAccent)),
+                          const Text('Hồ sơ & đổi mật khẩu', style: TextStyle(fontSize: 11, color: Color(0xFF1976D2))),
                         ]),
+                      ]),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: const Row(children: [
+                        Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                        SizedBox(width: 10),
+                        Text('Đăng xuất', style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.w600)),
                       ]),
                     ),
                   ],

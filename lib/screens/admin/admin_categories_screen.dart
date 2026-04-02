@@ -46,7 +46,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
       final cats = await _repo.getCategories();
       if (mounted) setState(() { _categories = cats; _loading = false; });
     } catch (e) {
-      if (mounted) { setState(() => _loading = false); _showError('Lỗi: $e'); }
+      if (mounted) { setState(() => _loading = false); _showError('Đã xảy ra lỗi, vui lòng thử lại!'); }
     }
   }
 
@@ -139,7 +139,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
         await _repo.upsertCategory(cat);
         _showSuccess(existing == null ? '✅ Đã thêm danh mục' : '✅ Đã cập nhật');
         _load();
-      } catch (e) { _showError('❌ Lỗi: $e'); }
+      } catch (e) { _showError('❌ Đã xảy ra lỗi, vui lòng thử lại!'); }
     }
   }
 
@@ -175,7 +175,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
         await _repo.deleteCategory(cat.categoryId);
         _showSuccess('🗑️ Đã xóa "${cat.categoryName}"');
         _load();
-      } catch (e) { _showError('❌ Lỗi: $e'); }
+      } catch (e) { _showError('❌ Đã xảy ra lỗi, vui lòng thử lại!'); }
     }
   }
 

@@ -66,6 +66,7 @@ abstract class RepositoryBase {
       requesterId: t.requesterId,
       requesterName: requester?.fullName,
       requesterDeptName: requester?.deptName,
+      requesterPhone: requester?.phone,
       assigneeId: t.assigneeId,
       assigneeName: assignee?.fullName,
       categoryId: t.categoryId,

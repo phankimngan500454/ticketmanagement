@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Tải mã nguồn về máy ảo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cài đặt Flutter
         uses: subosito/flutter-action@v2

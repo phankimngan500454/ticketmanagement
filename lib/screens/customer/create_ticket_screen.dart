@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
@@ -40,6 +39,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   Asset?    _selectedAsset;
   String    _priority         = 'Medium';
   DateTime? _proposedDeadline;
+  String?   _selectedAssetType; // lọc theo loại thiết bị
 
   @override
   void initState() {
@@ -99,12 +99,19 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       }
       final ext = (f.extension ?? 'bin').toLowerCase();
       String mime = 'application/octet-stream';
-      if (['jpg', 'jpeg'].contains(ext)) mime = 'image/jpeg';
-      else if (ext == 'png') mime = 'image/png';
-      else if (ext == 'gif') mime = 'image/gif';
-      else if (ext == 'webp') mime = 'image/webp';
-      else if (ext == 'pdf') mime = 'application/pdf';
-      else if (['doc', 'docx'].contains(ext)) mime = 'application/msword';
+      if (['jpg', 'jpeg'].contains(ext)) {
+        mime = 'image/jpeg';
+      } else if (ext == 'png') {
+        mime = 'image/png';
+      } else if (ext == 'gif') {
+        mime = 'image/gif';
+      } else if (ext == 'webp') {
+        mime = 'image/webp';
+      } else if (ext == 'pdf') {
+        mime = 'application/pdf';
+      } else if (['doc', 'docx'].contains(ext)) {
+        mime = 'application/msword';
+      }
       setState(() => _pendingFiles.add((name: f.name, mime: mime, bytes: f.bytes!)));
     }
   }
@@ -157,7 +164,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
           // Ticket đã tạo thành công, chỉ deadline fail → cảnh báo nhẹ
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('⚠️ Ticket đã tạo nhưng không gửi được deadline: $e'),
+              content: Text('⚠️ Ticket đã tạo nhưng gặp lỗi gửi đề xuất'),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ));
@@ -166,17 +173,33 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       }
 
       // Bước 3: Upload ảnh/file đính kèm (nếu có)
-      for (final pf in _pendingFiles) {
-        try {
-          await _repo.uploadAttachment(
-            ticketId: newTicket.ticketId,
-            uploaderId: widget.currentUser.userId,
-            fileName: pf.name,
-            mimeType: pf.mime,
-            fileData: base64Encode(pf.bytes),
-            fileSize: pf.bytes.length,
-          );
-        } catch (_) { /* best-effort, ticket đã tạo thành công */ }
+      if (_pendingFiles.isNotEmpty) {
+        int successCount = 0;
+        final List<String> failedNames = [];
+        for (final pf in _pendingFiles) {
+          try {
+            await _repo.uploadAttachment(
+              ticketId: newTicket.ticketId,
+              uploaderId: widget.currentUser.userId,
+              fileName: pf.name,
+              mimeType: pf.mime,
+              fileData: base64Encode(pf.bytes),
+              fileSize: pf.bytes.length,
+            );
+            successCount++;
+          } catch (e) {
+            failedNames.add(pf.name);
+          }
+        }
+        // Thông báo kết quả upload
+        if (mounted && failedNames.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('⚠️ $successCount/${_pendingFiles.length} file đã upload. Lỗi: ${failedNames.join(', ')}'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ));
+        }
       }
 
       if (mounted) {
@@ -188,7 +211,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      _showError('Có lỗi xảy ra: $e');
+      _showError('Có lỗi xảy ra, vui lòng thử lại!');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -919,78 +942,180 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           Text('Không có thiết bị trong danh mục này',
                             style: TextStyle(fontSize: 13, color: Colors.grey[400])),
                         ]))
-                    : DropdownButtonFormField<Asset?>(
-                        value: _selectedAsset,
-                        hint: Text('-- Không chọn thiết bị --',
-                          style: TextStyle(color: Colors.grey[400], fontSize: 13)),
-                        decoration: InputDecoration(
-                          filled: true, fillColor: const Color(0xFFF8F9FF),
-                          prefixIcon: const Icon(Icons.devices_rounded, size: 16, color: brown),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.grey.shade200)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: brown, width: 1.5)),
-                          isDense: true,
-                        ),
-                        dropdownColor: Colors.white,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: brown),
-                        items: [
-                          DropdownMenuItem<Asset?>(
-                            value: null,
-                            child: Text('-- Không chọn --',
-                              style: TextStyle(color: Colors.grey[500], fontSize: 13))),
-                          
-                          // Nhóm thuộc danh mục
-                          if (filteredAssets.any((a) => a.categoryId != null)) ...[
-                            DropdownMenuItem<Asset?>(
-                              value: const Asset(assetId: -1, assetName: '', assetCode: '', assetGroup: '', assetType: '', assetModel: '', status: ''),
-                              enabled: false,
-                              child: Container(
-                                padding: const EdgeInsets.only(top: 8, bottom: 4),
-                                child: Text('► THUỘC DANH MỤC "${_selectedCategory?.categoryName.toUpperCase()}"',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: brown, letterSpacing: 0.5)),
-                              )),
-                            ...filteredAssets.where((a) => a.categoryId != null).map((a) => DropdownMenuItem<Asset?>(
-                              value: a,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 12),
-                                child: Text(a.assetCode.isNotEmpty ? '${a.assetName} (${a.assetCode})' : a.assetName,
-                                  style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-                              ),
-                            )),
-                          ],
-
-                          // Nhóm dùng chung
-                          if (filteredAssets.any((a) => a.categoryId == null)) ...[
-                            if (filteredAssets.any((a) => a.categoryId != null))
-                              DropdownMenuItem<Asset?>(
-                                value: const Asset(assetId: -2, assetName: '', assetCode: '', assetGroup: '', assetType: '', assetModel: '', status: ''),
-                                enabled: false, child: const Divider(height: 1)),
-                            DropdownMenuItem<Asset?>(
-                              value: const Asset(assetId: -3, assetName: '', assetCode: '', assetGroup: '', assetType: '', assetModel: '', status: ''),
-                              enabled: false,
-                              child: Container(
-                                padding: const EdgeInsets.only(top: 8, bottom: 4),
-                                child: Text('► THIẾT BỊ DÙNG CHUNG (KHÁC)',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 0.5)),
-                              )),
-                            ...filteredAssets.where((a) => a.categoryId == null).map((a) => DropdownMenuItem<Asset?>(
-                              value: a,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 12),
-                                child: Text(a.assetCode.isNotEmpty ? '${a.assetName} (${a.assetCode})' : a.assetName,
-                                  style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-                              ),
-                            )),
-                          ],
-                        ],
-                        onChanged: (val) => setState(() => _selectedAsset = val),
-                      ),
+                    : _buildAssetPicker(filteredAssets),
           ),
         ],
       ]),
     );
+  }
+
+  // ── Asset picker: chip lọc loại + card list ─────────────────────
+  Widget _buildAssetPicker(List<Asset> assets) {
+    const brown = Color(0xFF6D4C41);
+
+    // Lấy danh sách loại duy nhất, sắp xếp theo tên
+    final types = assets.map((a) => a.assetType).toSet().toList()..sort();
+
+    // Icon theo loại thiết bị
+    IconData typeIcon(String t) {
+      final lower = t.toLowerCase();
+      if (lower.contains('laptop') || lower.contains('máy tính')) return Icons.laptop_rounded;
+      if (lower.contains('máy in')) return Icons.print_rounded;
+      if (lower.contains('màn hình')) return Icons.monitor_rounded;
+      if (lower.contains('switch') || lower.contains('router') || lower.contains('wifi') || lower.contains('mạng')) return Icons.router_rounded;
+      if (lower.contains('máy chủ') || lower.contains('server')) return Icons.dns_rounded;
+      if (lower.contains('tablet') || lower.contains('điện thoại')) return Icons.tablet_android_rounded;
+      if (lower.contains('camera')) return Icons.videocam_rounded;
+      if (lower.contains('ups') || lower.contains('điện')) return Icons.electrical_services_rounded;
+      if (lower.contains('y tế') || lower.contains('siêu âm') || lower.contains('ecg') || lower.contains('x-quang')) return Icons.medical_services_rounded;
+      return Icons.devices_other_rounded;
+    }
+
+    // Filter theo loại đã chọn
+    final displayed = _selectedAssetType == null
+        ? assets
+        : assets.where((a) => a.assetType == _selectedAssetType).toList();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+      // ── Chip lọc loại thiết bị ─────────────────────────────
+      if (types.length > 1) ...[
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            // Chip "Tất cả"
+            GestureDetector(
+              onTap: () => setState(() { _selectedAssetType = null; _selectedAsset = null; }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.only(right: 8, bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: _selectedAssetType == null ? brown : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _selectedAssetType == null ? brown : Colors.grey.shade300),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.apps_rounded, size: 13,
+                    color: _selectedAssetType == null ? Colors.white : Colors.grey[600]),
+                  const SizedBox(width: 5),
+                  Text('Tất cả (${assets.length})',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                      color: _selectedAssetType == null ? Colors.white : Colors.grey[700])),
+                ]),
+              ),
+            ),
+            // Chip từng loại
+            ...types.map((t) {
+              final selected = _selectedAssetType == t;
+              final count = assets.where((a) => a.assetType == t).length;
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedAssetType = selected ? null : t;
+                  _selectedAsset = null;
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(right: 8, bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: selected ? brown : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: selected ? brown : Colors.grey.shade300),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(typeIcon(t), size: 13,
+                      color: selected ? Colors.white : Colors.grey[600]),
+                    const SizedBox(width: 5),
+                    Text('$t ($count)',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                        color: selected ? Colors.white : Colors.grey[700])),
+                  ]),
+                ),
+              );
+            }),
+          ]),
+        ),
+      ],
+
+      // ── Nút "Không chọn thiết bị" ─────────────────────────
+      GestureDetector(
+        onTap: () => setState(() => _selectedAsset = null),
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: _selectedAsset == null ? brown.withValues(alpha: 0.08) : Colors.grey[50],
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: _selectedAsset == null ? brown : Colors.grey.shade200,
+              width: _selectedAsset == null ? 1.5 : 1,
+            ),
+          ),
+          child: Row(children: [
+            Icon(Icons.not_interested_rounded, size: 15,
+              color: _selectedAsset == null ? brown : Colors.grey[400]),
+            const SizedBox(width: 8),
+            Text('-- Không chọn thiết bị --',
+              style: TextStyle(fontSize: 13,
+                color: _selectedAsset == null ? brown : Colors.grey[500],
+                fontWeight: _selectedAsset == null ? FontWeight.w600 : FontWeight.normal)),
+            if (_selectedAsset == null) ...[
+              const Spacer(),
+              Icon(Icons.check_circle_rounded, size: 16, color: brown),
+            ],
+          ]),
+        ),
+      ),
+
+      // ── Danh sách thiết bị dạng card ──────────────────────
+      ...displayed.map((a) {
+        final sel = _selectedAsset?.assetId == a.assetId;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedAsset = sel ? null : a),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: sel ? brown.withValues(alpha: 0.08) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: sel ? brown : Colors.grey.shade200,
+                width: sel ? 1.5 : 1),
+              boxShadow: sel ? [] : [BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 4, offset: const Offset(0, 1))],
+            ),
+            child: Row(children: [
+              // Icon loại
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: sel ? brown.withValues(alpha: 0.12) : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(typeIcon(a.assetType), size: 16,
+                  color: sel ? brown : Colors.grey[500]),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(a.assetName,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                    color: sel ? brown : const Color(0xFF1C1C2E))),
+                Text(a.assetType,
+                  style: TextStyle(fontSize: 11, color: sel ? brown.withValues(alpha: 0.7) : Colors.grey[500])),
+              ])),
+              if (sel)
+                Icon(Icons.check_circle_rounded, size: 20, color: brown)
+              else
+                Icon(Icons.circle_outlined, size: 20, color: Colors.grey[300]),
+            ]),
+          ),
+        );
+      }),
+    ]);
   }
 }

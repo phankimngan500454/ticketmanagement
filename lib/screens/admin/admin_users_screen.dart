@@ -90,6 +90,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   // ── Create / Edit user sheet ────────────────────────────────
   void _showUserSheet({User? existing}) {
+    final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: existing?.fullName ?? '');
     final phoneCtrl = TextEditingController(text: existing?.phone ?? '');
     final usernameCtrl = TextEditingController();
@@ -109,7 +110,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 32),
-        child: SingleChildScrollView(child: Column(
+        child: SingleChildScrollView(child: Form(key: formKey, child: Column(
           mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Center(child: Container(width: 40, height: 4,
             decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
@@ -119,20 +120,34 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           const SizedBox(height: 16),
 
           // Full name
-          _inputField(nameCtrl, 'Họ tên', Icons.person_outline),
+          _inputField(nameCtrl, 'Họ tên', Icons.person_outline,
+            validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập họ tên' : null),
           const SizedBox(height: 10),
 
           // Phone
           _inputField(phoneCtrl, 'Số điện thoại', Icons.phone_outlined,
-            keyboardType: TextInputType.phone),
+            keyboardType: TextInputType.phone,
+            validator: (v) {
+              if (v != null && v.trim().isNotEmpty) {
+                if (!RegExp(r'^[0-9]+$').hasMatch(v.trim())) return 'Chỉ được nhập số';
+                if (v.trim().length < 9) return 'Số điện thoại quá ngắn';
+              }
+              return null;
+            }),
           const SizedBox(height: 10),
 
           // Username + Password (only for new user)
           if (existing == null) ...[ 
-            _inputField(usernameCtrl, 'Tên đăng nhập', Icons.account_circle_outlined),
+            _inputField(usernameCtrl, 'Tên đăng nhập', Icons.account_circle_outlined,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Vui lòng nhập tên đăng nhập';
+                if (v.trim().contains(' ')) return 'Không được chứa khoảng trắng';
+                return null;
+              }),
             const SizedBox(height: 10),
             _inputField(passCtrl, 'Mật khẩu', Icons.lock_outline,
-              obscureText: true),
+              obscureText: true,
+              validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập mật khẩu' : null),
             const SizedBox(height: 10),
           ],
 
@@ -165,11 +180,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           const SizedBox(height: 10),
 
           // Department
-          if (_departments.isNotEmpty) ...[ 
+          if (_departments.isNotEmpty && roleId != 2) ...[ 
             Text('Phòng ban', style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
             DropdownButtonFormField<int?>(
-              value: _departments.any((d) => d.deptId == deptId) ? deptId : null,
+              initialValue: _departments.any((d) => d.deptId == deptId) ? deptId : null,
               decoration: InputDecoration(
                 filled: true, fillColor: const Color(0xFFF4F5F9),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -199,25 +214,36 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                
                 final name = nameCtrl.text.trim();
-                if (name.isEmpty) return;
                 Navigator.pop(ctx);
                 try {
+                  final finalDeptId = roleId == 2 ? null : deptId;
                   if (existing == null) {
                     // Create new user
                     final username = usernameCtrl.text.trim();
                     final password = passCtrl.text.trim();
-                    if (username.isEmpty || password.isEmpty) return;
-                    await _repo.register(
+                    
+                    final result = await _repo.register(
                       username: username, password: password,
                       fullName: name, phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
-                      roleId: roleId, deptId: deptId,
+                      roleId: roleId, deptId: finalDeptId,
                     );
+                    
+                    if (result == null) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('❌ Lỗi: Tên đăng nhập này đã tồn tại!'),
+                          backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+                      }
+                      return; // Dừng lại, không chạy load hay báo thành công
+                    }
                   } else {
                     await _repo.updateUser(
                       userId: existing.userId, fullName: name,
                       phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
-                      roleId: roleId, deptId: deptId,
+                      roleId: roleId, deptId: finalDeptId,
                     );
                   }
                   _load();
@@ -230,13 +256,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                      content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                   }
                 }
               },
             ),
           ),
-        ])),
+        ]))),
       )),
     );
   }
@@ -244,6 +270,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   // ── Reset password sheet ────────────────────────────────────
   void _showResetPasswordSheet(User user) {
     final passCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -254,7 +281,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 32),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Form(key: formKey, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Center(child: Container(width: 40, height: 4,
             decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 16),
@@ -264,7 +291,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           Text('Nhập mật khẩu mới cho tài khoản này.',
             style: TextStyle(fontSize: 12, color: Colors.grey[500])),
           const SizedBox(height: 16),
-          _inputField(passCtrl, 'Mật khẩu mới', Icons.lock_outline, obscureText: true),
+          _inputField(passCtrl, 'Mật khẩu mới', Icons.lock_outline, obscureText: true,
+            validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập mật khẩu mới' : null),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -277,8 +305,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
                 final pw = passCtrl.text.trim();
-                if (pw.isEmpty) return;
                 Navigator.pop(ctx);
                 try {
                   await _repo.resetPassword(user.userId, pw);
@@ -291,13 +319,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                      content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                   }
                 }
               },
             ),
           ),
-        ]),
+        ])),
       ),
     );
   }
@@ -335,18 +363,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
       }
     }
   }
 
   // ── Helpers ─────────────────────────────────────────────────
   Widget _inputField(TextEditingController ctrl, String label, IconData icon,
-      {bool obscureText = false, TextInputType? keyboardType}) {
-    return TextField(
+      {bool obscureText = false, TextInputType? keyboardType, String? Function(String?)? validator}) {
+    return TextFormField(
       controller: ctrl,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 18, color: Colors.grey[500]),

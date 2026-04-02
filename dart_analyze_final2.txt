@@ -1,7 +1,0 @@
-﻿INFO|LINT|USE_BUILD_CONTEXT_SYNCHRONOUSLY|C:\\Users\\ASUS\\Documents\\ticketmanagement\\lib\\screens\\customer\\emergency_call_screen.dart|148|35|7|Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check.
-INFO|LINT|PACKAGE_NAMES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\pubspec.yaml|1|7|1|The package name '_' isn't a lower_case_with_underscores identifier.
-INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\checkpw.dart|5|3|5|Don't invoke 'print' in production code.
-INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\checkpw.dart|6|3|5|Don't invoke 'print' in production code.
-INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\checkpw.dart|7|3|5|Don't invoke 'print' in production code.
-INFO|LINT|DEPEND_ON_REFERENCED_PACKAGES|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\seed.dart|3|8|32|The imported package 'postgres' isn't a dependency of the importing package.
-INFO|LINT|AVOID_PRINT|C:\\Users\\ASUS\\Documents\\ticketmanagement\\ticketmanagement_server\\ticketmanagement_server_server\\tool\\seed_tickets.dart|25|3|5|Don't invoke 'print' in production code.

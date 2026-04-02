@@ -143,9 +143,11 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
     if (ok == true) {
       await _repo.deleteAsset(asset.assetId);
       _load();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('🗑️ Đã xóa "${asset.assetName}"'),
-        backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('🗑️ Đã xóa "${asset.assetName}"'),
+          backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+      }
     }
   }
 
@@ -219,7 +221,7 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
                 _label('1. Danh mục', Icons.category_rounded),
                 const SizedBox(height: 8),
                 _card(child: DropdownButtonFormField<int?>(
-                  value: selectedCategoryId,
+                  initialValue: selectedCategoryId,
                   decoration: InputDecoration(
                     filled: true, fillColor: Colors.white,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -343,12 +345,16 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
                           categoryId: selectedCategoryId,
                         ));
                         _load();
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(existing == null ? '✅ Đã thêm "$name"' : '✅ Đã cập nhật'),
-                          backgroundColor: const Color(0xFF43A047), behavior: SnackBarBehavior.floating));
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(existing == null ? '✅ Đã thêm "$name"' : '✅ Đã cập nhật'),
+                            backgroundColor: const Color(0xFF43A047), behavior: SnackBarBehavior.floating));
+                        }
                       } catch (e) {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
+                        }
                       }
                     },
                   ),

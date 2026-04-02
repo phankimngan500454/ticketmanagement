@@ -678,10 +678,12 @@ class _AdminDashboardState extends State<AdminDashboard>
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
                           ),
-                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.person_add_outlined, size: 12, color: Colors.orange),
-                            SizedBox(width: 4),
-                            Text('Giao việc', style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.person_add_outlined, size: 12, color: Colors.orange),
+                            const SizedBox(width: 4),
+                            const Flexible(child: Text('Giao việc',
+                              overflow: TextOverflow.ellipsis, maxLines: 1,
+                              style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold))),
                           ]),
                         ),
                 ),

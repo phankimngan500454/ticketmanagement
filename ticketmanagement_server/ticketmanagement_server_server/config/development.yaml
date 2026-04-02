@@ -45,7 +45,7 @@ redis:
   #user: # defaults to empty
   #requireSsl: true # defaults to false
 
-maxRequestSize: 524288 # The maximum size of requests allowed in bytes
+maxRequestSize: 10485760 # Thay đổi từ 512KB (524288) lên 10MB
 
 sessionLogs:
   persistentEnabled: true

@@ -161,7 +161,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted) {
         setState(() => _uploadingFile = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red));
+          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
       }
     }
   }
@@ -384,7 +384,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Lỗi: $e'),
+          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
         ));
@@ -408,7 +408,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Lỗi: $e'),
+          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 10),
@@ -435,7 +435,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Lỗi: $e'),
+          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 10),
@@ -537,7 +537,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
+                      SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                   }
                 }
               },
@@ -595,7 +595,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         if (context.canPop()) {
                           context.pop();
                         } else {
-                          // Fallback về dashboard theo role
                           final user = TicketRepository.instance.currentUser;
                           if (user?.role == 'Admin') {
                             context.go('/admin');
@@ -607,42 +606,50 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         }
                       },
                     ),
-                    const Expanded(child: Text('Chi tiết yêu cầu', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+                    // #TKT-xxxx
+                    Text('#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 8),
+                    // Priority badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                      decoration: BoxDecoration(
+                          color: priorityColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text(_ticket.priority,
+                          style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _statusColor(_ticket.status).withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _statusColor(_ticket.status).withValues(alpha: 0.6)),
+                      ),
+                      child: Text(
+                        _ticket.status == 'Open' ? 'Đang mở'
+                          : _ticket.status == 'Pending' ? 'Chờ xử lý'
+                          : _ticket.status == 'Resolved' ? 'Đã xong'
+                          : _ticket.status == 'WaitingConfirmation' ? 'Chờ xác nhận'
+                          : _ticket.status == 'Cancelled' ? 'Đã hủy'
+                          : _ticket.status,
+                        style: TextStyle(fontSize: 11,
+                            color: _statusColor(_ticket.status), fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ]),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Text('#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500)),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(color: priorityColor.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(20)),
-                        child: Text(_ticket.priority, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _statusColor(_ticket.status).withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: _statusColor(_ticket.status).withValues(alpha: 0.6)),
-                        ),
-                        child: Text(
-                          _ticket.status == 'Open' ? 'Đang mở'
-                            : _ticket.status == 'Pending' ? 'Chờ xử lý'
-                            : _ticket.status == 'Resolved' ? 'Đã xong'
-                            : _ticket.status == 'WaitingConfirmation' ? 'Chờ xác nhận'
-                            : _ticket.status == 'Cancelled' ? 'Đã hủy'
-                            : _ticket.status,
-                          style: TextStyle(fontSize: 11, color: _statusColor(_ticket.status), fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 8),
-                    Text(_ticket.subject, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3)),
+                    // Tiêu đề ticket
+                    Text(_ticket.subject,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
+                            color: Colors.white, height: 1.3)),
+
                     if (_ticket.status == 'Cancelled') ...[
                       const SizedBox(height: 8),
                       Container(
@@ -660,37 +667,61 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    Row(children: [
-                      CircleAvatar(radius: 14, backgroundColor: Colors.white.withValues(alpha: 0.2), child: const Icon(Icons.person, color: Colors.white, size: 16)),
-                      const SizedBox(width: 8),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      CircleAvatar(radius: 14, backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          child: Text(
+                            (_ticket.requesterName ?? widget.currentUser.fullName).isNotEmpty
+                                ? (_ticket.requesterName ?? widget.currentUser.fullName)[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                      const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         // Tên requester
                         Text(
                           _ticket.requesterName ?? widget.currentUser.fullName,
-                          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 2),
-                        // Phòng ban + SĐT + Category + Thời gian
-                        Text(
-                          [
-                            _ticket.requesterDeptName ?? widget.currentUser.deptName ?? '',
-                            _ticket.requesterPhone ?? widget.currentUser.phone,
-                            _ticket.categoryName ?? '',
-                            _formatExactTime(_ticket.createdAt),
-                          ].where((s) => s.isNotEmpty).join(' · '),
-                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.75)),
-                        ),
-
+                        const SizedBox(height: 8),
+                        // Info chips — wrap xuống dòng
+                        Wrap(spacing: 6, runSpacing: 6, children: [
+                          // Phòng ban
+                          if ((_ticket.requesterDeptName ?? widget.currentUser.deptName) != null)
+                            _infoChip(
+                              icon: Icons.business_outlined,
+                              label: _ticket.requesterDeptName ?? widget.currentUser.deptName!,
+                              color: const Color(0xFF90CAF9),
+                            ),
+                          // Số điện thoại
+                          if ((_ticket.requesterPhone ?? widget.currentUser.phone).isNotEmpty)
+                            _infoChip(
+                              icon: Icons.phone_outlined,
+                              label: _ticket.requesterPhone ?? widget.currentUser.phone,
+                              color: const Color(0xFFA5D6A7),
+                            ),
+                          // Danh mục
+                          if (_ticket.categoryName != null)
+                            _infoChip(
+                              icon: Icons.folder_outlined,
+                              label: _ticket.categoryName!,
+                              color: const Color(0xFFFFCC80),
+                            ),
+                          // Thiết bị
+                          if (_ticket.assetName != null)
+                            _infoChip(
+                              icon: Icons.devices_rounded,
+                              label: _ticket.assetName!,
+                              color: const Color(0xFFCE93D8),
+                            ),
+                          // Thời gian tạo
+                          _infoChip(
+                            icon: Icons.access_time_rounded,
+                            label: _formatExactTime(_ticket.createdAt),
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ]),
                       ])),
                     ]),
-                    if (_ticket.assetName != null) ...[
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        Icon(Icons.devices, size: 14, color: Colors.white.withValues(alpha: 0.7)),
-                        const SizedBox(width: 6),
-                        Text(_ticket.assetName!, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
-                      ]),
-                    ],
+
                   ]),
                 ),
               ]),
@@ -1198,6 +1229,26 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')} ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 
+  // Chip hiển thị thông tin trong header (phòng ban, SĐT, thiết bị...)
+  Widget _infoChip({required IconData icon, required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 11, color: color),
+        const SizedBox(width: 4),
+        Flexible(child: Text(label,
+          style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500),
+          overflow: TextOverflow.ellipsis, maxLines: 1)),
+      ]),
+    );
+  }
+
+
   // ════════════════════════════════════════════════════════════
   // TÍNH NĂNG 7 — ADMIN: DUYỆT / ĐIỀU CHỈNH DEADLINE
   // 7a. _approveDeadline        : Admin duyệt đề xuất deadline của user
@@ -1223,7 +1274,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
+          SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
       }
     }
   }
@@ -1336,7 +1387,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
+                      SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                   }
                 }
               },
