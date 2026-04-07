@@ -24,8 +24,14 @@ jobs:
           echo "$FIREBASE_SA_B64" | base64 --decode > ticketmanagement_server/ticketmanagement_server_server/firebase_service_account.json
           echo "✅ firebase_service_account.json restored"
 
-      - name: Cài đặt Dependencies
+      - name: Cài đặt Dependencies (Dart)
         run: flutter pub get
+
+      - name: Cài đặt CocoaPods dependencies (bắt buộc cho iOS)
+        run: |
+          cd ios
+          pod install --repo-update
+          echo "✅ CocoaPods installed"
 
       - name: Build thư mục iOS (Không cần chứng chỉ)
         run: flutter build ios --release --no-codesign

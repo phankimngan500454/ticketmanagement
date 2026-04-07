@@ -6,6 +6,7 @@ import '../../widgets/admin_sidebar.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
+import '../../services/windows_notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   final User currentUser;
@@ -75,8 +76,17 @@ class _AdminDashboardState extends State<AdminDashboard>
         rawTickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         // Detect genuinely new tickets (unknown IDs)
         if (_knownTicketIds.isNotEmpty) {
-          final newOnes = rawTickets.where((t) => !_knownTicketIds.contains(t.ticketId)).length;
-          if (newOnes > 0) _newNotifCount += newOnes;
+          final newTickets = rawTickets.where((t) => !_knownTicketIds.contains(t.ticketId)).toList();
+          if (newTickets.isNotEmpty) {
+            _newNotifCount += newTickets.length;
+            // 🔔 Windows toast notification cho ticket mới nhất
+            final latest = newTickets.first;
+            WindowsNotificationService.showNewTicket(
+              ticketId: latest.ticketId,
+              subject: latest.subject,
+              requester: latest.requesterName ?? 'Không rõ',
+            );
+          }
         }
         _knownTicketIds.addAll(rawTickets.map((t) => t.ticketId));
         _tickets = rawTickets;
@@ -270,8 +280,8 @@ class _AdminDashboardState extends State<AdminDashboard>
                       unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
                       tabs: [
                         Tab(text: 'TẤT CẢ ($total)'),
-                        Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Text('CHƯA PHÂN CÔNG'),
+                        Tab(child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+                          const Flexible(child: Text('CHƯA PHÂN CÔNG', overflow: TextOverflow.ellipsis)),
                           if (unassigned > 0) ...[
                             const SizedBox(width: 5),
                             CircleAvatar(radius: 9, backgroundColor: const Color(0xFFE53935),
@@ -290,22 +300,24 @@ class _AdminDashboardState extends State<AdminDashboard>
               color: Colors.white,
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
               child: Column(children: [
-                // Status summary chips row
+                // Status summary chips row — dùng Row có Flexible để không overflow
                 Row(children: [
-                  _summaryChip('$openCount Đang mở', const Color(0xFFE53935)),
+                  Flexible(
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        _summaryChip('$openCount Đang mở', const Color(0xFFE53935)),
+                        _summaryChip('$pendingCount Chờ xử lý', const Color(0xFFFB8C00)),
+                        _summaryChip('$resolvedCount Đã xong', const Color(0xFF43A047)),
+                        if (slaOverdue > 0)
+                          _summaryChip('$slaOverdue SLA QH', const Color(0xFFB71C1C), icon: Icons.warning_rounded),
+                        if (slaSoon > 0 && slaOverdue == 0)
+                          _summaryChip('$slaSoon SLA Sắp hết', Colors.orange, icon: Icons.timer_outlined),
+                      ],
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  _summaryChip('$pendingCount Chờ xử lý', const Color(0xFFFB8C00)),
-                  const SizedBox(width: 8),
-                  _summaryChip('$resolvedCount Đã xong', const Color(0xFF43A047)),
-                  if (slaOverdue > 0) ...[
-                    const SizedBox(width: 8),
-                    _summaryChip('$slaOverdue SLA QH', const Color(0xFFB71C1C), icon: Icons.warning_rounded),
-                  ],
-                  if (slaSoon > 0 && slaOverdue == 0) ...[
-                    const SizedBox(width: 8),
-                    _summaryChip('$slaSoon SLA Sắp hết', Colors.orange, icon: Icons.timer_outlined),
-                  ],
-                  const Spacer(),
                   // Priority filter
                   PopupMenuButton<String>(
                     initialValue: _priorityFilter,

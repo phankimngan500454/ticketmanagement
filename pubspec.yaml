@@ -21,6 +21,8 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   shared_preferences: ^2.5.5
   go_router: ^17.1.0
+  window_manager: ^0.4.3
+  local_notifier: ^0.1.6
 
 dev_dependencies:
   flutter_test:
@@ -43,3 +45,7 @@ flutter_launcher_icons:
     image_path: "assets/app_icon.png"
     background_color: "#1A237E"
     theme_color: "#3949AB"
+  windows:
+    generate: true
+    image_path: "assets/app_icon.png"
+    icon_size: 48

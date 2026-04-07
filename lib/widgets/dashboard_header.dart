@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../data/ticket_repository.dart';
+import '../../main.dart' show setLoginWindowSize;
 
 /// Widget header dùng chung cho tất cả các Dashboard.
 /// Nhận vào: tiêu đề, tên người dùng, lời chào,
@@ -48,23 +49,29 @@ class DashboardHeader extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 12, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      if (leadingAction != null) ...[
-                        leadingAction!,
-                        const SizedBox(width: 4),
-                      ],
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                  // Left side: menu + title (Expanded để chiếm hết phần còn lại)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (leadingAction != null) ...[
+                          leadingAction!,
+                          const SizedBox(width: 4),
+                        ],
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   // Notification bell + Avatar
                   Row(
@@ -145,7 +152,8 @@ class _LogoutAvatar extends StatelessWidget {
       onSelected: (value) async {
         if (value == 'logout') {
           TicketRepository.instance.logout();
-          context.go('/login');
+          await setLoginWindowSize();
+          if (context.mounted) context.go('/login');
         } else if (value == 'profile') {
           await context.push('/profile');
         }

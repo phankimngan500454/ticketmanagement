@@ -1,0 +1,27 @@
+﻿Analyzing ticketmanagement...                                   
+
+  error - The name 'MyApp' isn't a class - test\widget_test.dart:16:35 - creation_with_non_type
+   info - The package name '_' isn't a lower_case_with_underscores identifier - ticketmanagement_server\pubspec.yaml:1:7 - package_names
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - ticketmanagement_server\ticketmanagement_server_server\lib\src\services\fcm_service.dart:101:9 - use_null_aware_elements
+   info - The imported package 'postgres' isn't a dependency of the importing package - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:2:8 - depend_on_referenced_packages
+   info - Statements in a for should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:13:28 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:19:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:19:61 - curly_braces_in_flow_control_structures
+   info - Statements in a for should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:19:89 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:25:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:25:66 - curly_braces_in_flow_control_structures
+   info - Statements in a for should be enclosed in a block - ticketmanagement_server\ticketmanagement_server_server\tool\check_depts.dart:25:94 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\checkpw.dart:5:3 - avoid_print
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\checkpw.dart:6:3 - avoid_print
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\checkpw.dart:7:3 - avoid_print
+   info - The imported package 'postgres' isn't a dependency of the importing package - ticketmanagement_server\ticketmanagement_server_server\tool\fix_duplicate_assets.dart:2:8 - depend_on_referenced_packages
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\genhash.dart:7:3 - avoid_print
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\genhash.dart:8:3 - avoid_print
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\genhash.dart:9:3 - avoid_print
+   info - The imported package 'postgres' isn't a dependency of the importing package - ticketmanagement_server\ticketmanagement_server_server\tool\seed.dart:3:8 - depend_on_referenced_packages
+   info - The imported package 'postgres' isn't a dependency of the importing package - ticketmanagement_server\ticketmanagement_server_server\tool\seed_medical_assets.dart:2:8 - depend_on_referenced_packages
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\seed_tickets.dart:25:3 - avoid_print
+warning - Unused import: 'dart:io' - ticketmanagement_server\ticketmanagement_server_server\tool\test_tickets.dart:1:8 - unused_import
+   info - Don't invoke 'print' in production code - ticketmanagement_server\ticketmanagement_server_server\tool\test_tickets.dart:4:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\remove_raw_exceptions.dart:26:7 - avoid_print
+

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/user.dart';
 import '../../services/notification_service.dart';
+import '../../../main.dart' show setFullWindowSize;
 
 class SplashScreen extends StatefulWidget {
   // redirectUrl được truyền qua query parameter ?redirect=...
@@ -29,7 +30,9 @@ class _SplashScreenState extends State<SplashScreen> {
     if (user != null) {
       // 🔔 Register FCM token for push notifications
       NotificationService.init(user.userId);
-      
+      // Expand to full window on desktop when auto-login succeeds
+      await setFullWindowSize();
+      if (!mounted) return;
       // Nếu có redirectUrl (từ F5 tại màn hình khác), quay về đó
       final redirect = widget.redirectUrl;
       if (redirect != null && redirect.isNotEmpty && redirect != '/') {
