@@ -215,7 +215,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
               padding: const EdgeInsets.fromLTRB(16, 12, 12, 0),
               child: Row(children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('IT Helpdesk', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const Text('MedHub', style: TextStyle(color: Colors.white70, fontSize: 11)),
                   Text(widget.currentUser.fullName,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       maxLines: 1, overflow: TextOverflow.ellipsis),

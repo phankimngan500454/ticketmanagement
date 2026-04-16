@@ -62,7 +62,7 @@ class _WebSidebarState extends State<WebSidebar> {
                 ],
               ),
               child: const Icon(
-                Icons.confirmation_number_rounded,
+                Icons.local_hospital_rounded,
                 color: Colors.white,
                 size: 20,
               ),

@@ -62,7 +62,7 @@ class NotificationService {
     const channel = AndroidNotificationChannel(
       'ticket_alerts',
       'Thông báo Ticket',
-      description: 'Thông báo về ticket IT Helpdesk',
+      description: 'Thông báo MedHub',
       importance: Importance.high,
     );
     await _localNotif
@@ -108,7 +108,7 @@ class NotificationService {
         android: AndroidNotificationDetails(
           'ticket_alerts',
           'Thông báo Ticket',
-          channelDescription: 'Thông báo về ticket IT Helpdesk',
+          channelDescription: 'Thông báo MedHub',
           importance: Importance.high,
           priority: Priority.high,
           visibility: NotificationVisibility.public,

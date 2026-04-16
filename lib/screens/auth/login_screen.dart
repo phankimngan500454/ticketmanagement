@@ -244,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen>
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _buildLogo(size: 56),
             const SizedBox(height: 12),
-            const Text('IT HELPDESK',
+            const Text('MEDHUB',
                 style: TextStyle(
                     fontSize: 20, fontWeight: FontWeight.w900,
                     color: _darkBlue, letterSpacing: 3)),
@@ -277,12 +277,12 @@ class _LoginScreenState extends State<LoginScreen>
         children: [
           _buildLogo(size: 64),
           const SizedBox(height: 22),
-          const Text('IT HELPDESK',
+          const Text('MEDHUB',
               style: TextStyle(
                   fontSize: 22, fontWeight: FontWeight.w900,
                   color: Colors.white, letterSpacing: 3.5)),
           const SizedBox(height: 6),
-          Text('Hệ thống quản lý\nyêu cầu hỗ trợ kỹ thuật',
+          Text('Cổng hỗ trợ nội bộ\nbệnh viện',
               style: TextStyle(
                   fontSize: 13,
                   color: Colors.white.withValues(alpha: 0.75),
@@ -290,8 +290,8 @@ class _LoginScreenState extends State<LoginScreen>
           const SizedBox(height: 36),
           // Feature list
           ...const [
-            (Icons.speed_rounded,               'Phản hồi nhanh chóng'),
-            (Icons.track_changes_rounded,        'Theo dõi tiến độ realtime'),
+            (Icons.speed_rounded,               'Xử lý yêu cầu nhanh chóng'),
+            (Icons.track_changes_rounded,        'Theo dõi tiến độ thời gian thực'),
             (Icons.notifications_active_rounded, 'Thông báo tức thì'),
             (Icons.bar_chart_rounded,            'Báo cáo & thống kê'),
           ].map((e) => _featureRow(e.$1, e.$2)),
@@ -328,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen>
             offset: const Offset(0, 4)),
         ],
       ),
-      child: Icon(Icons.support_agent_rounded,
+      child: Icon(Icons.local_hospital_rounded,
           size: size * 0.44, color: Colors.white),
     );
   }
@@ -396,7 +396,7 @@ class _LoginScreenState extends State<LoginScreen>
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: _darkBlue)),
-            Text('IT Helpdesk System',
+            Text('Cổng hỗ trợ nội bộ bệnh viện',
                 style: TextStyle(fontSize: 11, color: Color(0xFF78909C))),
           ]),
         ]),
@@ -470,7 +470,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 22),
         Center(
-          child: Text('© 2026 IT Helpdesk System',
+          child: Text('© 2026 MedHub',
               style: TextStyle(fontSize: 11, color: Colors.grey[400])),
         ),
       ]),

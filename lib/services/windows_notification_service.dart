@@ -10,7 +10,7 @@ class WindowsNotificationService {
   static Future<void> init() async {
     if (!_isWindows) return;
     if (_initialized) return;
-    await localNotifier.setup(appName: 'IT Helpdesk');
+    await localNotifier.setup(appName: 'MedHub');
     _initialized = true;
   }
 
@@ -61,7 +61,7 @@ class WindowsNotificationService {
     VoidCallback? onTap,
   }) async {
     await show(
-      title: 'IT Helpdesk — Cập nhật ticket #${ticketId.toString().padLeft(4, '0')}',
+      title: 'MedHub — Cập nhật ticket #${ticketId.toString().padLeft(4, '0')}',
       body: message,
       onTap: onTap,
     );

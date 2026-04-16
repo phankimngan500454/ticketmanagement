@@ -1,11 +1,11 @@
 {
-    "name": "ticketmanagement",
-    "short_name": "ticketmanagement",
+    "name": "MedHub",
+    "short_name": "MedHub",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1A237E",
     "theme_color": "#3949AB",
-    "description": "A new Flutter project.",
+    "description": "MedHub – Cổng hỗ trợ nội bộ bệnh viện",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

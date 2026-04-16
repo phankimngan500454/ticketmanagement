@@ -60,7 +60,7 @@ void main() async {
           backgroundColor: Colors.transparent,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
-          title: 'IT Helpdesk',
+          title: 'MedHub',
         );
         await windowManager.waitUntilReadyToShow(options, () async {
           await windowManager.maximize();
@@ -89,7 +89,7 @@ void main() async {
           statusBarIconBrightness: Brightness.light,
         ),
       );
-      runApp(const HelpdeskApp());
+      runApp(const MedHubApp());
     },
     (error, stackTrace) {
       debugPrint('🔴 Unhandled error: $error');
@@ -98,13 +98,13 @@ void main() async {
   );
 }
 
-class HelpdeskApp extends StatelessWidget {
-  const HelpdeskApp({super.key});
+class MedHubApp extends StatelessWidget {
+  const MedHubApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'IT Helpdesk',
+      title: 'MedHub',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
       // textScaler bị xóa để tỉ lệ nhất quán giữa login và dashboard

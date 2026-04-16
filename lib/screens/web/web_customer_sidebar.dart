@@ -54,7 +54,7 @@ class _WebCustomerSidebarState extends State<WebCustomerSidebar> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
-                Icons.support_agent_rounded,
+                Icons.local_hospital_rounded,
                 color: Colors.white,
                 size: 20,
               ),

@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.support_agent,
+                Icons.local_hospital_rounded,
                 size: 80,
                 color: Colors.white,
               ),
