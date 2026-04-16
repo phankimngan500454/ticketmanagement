@@ -8,10 +8,17 @@ import '../models/user.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
+import 'screens/web/web_admin_dashboard.dart'; // Web Dashboard
+import 'screens/web/web_customer_dashboard.dart';
+import 'screens/web/web_it_dashboard.dart';
+import 'screens/web/web_manager_dashboard.dart';
 import 'screens/it/it_agent_dashboard.dart';
 import 'screens/customer/customer_dashboard.dart';
+import 'screens/manager/manager_dashboard.dart';
 import 'screens/shared/ticket_detail_screen.dart';
+import 'screens/shared/feedback_detail_screen.dart';
 import 'screens/shared/notifications_screen.dart';
+import 'package:flutter/foundation.dart'; // Thêm kIsWeb
 import 'screens/shared/not_found_screen.dart';
 import 'screens/customer/create_ticket_screen.dart';
 import 'screens/customer/emergency_call_screen.dart';
@@ -34,13 +41,15 @@ class TicketDetailWrapper extends StatefulWidget {
   final Ticket? ticket;
   final User currentUser;
   final bool isAdmin;
+  final bool isEmbedded;
   
   const TicketDetailWrapper({
     super.key, 
     required this.ticketId, 
     this.ticket, 
     required this.currentUser, 
-    required this.isAdmin
+    required this.isAdmin,
+    this.isEmbedded = false,
   });
 
   @override
@@ -69,10 +78,19 @@ class _TicketDetailWrapperState extends State<TicketDetailWrapper> {
         body: Center(child: CircularProgressIndicator(color: Color(0xFF3949AB))),
       );
     }
+    // Feedback / reopen_medical tickets → màn hình đơn giản
+    if (_ticket!.ticketType == 'feedback' || _ticket!.ticketType == 'reopen_medical') {
+      return FeedbackDetailScreen(
+        ticket: _ticket!,
+        currentUser: widget.currentUser,
+        isEmbedded: widget.isEmbedded,
+      );
+    }
     return TicketDetailScreen(
       ticket: _ticket!, 
       currentUser: widget.currentUser, 
-      isAdmin: widget.isAdmin
+      isAdmin: widget.isAdmin,
+      isEmbedded: widget.isEmbedded,
     );
   }
 }
@@ -81,6 +99,8 @@ class _TicketDetailWrapperState extends State<TicketDetailWrapper> {
 String _homeForUser(User user) {
   if (user.role == 'Admin') return '/admin';
   if (user.role == 'IT') return '/it';
+  final p = user.permissions ?? '';
+  if (user.role == 'Manager' || p.contains('insurance') || p.contains('finance')) return '/manager';
   return '/customer';
 }
 
@@ -105,15 +125,26 @@ final GoRouter appRouter = GoRouter(
     // Ở trang cần auth mà chưa login → về Splash để auto-login
     if (user == null) return '/?redirect=${Uri.encodeComponent(path)}';
     
-    // ── PHÂN QUYỀN THEO ROLE ─────────────────────────────────────
+    // ── PHÂN QUYỀN THEO ROLE & PERMISSIONS ───────────────────────
     final role = user.role;
+    final p = user.permissions ?? '';
+    final isMedicalApprover = p.contains('insurance') || p.contains('finance');
+
     // Customer chỉ được vào /customer và /ticket/:id và /notifications
-    if (role == 'Customer' && (path.startsWith('/admin') || path.startsWith('/it'))) {
+    if (role == 'Customer' && !isMedicalApprover && (path.startsWith('/admin') || path.startsWith('/it') || path.startsWith('/manager'))) {
       return '/customer';
     }
+    // Nếu là Customer nhưng được phân quyền duyệt bệnh án, chặn Admin/IT nhưng pass Manager
+    if (role == 'Customer' && isMedicalApprover && (path.startsWith('/admin') || path.startsWith('/it'))) {
+      return '/manager';
+    }
     // IT chỉ được vào /it và /ticket/:id và /notifications, không vào /admin
-    if (role == 'IT' && path.startsWith('/admin')) {
+    if (role == 'IT' && (path.startsWith('/admin') || path.startsWith('/manager'))) {
       return '/it';
+    }
+    // Manager chỉ được vào /manager và /ticket/:id và /notifications
+    if (role == 'Manager' && (path.startsWith('/admin') || path.startsWith('/it') || path.startsWith('/customer'))) {
+      return '/manager';
     }
     
     return null; // OK, pass through
@@ -138,6 +169,9 @@ final GoRouter appRouter = GoRouter(
       path: '/admin',
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser!;
+        if (kIsWeb) {
+          return WebAdminDashboard(currentUser: user);
+        }
         return AdminDashboard(currentUser: user);
       },
     ),
@@ -145,6 +179,9 @@ final GoRouter appRouter = GoRouter(
       path: '/it',
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser!;
+        if (kIsWeb) {
+          return WebITDashboard(currentUser: user);
+        }
         return ITAgentDashboard(currentUser: user);
       },
     ),
@@ -152,7 +189,20 @@ final GoRouter appRouter = GoRouter(
       path: '/customer',
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser!;
+        if (kIsWeb) {
+          return WebCustomerDashboard(currentUser: user);
+        }
         return CustomerDashboard(currentUser: user);
+      },
+    ),
+    GoRoute(
+      path: '/manager',
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser!;
+        if (kIsWeb) {
+          return WebManagerDashboard(currentUser: user);
+        }
+        return ManagerDashboard(currentUser: user);
       },
     ),
 

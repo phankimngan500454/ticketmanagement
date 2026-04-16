@@ -297,18 +297,24 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
                   }).toList(),
                 )),
 
+                // ─────────────────────────────────────────────────────────────────
+                // TODO: Model & Serial tạm ẩn (2026-04-08) — người dùng thường không biết
+                // Để bật lại model/serial: bỏ comment khối bên dưới
+                // ─────────────────────────────────────────────────────────────────
                 const SizedBox(height: 16),
-
-                // 3. Thông tin chi tiết
-                _label('3. Thông tin chi tiết', Icons.info_outline_rounded),
+                _label('3. Tên thiết bị hoặc tên phần mềm (tùy chọn)', Icons.label_rounded),
                 const SizedBox(height: 8),
-                _card(padding: const EdgeInsets.all(14), child: Column(children: [
-                  _field(nameCtrl, 'Tên thiết bị / phần mềm *', Icons.label_rounded),
-                  const SizedBox(height: 10),
-                  _field(modelCtrl, 'Model (VD: Dell XPS 15, HP LaserJet Pro...)', Icons.info_outline_rounded),
-                  const SizedBox(height: 10),
-                  _field(codeCtrl, 'Mã / Số serial', Icons.qr_code_2_rounded),
-                ])),
+                _card(padding: const EdgeInsets.all(14), child: _field(
+                  nameCtrl,
+                  'VD: Laptop phòng Kế toán, Máy in tầng 2...',
+                  Icons.label_rounded,
+                )),
+                // ── Model & Serial (tạm ẩn) ──
+                // const SizedBox(height: 10),
+                // _field(modelCtrl, 'Model (VD: Dell XPS 15, HP LaserJet Pro...)', Icons.info_outline_rounded),
+                // const SizedBox(height: 10),
+                // _field(codeCtrl, 'Mã / Số serial', Icons.qr_code_2_rounded),
+                // ─────────────────────────────────────────────────────────────────
 
                 const SizedBox(height: 20),
 
@@ -325,13 +331,10 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: () async {
-                      final name = nameCtrl.text.trim();
-                      if (name.isEmpty) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                          content: Text('⚠️ Vui lòng nhập tên thiết bị'),
-                          backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating));
-                        return;
-                      }
+                      // Nếu không nhập tên → dùng tên loại thiết bị làm mặc định
+                      final name = nameCtrl.text.trim().isEmpty
+                          ? selectedType
+                          : nameCtrl.text.trim();
                       Navigator.pop(ctx);
                       try {
                         await _repo.upsertAsset(Asset(
@@ -545,7 +548,10 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
         Expanded(child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(asset.assetName,
+            Text(
+              asset.assetName == '(Chưa xác định)' || asset.assetName.isEmpty
+                  ? asset.assetType
+                  : asset.assetName,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1C1C2E))),
             if (asset.assetModel.isNotEmpty) ...[
               const SizedBox(height: 2),

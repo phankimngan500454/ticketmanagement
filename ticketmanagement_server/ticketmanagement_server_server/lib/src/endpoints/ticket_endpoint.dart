@@ -13,22 +13,43 @@ class TicketEndpoint extends Endpoint {
     int roleId,
   ) async {
     if (roleId == 1) {
+      // Admin: xem được MỌI thể loại ticket (bao gồm IT, Feedback, Reopen Medical)
       return Ticket.db.find(
         session,
         orderBy: (t) => t.createdAt,
         orderDescending: true,
       );
     } else if (roleId == 2) {
+      // IT: chỉ ticket được giao (không lấy feedback/reopen_medical)
       return Ticket.db.find(
         session,
-        where: (t) => t.assigneeId.equals(userId),
+        where: (t) => t.assigneeId.equals(userId) & t.ticketType.notEquals('feedback') & t.ticketType.notEquals('reopen_medical'),
+        orderBy: (t) => t.createdAt,
+        orderDescending: true,
+      );
+    } else if (roleId == 4) {
+      // Manager: lấy feedback + reopen_medical tickets
+      return Ticket.db.find(
+        session,
+        where: (t) => t.ticketType.equals('feedback') | t.ticketType.equals('reopen_medical'),
         orderBy: (t) => t.createdAt,
         orderDescending: true,
       );
     } else {
+      // Fetch user to check special permissions
+      final user = await AppUser.db.findById(session, userId);
+      final p = user?.permissions ?? '';
+      final isApprover = p.contains('insurance') || p.contains('finance');
+
+      // Customer: tất cả ticket của mình (bao gồm feedback).
+      // Nếu có quyền duyệt y tế, lấy thêm reopen_medical đã qua duyệt (Resolved/Pending/WaitingConfirmation).
+      // Open = chưa duyệt → không hiện cho approver.
       return Ticket.db.find(
         session,
-        where: (t) => t.requesterId.equals(userId),
+        where: (t) => t.requesterId.equals(userId) |
+            (isApprover
+                ? (t.ticketType.equals('reopen_medical') & t.status.notEquals('Open'))
+                : t.assigneeId.equals(-999)),
         orderBy: (t) => t.createdAt,
         orderDescending: true,
       );
@@ -60,6 +81,7 @@ class TicketEndpoint extends Endpoint {
     String description,
     String priority,
     int? assetId,
+    String? ticketType,
   ) async {
     final ticket = Ticket(
       subject: subject,
@@ -70,17 +92,38 @@ class TicketEndpoint extends Endpoint {
       requesterId: requesterId,
       categoryId: categoryId,
       assetId: assetId,
+      ticketType: ticketType ?? 'ticket',
     );
     final saved = await Ticket.db.insertRow(session, ticket);
 
-    // 🔔 Notify all Admins about the new ticket
-    await FcmService.sendToRole(
-      session,
-      roleId: 1, // Admin
-      title: '🎫 Ticket mới cần xử lý',
-      body: '#${saved.id?.toString().padLeft(4, '0') ?? '0000'}: $subject',
-      data: {'ticketId': '${saved.id}', 'screen': 'ticket_detail'},
-    );
+    // 🔔 Notify theo loại ticket
+    if ((ticketType ?? 'ticket') == 'feedback' || (ticketType ?? 'ticket') == 'reopen_medical') {
+      // Feedback / Reopen medical → notify Managers
+      final notifyTitle = (ticketType == 'reopen_medical') ? '📋 Yêu cầu mở lại bệnh án' : '💬 Góp ý mới';
+      await FcmService.sendToRole(
+        session,
+        roleId: 4, // Manager
+        title: notifyTitle,
+        body: '#${saved.id?.toString().padLeft(4, '0') ?? '0000'}: $subject',
+        data: {'ticketId': '${saved.id}', 'screen': 'ticket_detail'},
+      );
+    } else {
+      // Ticket thường → notify Admin + IT
+      await FcmService.sendToRole(
+        session,
+        roleId: 1, // Admin
+        title: '🎫 Ticket mới cần xử lý',
+        body: '#${saved.id?.toString().padLeft(4, '0') ?? '0000'}: $subject',
+        data: {'ticketId': '${saved.id}', 'screen': 'ticket_detail'},
+      );
+      await FcmService.sendToRole(
+        session,
+        roleId: 2, // IT
+        title: '🎫 Ticket mới cần xử lý',
+        body: '#${saved.id?.toString().padLeft(4, '0') ?? '0000'}: $subject',
+        data: {'ticketId': '${saved.id}', 'screen': 'ticket_detail'},
+      );
+    }
 
     return saved;
   }
@@ -187,6 +230,17 @@ class TicketEndpoint extends Endpoint {
         targetUserId: ticket.assigneeId!,
         title: '❌ Ticket đã bị hủy',
         body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+      );
+    }
+
+    // 🔔 Re-opened → notify IT staff (if assigned)
+    if (status == 'Open' && ticket.assigneeId != null) {
+      await FcmService.sendToUser(
+        session,
+        targetUserId: ticket.assigneeId!,
+        title: '🔄 Ticket đã bị mở lại',
+        body: 'Người dùng vừa yêu cầu mở lại ticket #${ticketId.toString().padLeft(4, '0')}',
         data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
       );
     }

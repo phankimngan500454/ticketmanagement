@@ -194,7 +194,13 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F8),
-      body: Column(children: [
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        color: _green,
+        child: NestedScrollView(
+          headerSliverBuilder: (ctx, innerBoxScrolled) => [
+            SliverToBoxAdapter(
+              child: Column(children: [
         // ── COMPACT HEADER (mobile-optimized) ─────────────────
         Container(
           decoration: const BoxDecoration(
@@ -247,26 +253,51 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(
-                      value: 'profile',
-                      child: Row(children: [
-                        CircleAvatar(radius: 14, backgroundColor: _green.withValues(alpha: 0.1),
-                          child: Text(widget.currentUser.fullName[0],
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _green))),
-                        const SizedBox(width: 10),
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(widget.currentUser.fullName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          const Text('Hồ sơ & đổi mật khẩu', style: TextStyle(fontSize: 11, color: Color(0xFF00897B))),
+                      enabled: false,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: _green.withValues(alpha: 0.12),
+                            child: Text(widget.currentUser.fullName[0],
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _green)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(widget.currentUser.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1C1C2E)), overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 2),
+                            Text('Quản lý tài khoản', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                          ])),
                         ]),
+                        const SizedBox(height: 12),
+                        Divider(height: 1, color: Colors.grey.shade200),
                       ]),
                     ),
-                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'profile',
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Row(children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(color: _green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.manage_accounts_rounded, color: _green, size: 17),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Hồ sơ & Đổi mật khẩu', style: TextStyle(color: Color(0xFF1C1C2E), fontSize: 13, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
                     PopupMenuItem(
                       value: 'logout',
-                      child: const Row(children: [
-                        Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
-                        SizedBox(width: 10),
-                        Text('Đăng xuất', style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.w600)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Row(children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 17),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Đăng xuất', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w600)),
                       ]),
                     ),
                   ],
@@ -322,13 +353,14 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
           ),
         ),
 
-        // ── CONTENT AREA ───────────────────────────────────────
-        Expanded(child: RefreshIndicator(
-          onRefresh: _loadData,
-          color: _green,
-          child: body,
-        )),
-      ]),
+              ]),
+            ),
+          ],
+          body: _loading
+              ? const Center(child: CircularProgressIndicator(color: _green))
+              : body, // The inner scrollable view
+        ),
+      ),
 
       // ── BOTTOM NAVIGATION BAR ──────────────────────────────
       bottomNavigationBar: Container(

@@ -49,6 +49,12 @@ mixin AuthRepository on RepositoryBase {
 
   // ── Đăng xuất (xóa cache) ───────────────────────────────────
   Future<void> logout() async {
+    if (currentUser != null) {
+      // Clear FCM token on the backend to prevent the device from 
+      // receiving notifications for this account after logging out.
+      await updateFcmToken(currentUser!.userId, '');
+    }
+
     userCache = [];
     categoryCache = [];
     assetCache = [];
@@ -68,9 +74,10 @@ mixin AuthRepository on RepositoryBase {
     String? phone,
     required int roleId,
     int? deptId,
+    String? permissions,
   }) async {
     final u = await client.auth.register(
-        username, password, fullName, phone, roleId, deptId);
+        username, password, fullName, phone, roleId, deptId, permissions);
     if (u == null) return null;
     userCache = [];
     return mapUser(u);
@@ -99,8 +106,9 @@ mixin AuthRepository on RepositoryBase {
     String? phone,
     required int roleId,
     int? deptId,
+    String? permissions,
   }) async {
-    final u = await client.auth.updateUser(userId, fullName, phone, roleId, deptId);
+    final u = await client.auth.updateUser(userId, fullName, phone, roleId, deptId, permissions);
     if (u == null) throw Exception('User not found');
     userCache = [];
     return mapUser(u);

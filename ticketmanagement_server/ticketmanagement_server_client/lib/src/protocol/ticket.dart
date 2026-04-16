@@ -29,6 +29,7 @@ abstract class Ticket implements _i1.SerializableModel {
     this.deadlineStatus,
     this.adminNote,
     this.proposedByUserId,
+    this.ticketType,
   });
 
   factory Ticket({
@@ -47,6 +48,7 @@ abstract class Ticket implements _i1.SerializableModel {
     String? deadlineStatus,
     String? adminNote,
     int? proposedByUserId,
+    String? ticketType,
   }) = _TicketImpl;
 
   factory Ticket.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -76,6 +78,7 @@ abstract class Ticket implements _i1.SerializableModel {
       deadlineStatus: jsonSerialization['deadlineStatus'] as String?,
       adminNote: jsonSerialization['adminNote'] as String?,
       proposedByUserId: jsonSerialization['proposedByUserId'] as int?,
+      ticketType: jsonSerialization['ticketType'] as String?,
     );
   }
 
@@ -112,6 +115,8 @@ abstract class Ticket implements _i1.SerializableModel {
 
   int? proposedByUserId;
 
+  String? ticketType;
+
   /// Returns a shallow copy of this [Ticket]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -131,6 +136,7 @@ abstract class Ticket implements _i1.SerializableModel {
     String? deadlineStatus,
     String? adminNote,
     int? proposedByUserId,
+    String? ticketType,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -152,6 +158,7 @@ abstract class Ticket implements _i1.SerializableModel {
       if (deadlineStatus != null) 'deadlineStatus': deadlineStatus,
       if (adminNote != null) 'adminNote': adminNote,
       if (proposedByUserId != null) 'proposedByUserId': proposedByUserId,
+      if (ticketType != null) 'ticketType': ticketType,
     };
   }
 
@@ -180,6 +187,7 @@ class _TicketImpl extends Ticket {
     String? deadlineStatus,
     String? adminNote,
     int? proposedByUserId,
+    String? ticketType,
   }) : super._(
          id: id,
          subject: subject,
@@ -196,6 +204,7 @@ class _TicketImpl extends Ticket {
          deadlineStatus: deadlineStatus,
          adminNote: adminNote,
          proposedByUserId: proposedByUserId,
+         ticketType: ticketType,
        );
 
   /// Returns a shallow copy of this [Ticket]
@@ -218,6 +227,7 @@ class _TicketImpl extends Ticket {
     Object? deadlineStatus = _Undefined,
     Object? adminNote = _Undefined,
     Object? proposedByUserId = _Undefined,
+    Object? ticketType = _Undefined,
   }) {
     return Ticket(
       id: id is int? ? id : this.id,
@@ -243,6 +253,7 @@ class _TicketImpl extends Ticket {
       proposedByUserId: proposedByUserId is int?
           ? proposedByUserId
           : this.proposedByUserId,
+      ticketType: ticketType is String? ? ticketType : this.ticketType,
     );
   }
 }

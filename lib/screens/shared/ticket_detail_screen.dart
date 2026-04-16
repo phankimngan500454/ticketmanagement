@@ -25,12 +25,14 @@ class TicketDetailScreen extends StatefulWidget {
   final Ticket ticket;
   final bool isAdmin;
   final User currentUser;
+  final bool isEmbedded;
 
   const TicketDetailScreen({
     super.key,
     required this.ticket,
     required this.currentUser,
     this.isAdmin = false,
+    this.isEmbedded = false,
   });
 
   @override
@@ -54,7 +56,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Timer? _refreshTimer;                        // Auto-refresh realtime
 
   // ── Theme  ───────────────────────────────────────────────────
-  static const Color _themeColor = Color(0xFF3949AB); // Màu chủ đạo (indigo)
+  static const Color _themeColor = Color(0xFF2563EB); // Web primary blue
 
   @override
   void initState() {
@@ -132,7 +134,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     if (file.bytes == null) return;
     // 5MB limit
     if (file.size > 5 * 1024 * 1024) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('❌ File không được vượt quá 5MB'), backgroundColor: Colors.red));
       }
@@ -150,7 +152,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         fileData: base64Data,
         fileSize: file.size,
       );
-      if (mounted) {
+      if (mounted && context.mounted) {
         setState(() { _attachments.add(attachment); _uploadingFile = false; });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('📎 Đã đính kèm: ${file.name}'),
@@ -158,7 +160,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           behavior: SnackBarBehavior.floating));
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         setState(() => _uploadingFile = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
@@ -290,7 +292,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               Navigator.pop(context);
               final updated = await _repo.assignTicket(_ticket.ticketId, staff.userId);
               setState(() => _ticket = updated);
-              if (mounted) {
+              if (mounted && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text('✅ Đã giao việc cho ${staff.fullName}'),
                   backgroundColor: const Color(0xFF43A047),
@@ -319,11 +321,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Color _statusColor(String s) {
     switch (s) {
-      case 'Open': return const Color(0xFFE53935);
-      case 'Pending': return const Color(0xFFFB8C00);
-      case 'Resolved': return const Color(0xFF43A047);
-      case 'WaitingConfirmation': return const Color(0xFFF59E0B);
-      case 'Cancelled': return const Color(0xFF78909C);
+      case 'Open': return const Color(0xFF3B82F6);
+      case 'Pending': return const Color(0xFFF59E0B);
+      case 'WaitingConfirmation': return const Color(0xFF8B5CF6);
+      case 'Resolved': return const Color(0xFF10B981);
+      case 'Cancelled': return const Color(0xFF64748B);
       default: return Colors.grey;
     }
   }
@@ -372,7 +374,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     if (confirm != true) return;
     try {
       final updated = await _repo.updateStatus(_ticket.ticketId, 'Cancelled');
-      if (mounted) {
+      if (mounted && context.mounted) {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('🚫 Yêu cầu đã được hủy'),
@@ -382,7 +384,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
           backgroundColor: Colors.red.shade700,
@@ -396,7 +398,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Future<void> _markResolved() async {
     try {
       final updated = await _repo.updateStatus(_ticket.ticketId, 'WaitingConfirmation');
-      if (mounted) {
+      if (mounted && context.mounted) {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('✅ Đã gửi yêu cầu xác nhận'),
@@ -406,7 +408,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
           backgroundColor: Colors.red.shade700,
@@ -423,7 +425,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     try {
       final newStatus = confirm ? 'Resolved' : 'Open';
       final updated = await _repo.updateStatus(_ticket.ticketId, newStatus);
-      if (mounted) {
+      if (mounted && context.mounted) {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(confirm ? '✅ Yêu cầu đã được xác nhận hoàn thành' : '🔄 Đã mở lại yêu cầu'),
@@ -433,7 +435,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
           backgroundColor: Colors.red.shade700,
@@ -443,6 +445,98 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         ));
       }
     }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // TÍNH NĂNG 5d — WORKFLOW BỆNH ÁN (Insurance / Customer)
+  // Cập nhật trạng thái bệnh án theo luồng:
+  //   Resolved → Pending → WaitingConfirmation → Cancelled
+  // ════════════════════════════════════════════════════════════
+  Future<void> _updateMedicalStatus(String newStatus, String successMsg) async {
+    try {
+      final updated = await _repo.updateStatus(_ticket.ticketId, newStatus);
+      if (mounted && context.mounted) {
+        setState(() => _ticket = updated);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(successMsg),
+          backgroundColor: const Color(0xFF43A047),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } catch (e) {
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
+  }
+
+  Widget _buildMedicalWorkflowCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String buttonLabel,
+    required Color buttonColor,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: buttonColor.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: Column(children: [
+        Container(
+          height: 5,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [buttonColor, buttonColor.withValues(alpha: 0.6)]),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Column(children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: buttonColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: buttonColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1C1C2E))),
+                const SizedBox(height: 3),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+              ])),
+            ]),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: Icon(icon, size: 18),
+                label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                onPressed: onPressed,
+              ),
+            ),
+          ]),
+        ),
+      ]),
+    );
   }
 
   // ════════════════════════════════════════════════════════════
@@ -525,7 +619,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 Navigator.pop(ctx);
                 try {
                   final updated = await _repo.proposeDeadline(_ticket.ticketId, widget.currentUser.userId, picked!);
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     setState(() => _ticket = updated);
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: const Text('📅 Đã gửi đề xuất deadline, chờ Admin phê duyệt'),
@@ -535,7 +629,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     ));
                   }
                 } catch (e) {
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                   }
@@ -580,8 +674,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       body: Column(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1A237E), Color(0xFF3949AB)]),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: SafeArea(
               bottom: false,
@@ -589,28 +684,33 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
                   child: Row(children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          final user = TicketRepository.instance.currentUser;
-                          if (user?.role == 'Admin') {
-                            context.go('/admin');
-                          } else if (user?.role == 'IT') {
-                            context.go('/it');
+                    if (!widget.isEmbedded)
+                      IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.grey.shade700),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
                           } else {
-                            context.go('/customer');
+                            final user = TicketRepository.instance.currentUser;
+                            if (user?.role == 'Admin') {
+                              context.go('/admin');
+                            } else if (user?.role == 'IT') {
+                              context.go('/it');
+                            } else {
+                              context.go('/customer');
+                            }
                           }
-                        }
-                      },
-                    ),
-                    // #TKT-xxxx
-                    Text('#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 13, fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 8),
+                        },
+                      )
+                    else
+                      const SizedBox(width: 16), // Padding instead of back button
+                    if (!widget.isEmbedded) ...[
+                      // #TKT-xxxx
+                      Text('#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
+                          style: TextStyle(color: Colors.grey.shade600,
+                              fontSize: 13, fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 8),
+                    ],
                     // Priority badge
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
@@ -648,38 +748,39 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     // Tiêu đề ticket
                     Text(_ticket.subject,
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                            color: Colors.white, height: 1.3)),
+                            color: Color(0xFF1E293B), height: 1.3)),
 
                     if (_ticket.status == 'Cancelled') ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.cancel_outlined, size: 13, color: Colors.white.withValues(alpha: 0.8)),
+                          Icon(Icons.cancel_outlined, size: 13, color: Colors.grey.shade600),
                           const SizedBox(width: 5),
                           Text('Yêu cầu này đã bị hủy bởi người dùng',
-                              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
                         ]),
                       ),
                     ],
                     const SizedBox(height: 12),
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      CircleAvatar(radius: 14, backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      CircleAvatar(radius: 14, backgroundColor: const Color(0xFFEFF6FF),
                           child: Text(
                             (_ticket.requesterName ?? widget.currentUser.fullName).isNotEmpty
                                 ? (_ticket.requesterName ?? widget.currentUser.fullName)[0].toUpperCase()
                                 : '?',
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                            style: const TextStyle(color: Color(0xFF2563EB), fontSize: 12, fontWeight: FontWeight.bold))),
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         // Tên requester
                         Text(
                           _ticket.requesterName ?? widget.currentUser.fullName,
-                          style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 14, color: Color(0xFF334155), fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         // Info chips — wrap xuống dòng
@@ -689,34 +790,34 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             _infoChip(
                               icon: Icons.business_outlined,
                               label: _ticket.requesterDeptName ?? widget.currentUser.deptName!,
-                              color: const Color(0xFF90CAF9),
+                              color: Colors.blue.shade700,
                             ),
                           // Số điện thoại
                           if ((_ticket.requesterPhone ?? widget.currentUser.phone).isNotEmpty)
                             _infoChip(
                               icon: Icons.phone_outlined,
                               label: _ticket.requesterPhone ?? widget.currentUser.phone,
-                              color: const Color(0xFFA5D6A7),
+                              color: Colors.green.shade700,
                             ),
                           // Danh mục
                           if (_ticket.categoryName != null)
                             _infoChip(
                               icon: Icons.folder_outlined,
                               label: _ticket.categoryName!,
-                              color: const Color(0xFFFFCC80),
+                              color: Colors.orange.shade700,
                             ),
                           // Thiết bị
                           if (_ticket.assetName != null)
                             _infoChip(
                               icon: Icons.devices_rounded,
                               label: _ticket.assetName!,
-                              color: const Color(0xFFCE93D8),
+                              color: Colors.purple.shade700,
                             ),
                           // Thời gian tạo
                           _infoChip(
                             icon: Icons.access_time_rounded,
                             label: _formatExactTime(_ticket.createdAt),
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: Colors.grey.shade600,
                           ),
                         ]),
                       ])),
@@ -880,9 +981,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Row(children: [
-                      Icon(Icons.description_outlined, size: 16, color: Color(0xFF3949AB)),
+                      Icon(Icons.description_outlined, size: 16, color: Color(0xFF2563EB)),
                       SizedBox(width: 6),
-                      Text('Mô tả', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF3949AB))),
+                      Text('Mô tả', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2563EB))),
                     ]),
                     const SizedBox(height: 8),
                     // Lọc bỏ dòng "📍 Vị trí:" khỏi mô tả (đã hiển thị riêng ở card trên)
@@ -971,6 +1072,55 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     ]),
                   ),
 
+                // ── Nút IT tự nhận việc ────────────────────
+                if (!isLocked &&
+                    widget.currentUser.role == 'IT' &&
+                    !isAssigned &&
+                    _ticket.status == 'Open')
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.flash_on_rounded, size: 18),
+                        label: const Text('Nhận xử lý ngay'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00897B),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          elevation: 2,
+                        ),
+                        onPressed: () async {
+                          try {
+                            final updated = await _repo.assignTicket(
+                              _ticket.ticketId, widget.currentUser.userId);
+                            if (mounted) {
+                              setState(() => _ticket = updated);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: const Text('⚡ Đã nhận xử lý ticket này!'),
+                                  backgroundColor: const Color(0xFF00897B),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ));
+                              }
+                            }
+                          } catch (e) {
+                            if (mounted && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: const Text('❌ Không thể nhận việc, thử lại!'),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ));
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+
                 if (!isLocked &&
                     (widget.isAdmin || widget.currentUser.role == 'IT') &&
                     isAssigned &&
@@ -992,6 +1142,64 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         onPressed: _markResolved,
                       ),
                     ),
+                  ),
+
+                // ══════════════════════════════════════════════════════
+                // WORKFLOW BỆNH ÁN (chỉ cho reopen_medical)
+                // Luồng: Admin/Manager duyệt (Resolved) → BH mở BA (Pending) → 
+                //        Customer sửa xong (WaitingConfirmation) → BH đóng BA (Cancelled)
+                // ══════════════════════════════════════════════════════
+
+                // ── Admin/Manager: Nút "Duyệt yêu cầu" (khi Open) ──
+                if (_ticket.ticketType == 'reopen_medical' &&
+                    _ticket.status == 'Open' &&
+                    (widget.isAdmin || widget.currentUser.role == 'Manager'))
+                  _buildMedicalWorkflowCard(
+                    icon: Icons.check_circle_outline,
+                    title: 'Duyệt yêu cầu mở lại bệnh án',
+                    subtitle: 'Xác nhận duyệt yêu cầu này. Sau khi duyệt, phòng ban phụ trách sẽ nhận được thông báo để mở lại bệnh án.',
+                    buttonLabel: '✅ Duyệt yêu cầu',
+                    buttonColor: const Color(0xFF43A047),
+                    onPressed: () => _updateMedicalStatus('Resolved', '✅ Đã duyệt! Phòng ban phụ trách sẽ nhận được yêu cầu mở bệnh án.'),
+                  ),
+
+                // ── Bảo hiểm: Nút "Đã mở lại BA" (khi Resolved) ──
+                if (_ticket.ticketType == 'reopen_medical' &&
+                    _ticket.status == 'Resolved' &&
+                    (widget.currentUser.permissions ?? '').contains('insurance'))
+                  _buildMedicalWorkflowCard(
+                    icon: Icons.folder_open_rounded,
+                    title: 'Xác nhận mở lại bệnh án',
+                    subtitle: 'Manager đã duyệt yêu cầu này. Nhấn để xác nhận đã mở lại bệnh án cho ${_ticket.requesterName ?? 'người yêu cầu'} sửa.',
+                    buttonLabel: '📂 Đã mở lại bệnh án',
+                    buttonColor: const Color.fromARGB(255, 148, 182, 234),
+                    onPressed: () => _updateMedicalStatus('Pending', '📂 Đã xác nhận mở lại bệnh án!'),
+                  ),
+
+                // ── Customer: Nút "Đã sửa xong" (khi Pending = BA đang mở) ──
+                if (_ticket.ticketType == 'reopen_medical' &&
+                    _ticket.status == 'Pending' &&
+                    _ticket.requesterId == widget.currentUser.userId)
+                  _buildMedicalWorkflowCard(
+                    icon: Icons.edit_note_rounded,
+                    title: 'Bệnh án đã được mở',
+                    subtitle: 'Phòng ban phụ trách đã mở lại bệnh án. Khi bạn sửa xong, nhấn nút bên dưới để thông báo.',
+                    buttonLabel: '✅ Đã sửa xong',
+                    buttonColor: const Color(0xFF43A047),
+                    onPressed: () => _updateMedicalStatus('WaitingConfirmation', '✅ Đã thông báo sửa xong! Chờ đóng bệnh án.'),
+                  ),
+
+                // ── Bảo hiểm: Nút "Đóng bệnh án" (khi WaitingConfirmation = Customer sửa xong) ──
+                if (_ticket.ticketType == 'reopen_medical' &&
+                    _ticket.status == 'WaitingConfirmation' &&
+                    (widget.currentUser.permissions ?? '').contains('insurance'))
+                  _buildMedicalWorkflowCard(
+                    icon: Icons.lock_rounded,
+                    title: '${_ticket.requesterName ?? 'Người yêu cầu'} đã sửa xong',
+                    subtitle: '${_ticket.requesterName ?? 'Người yêu cầu'} đã hoàn tất chỉnh sửa. Nhấn để đóng/khóa lại bệnh án.',
+                    buttonLabel: '🔒 Đóng bệnh án',
+                    buttonColor: const Color(0xFF78909C),
+                    onPressed: () => _updateMedicalStatus('Cancelled', '🔒 Đã đóng bệnh án thành công!'),
                   ),
 
                 // ── Deadline Card ─────────────────────────
@@ -1263,7 +1471,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Future<void> _approveDeadline() async {
     try {
       final updated = await _repo.approveDeadline(_ticket.ticketId, 'approve');
-      if (mounted) {
+      if (mounted && context.mounted) {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('✅ Đã phê duyệt deadline'),
@@ -1272,7 +1480,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
       }
@@ -1376,7 +1584,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     adminNote: note,
                   );
 
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     setState(() => _ticket = updated);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('📅 Đã điều chỉnh deadline'),
@@ -1385,7 +1593,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     ));
                   }
                 } catch (e) {
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                   }

@@ -29,6 +29,7 @@ abstract class RepositoryBase {
   String roleFromId(int id) {
     if (id == 1) return 'Admin';
     if (id == 2) return 'IT';
+    if (id == 4) return 'Manager';
     return 'Customer';
   }
 
@@ -39,12 +40,14 @@ abstract class RepositoryBase {
     final dept = deptCache.where((d) => d.deptId == deptId).firstOrNull;
     return User(
       userId: u.id ?? 0,
+      username: u.username,
       fullName: u.fullName?.isNotEmpty == true ? u.fullName! : u.username,
       phone: u.phone ?? '',
       role: roleFromId(u.roleId),
       createdAt: u.createdAt,
       deptId: deptId,
       deptName: dept?.deptName,
+      permissions: u.permissions,
     );
   }
 
@@ -67,6 +70,7 @@ abstract class RepositoryBase {
       requesterName: requester?.fullName,
       requesterDeptName: requester?.deptName,
       requesterPhone: requester?.phone,
+      ticketType: t.ticketType ?? 'ticket',
       assigneeId: t.assigneeId,
       assigneeName: assignee?.fullName,
       categoryId: t.categoryId,

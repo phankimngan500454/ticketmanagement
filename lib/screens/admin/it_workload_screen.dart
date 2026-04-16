@@ -18,12 +18,13 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
   List<Ticket> _tickets = [];
   bool _loading = true;
   String _searchQuery = '';
-  final TextEditingController _searchCtrl = TextEditingController();
-  String _filterTab = 'all';
+  final _searchCtrl = TextEditingController();
+  String _filterTab = 'all'; // all | busy | free
+  int? _expandedUserId;
 
-  static const _indigo = Color(0xFF3949AB);
-  static const _darkIndigo = Color(0xFF1A237E);
-  static const _green = Color(0xFF43A047);
+  static const _accent = Color(0xFF2563EB);
+  static const _green = Color(0xFF10B981);
+  static const _amber = Color(0xFFF59E0B);
 
   @override
   void initState() { super.initState(); _loadData(); }
@@ -37,232 +38,333 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
     if (mounted) setState(() { _itStaff = staff; _tickets = tickets; _loading = false; });
   }
 
-  List<Ticket> _ticketsFor(int userId) => _tickets.where((t) => t.assigneeId == userId && t.status != 'Resolved').toList();
-  bool _isFree(User s) => _ticketsFor(s.userId).isEmpty;
+  List<Ticket> _activeTicketsFor(int userId) =>
+      _tickets.where((t) => t.assigneeId == userId && t.status != 'Resolved' && t.status != 'Cancelled').toList();
+
+  bool _isFree(User s) => _activeTicketsFor(s.userId).isEmpty;
 
   List<User> get _filteredStaff {
     final q = _searchQuery.toLowerCase().trim();
     Iterable<User> base = _itStaff;
     if (_filterTab == 'busy') base = base.where((s) => !_isFree(s));
     if (_filterTab == 'free') base = base.where((s) => _isFree(s));
-    if (q.isNotEmpty) base = base.where((s) => s.fullName.toLowerCase().contains(q));
-    return base.toList();
+    if (q.isNotEmpty) base = base.where((s) =>
+        s.fullName.toLowerCase().contains(q) || s.username.toLowerCase().contains(q));
+    // Sort: busy first, then by ticket count desc
+    final result = base.toList();
+    result.sort((a, b) {
+      final aCount = _activeTicketsFor(a.userId).length;
+      final bCount = _activeTicketsFor(b.userId).length;
+      return bCount.compareTo(aCount);
+    });
+    return result;
   }
 
   Color _statusColor(String s) {
     switch (s) {
-      case 'Open': return const Color(0xFFE53935);
-      case 'Pending': return const Color(0xFFFB8C00);
-      case 'WaitingConfirmation': return const Color(0xFFF59E0B);
-      case 'Resolved': return const Color(0xFF43A047);
-      case 'Cancelled': return const Color(0xFF78909C);
+      case 'Open': return const Color(0xFF3B82F6);
+      case 'Pending': return _amber;
+      case 'WaitingConfirmation': return const Color(0xFF8B5CF6);
       default: return Colors.grey;
     }
   }
 
   String _statusLabel(String s) {
     switch (s) {
-      case 'Open': return 'Đang mở';
-      case 'Pending': return 'Chờ xử lý';
+      case 'Open': return 'Mở';
+      case 'Pending': return 'Đang xử lý';
       case 'WaitingConfirmation': return 'Chờ xác nhận';
-      case 'Resolved': return 'Đã xong';
-      case 'Cancelled': return 'Đã hủy';
       default: return s;
     }
   }
 
   Color _priorityColor(String? p) {
     switch (p) {
-      case 'High': return const Color(0xFFE53935);
-      case 'Medium': return const Color(0xFFFB8C00);
-      default: return const Color(0xFF29B6F6);
+      case 'High': return const Color(0xFFEF4444);
+      case 'Medium': return _amber;
+      default: return _accent;
     }
   }
 
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m trước';
+    if (diff.inHours < 24) return '${diff.inHours}h trước';
+    return '${diff.inDays}d trước';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final freeCount = _itStaff.where(_isFree).length;
     final busyCount = _itStaff.length - freeCount;
-    final totalActive = _tickets.where((t) => t.status != 'Resolved').length;
     final shown = _filteredStaff;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(children: [
+        // ── Header ──
         Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [_darkIndigo, _indigo], begin: Alignment.topLeft, end: Alignment.bottomRight)),
-          child: SafeArea(bottom: false, child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
-              child: Row(children: [
-                IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.pop()),
-                const Expanded(child: Text('Theo dõi IT', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-                IconButton(icon: const Icon(Icons.refresh_rounded, color: Colors.white), onPressed: () { setState(() => _loading = true); _loadData(); }),
-              ]),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-              child: Row(children: [
-                _statCard('Tất cả', '${_itStaff.length}', Icons.people_rounded, Colors.white, 'all'),
-                const SizedBox(width: 8),
-                _statCard('Đang bận', '$busyCount', Icons.work_rounded, const Color(0xFFFFCC80), 'busy'),
-                const SizedBox(width: 8),
-                _statCard('Trống', '$freeCount', Icons.check_circle_outline_rounded, const Color(0xFFA5D6A7), 'free'),
-                const SizedBox(width: 8),
-                _statCard('Đang xử lý', '$totalActive', Icons.confirmation_number_outlined, const Color(0xFF90CAF9), null),
-              ]),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                style: const TextStyle(fontSize: 13, color: Color(0xFF1C1C2E)),
-                decoration: InputDecoration(
-                  hintText: 'Tìm nhân viên IT...',
-                  hintStyle: const TextStyle(fontSize: 13, color: Colors.white54),
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Colors.white54),
-                  suffixIcon: _searchQuery.isNotEmpty ? GestureDetector(onTap: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); }, child: const Icon(Icons.close, size: 16, color: Colors.white54)) : null,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.15),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
+          padding: const EdgeInsets.fromLTRB(28, 22, 28, 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              _iconBtn(Icons.arrow_back_rounded, () => context.go('/admin')),
+              const SizedBox(width: 16),
+              const Expanded(child: Text('Theo dõi IT',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: Color(0xFF1E293B)))),
+              _iconBtn(Icons.refresh_rounded, () { setState(() => _loading = true); _loadData(); }),
+            ]),
+            const SizedBox(height: 20),
+
+            // Filter + Search row
+            Row(children: [
+              _filterBtn('Tất cả (${_itStaff.length})', 'all'),
+              const SizedBox(width: 6),
+              _filterBtn('Đang bận ($busyCount)', 'busy', color: _amber),
+              const SizedBox(width: 6),
+              _filterBtn('Rảnh ($freeCount)', 'free', color: _green),
+              const Spacer(),
+              SizedBox(
+                width: 220,
+                height: 34,
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm...',
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                    prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    filled: true, fillColor: const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: _accent, width: 1.5)),
+                  ),
                 ),
               ),
-            ),
-          ])),
+            ]),
+          ]),
         ),
+
+        // ── Table header ──
+        Container(
+          margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(children: [
+            const SizedBox(width: 48),
+            Expanded(flex: 3, child: Text('NHÂN VIÊN', style: _colHeader)),
+            Expanded(flex: 2, child: Text('TRẠNG THÁI', style: _colHeader)),
+            SizedBox(width: 80, child: Text('SỐ TICKET', style: _colHeader, textAlign: TextAlign.center)),
+            const SizedBox(width: 40),
+          ]),
+        ),
+
+        // ── List ──
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator(color: _indigo))
+              ? const Center(child: CircularProgressIndicator(color: _accent))
               : shown.isEmpty
-                  ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.search_off_rounded, size: 56, color: Colors.grey[300]),
-                      const SizedBox(height: 12),
-                      Text(_searchQuery.isNotEmpty ? 'Không tìm thấy kết quả' : 'Không có nhân viên', style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.engineering_rounded, size: 48, color: Colors.grey.shade300),
+                      const SizedBox(height: 8),
+                      Text('Không tìm thấy', style: TextStyle(fontSize: 14, color: Colors.grey.shade400)),
                     ]))
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      color: _indigo,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                        itemCount: shown.length,
-                        itemBuilder: (_, i) => _buildStaffCard(shown[i]),
-                      ),
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+                      itemCount: shown.length,
+                      itemBuilder: (_, i) => _buildRow(shown[i]),
                     ),
         ),
       ]),
     );
   }
 
-  Widget _buildStaffCard(User staff) {
-    final activeTickets = _ticketsFor(staff.userId);
-    final isFree = activeTickets.isEmpty;
+  Widget _filterBtn(String label, String key, {Color? color}) {
+    final selected = _filterTab == key;
+    final c = color ?? const Color(0xFF64748B);
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => setState(() => _filterTab = key),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? c.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: selected ? c.withValues(alpha: 0.4) : Colors.grey.shade200),
+        ),
+        child: Text(label, style: TextStyle(
+          fontSize: 12, fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+          color: selected ? c : Colors.grey.shade600,
+        )),
+      ),
+    );
+  }
+
+  // ── Single staff row (expandable) ──
+  Widget _buildRow(User staff) {
+    final tickets = _activeTicketsFor(staff.userId);
+    final isFree = tickets.isEmpty;
+    final isExpanded = _expandedUserId == staff.userId;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(top: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isFree ? _green.withValues(alpha: 0.35) : _indigo.withValues(alpha: 0.15), width: isFree ? 1.5 : 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isExpanded ? _accent.withValues(alpha: 0.25) : Colors.grey.shade100),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-          child: Row(children: [
-            CircleAvatar(radius: 20, backgroundColor: isFree ? _green.withValues(alpha: 0.12) : _indigo.withValues(alpha: 0.12),
-                child: Text(staff.fullName[0], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isFree ? _green : _indigo))),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Flexible(child: Text(staff.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)),
-                const SizedBox(width: 8),
+      child: Column(children: [
+        // Main row
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            hoverColor: const Color(0xFFFAFBFC),
+            onTap: isFree ? null : () => setState(() => _expandedUserId = isExpanded ? null : staff.userId),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(children: [
+                // Avatar
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: isFree ? _green.withValues(alpha: 0.12) : _indigo.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Text(isFree ? '✓ Trống' : '${activeTickets.length} việc', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isFree ? _green : _indigo)),
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: (isFree ? _green : _amber).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(child: Text(
+                    staff.fullName.isNotEmpty ? staff.fullName[0].toUpperCase() : '?',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isFree ? _green : _amber),
+                  )),
                 ),
-              ]),
-              const SizedBox(height: 2),
-              Text(staff.deptName ?? 'IT', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-            ])),
-          ]),
-        ),
-        if (isFree)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-            child: Container(
-              width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(color: _green.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
-              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.sentiment_satisfied_alt_rounded, size: 16, color: _green),
-                SizedBox(width: 6),
-                Text('Sẵn sàng nhận ticket mới', style: TextStyle(fontSize: 12, color: _green, fontWeight: FontWeight.w500)),
+                const SizedBox(width: 12),
+
+                // Name
+                Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Text(staff.fullName,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
+                    overflow: TextOverflow.ellipsis),
+                  if (staff.username.isNotEmpty)
+                    Text('@${staff.username}', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                ])),
+
+                // Status
+                Expanded(flex: 2, child: Row(children: [
+                  Container(width: 7, height: 7, decoration: BoxDecoration(
+                    color: isFree ? _green : _amber, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(isFree ? 'Rảnh' : 'Đang bận',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isFree ? _green : _amber)),
+                ])),
+
+                // Ticket count
+                SizedBox(width: 80, child: Center(
+                  child: isFree
+                    ? Text('0', style: TextStyle(fontSize: 13, color: Colors.grey.shade300))
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _accent.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('${tickets.length}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _accent)),
+                      ),
+                )),
+
+                // Expand icon
+                SizedBox(width: 40, child: Center(
+                  child: isFree
+                    ? const SizedBox.shrink()
+                    : AnimatedRotation(
+                        turns: isExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.grey.shade400),
+                      ),
+                )),
               ]),
             ),
-          )
-        else ...[
-          const Divider(height: 1),
-          ...activeTickets.map((t) => _buildTicketRow(t)),
-          const SizedBox(height: 4),
-        ],
+          ),
+        ),
+
+        // Expanded ticket list
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: _buildTicketList(tickets),
+          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
       ]),
     );
   }
 
-  Widget _buildTicketRow(Ticket t) {
-    final sc = _statusColor(t.status);
-    final pc = _priorityColor(t.priority);
-    return InkWell(
-      onTap: () async {
-        await context.push('/ticket/${t.ticketId}', extra: t);
-        _loadData();
-      },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-        decoration: BoxDecoration(border: Border(left: BorderSide(color: pc, width: 3))),
-        child: Row(children: [
-          Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 10), decoration: BoxDecoration(color: pc, shape: BoxShape.circle)),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('#TKT-${t.ticketId.toString().padLeft(4, '0')}  ${t.subject}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (t.categoryName != null) Text(t.categoryName!, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
-          ])),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: sc.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: sc.withValues(alpha: 0.4))),
-            child: Text(_statusLabel(t.status), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: sc)),
-          ),
-          const SizedBox(width: 6),
-          Icon(Icons.chevron_right, size: 16, color: Colors.grey[400]),
-        ]),
+  Widget _buildTicketList(List<Ticket> tickets) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFBFC),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+        border: Border(top: BorderSide(color: Colors.grey.shade100)),
+      ),
+      child: Column(
+        children: tickets.map((t) {
+          final sc = _statusColor(t.status);
+          final pc = _priorityColor(t.priority);
+          return InkWell(
+            onTap: () async {
+              await context.push('/ticket/${t.ticketId}', extra: t);
+              _loadData();
+            },
+            hoverColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+              child: Row(children: [
+                // Priority dot
+                Container(width: 6, height: 6, margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(color: pc, shape: BoxShape.circle)),
+                // ID
+                SizedBox(width: 70, child: Text('#TK-${t.ticketId.toString().padLeft(4, '0')}',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade500))),
+                // Subject
+                Expanded(child: Text(t.subject,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF334155)),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
+                // Status
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(color: sc.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                  child: Text(_statusLabel(t.status), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: sc)),
+                ),
+                const SizedBox(width: 10),
+                // Time
+                Text(_relativeTime(t.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded, size: 14, color: Colors.grey.shade300),
+              ]),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color, String? filterKey) {
-    final selected = filterKey != null && _filterTab == filterKey;
-    return Expanded(child: GestureDetector(
-      onTap: filterKey == null ? null : () => setState(() => _filterTab = selected ? 'all' : filterKey),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white.withValues(alpha: 0.30) : Colors.white.withValues(alpha: 0.13),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? Colors.white.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.2), width: selected ? 2 : 1),
-        ),
-        child: Column(children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(height: 3),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 1),
-          Text(label, style: const TextStyle(fontSize: 8, color: Colors.white70), textAlign: TextAlign.center),
-          if (selected) ...[const SizedBox(height: 3), Container(width: 16, height: 2, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(1)))],
-        ]),
-      ),
-    ));
+  Widget _iconBtn(IconData icon, VoidCallback onTap) {
+    return Material(
+      borderRadius: BorderRadius.circular(8),
+      color: const Color(0xFFF1F5F9),
+      child: InkWell(borderRadius: BorderRadius.circular(8), onTap: onTap,
+        child: Padding(padding: const EdgeInsets.all(8), child: Icon(icon, size: 20, color: Colors.grey.shade600))),
+    );
   }
+
+  TextStyle get _colHeader => TextStyle(
+    fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey.shade400, letterSpacing: 0.5,
+  );
 }

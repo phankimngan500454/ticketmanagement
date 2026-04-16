@@ -92,9 +92,9 @@ BEGIN
             VALUE "CompanyName", "IT Helpdesk" "\0"
             VALUE "FileDescription", "IT Helpdesk" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "ticketmanagement" "\0"
+            VALUE "InternalName", "HelpDesk" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 IT Helpdesk. All rights reserved." "\0"
-            VALUE "OriginalFilename", "ticketmanagement.exe" "\0"
+            VALUE "OriginalFilename", "HelpDesk.exe" "\0"
             VALUE "ProductName", "IT Helpdesk" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

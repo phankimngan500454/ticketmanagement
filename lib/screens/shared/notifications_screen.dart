@@ -24,6 +24,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool get _isIT => widget.currentUser.role == 'IT';
   bool get _isCustomer => !widget.isAdmin && !_isIT;
 
+  // Permission helpers
+  bool get _hasInsurance => (widget.currentUser.permissions ?? '').contains('insurance');
+  bool get _hasFinance => (widget.currentUser.permissions ?? '').contains('finance');
+  bool get _hasSpecialAccess => _hasInsurance || _hasFinance;
+
   // Theme colors
   static const _indigo = Color(0xFF3949AB);
   static const _navy = Color(0xFF1A237E);
@@ -56,6 +61,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         result = sorted;
       } else if (_isIT) {
         result = sorted.where((t) => t.assigneeId == widget.currentUser.userId || t.assigneeId == null).toList();
+      } else if (_hasSpecialAccess) {
+        // Bảo hiểm / Tài chính: hiện ticket của mình + bệnh án cần xử lý
+        result = sorted.where((t) {
+          // Ticket do chính mình tạo → luôn hiện
+          if (t.requesterId == widget.currentUser.userId) return true;
+
+          // Chỉ hiện bệnh án mở lại (reopen_medical) đã qua duyệt (không phải Open)
+          if (t.ticketType != 'reopen_medical') return false;
+          if (t.status == 'Open') return false;
+
+          // Tài chính (không có Bảo hiểm): chỉ thấy bệnh án có ảnh hưởng tài chính
+          if (_hasFinance && !_hasInsurance) {
+            return (t.description).toLowerCase().contains('ảnh hưởng tài chính: có');
+          }
+          // Bảo hiểm: thấy tất cả bệnh án đã duyệt
+          return true;
+        }).toList();
       } else {
         result = sorted.where((t) => t.requesterId == widget.currentUser.userId).toList();
       }
@@ -65,25 +87,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  Color _statusColor(String s) {
-    switch (s) {
-      case 'Open': return const Color(0xFFE53935);
+  Color _statusColor(Ticket t) {
+    if (t.ticketType == 'reopen_medical') {
+      switch (t.status) {
+        case 'Open': return const Color(0xFF78909C);
+        case 'Pending': return const Color(0xFFFB8C00);
+        case 'WaitingConfirmation': return const Color(0xFF0097A7);
+        case 'Resolved': return const Color(0xFF43A047);
+        case 'Cancelled': return const Color(0xFF78909C);
+        default: return Colors.grey;
+      }
+    }
+    switch (t.status) {
+      case 'Open': return const Color(0xFF78909C);
       case 'Pending': return const Color(0xFFFB8C00);
-      case 'WaitingConfirmation': return const Color(0xFFF59E0B);
       case 'Resolved': return const Color(0xFF43A047);
-      case 'Cancelled': return const Color(0xFF78909C);
+      case 'Cancelled': return const Color(0xFFE53935);
       default: return Colors.grey;
     }
   }
 
-  String _statusLabel(String s) {
-    switch (s) {
-      case 'Open': return 'Đang mở';
-      case 'Pending': return 'Chờ xử lý';
-      case 'WaitingConfirmation': return 'Chờ xác nhận';
-      case 'Resolved': return 'Đã xong';
-      case 'Cancelled': return 'Đã hủy';
-      default: return s;
+  String _statusLabel(Ticket t) {
+    if (t.ticketType == 'reopen_medical') {
+      switch (t.status) {
+        case 'Open': return 'Chờ duyệt';
+        case 'Resolved': return 'Đã duyệt';
+        case 'Pending': return 'Đang mở BA';
+        case 'WaitingConfirmation': return 'Chờ đóng BA';
+        case 'Cancelled': return 'Đã đóng BA';
+        default: return t.status;
+      }
+    }
+    switch (t.status) {
+      case 'Open': return 'Đang xử lý';
+      case 'Pending': return 'Đang xem xét';
+      case 'Resolved': return 'Đã tiếp nhận';
+      case 'Cancelled': return 'Đã huỷ';
+      default: return t.status;
     }
   }
 
@@ -96,39 +136,40 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   _NotifInfo _getInfo(Ticket t) {
+    final bool isMedical = t.ticketType == 'reopen_medical';
+    
+    if (isMedical) {
+      if (t.status == 'Resolved') {
+        return _NotifInfo(icon: Icons.fact_check_rounded, color: const Color(0xFF43A047), message: 'Yêu cầu mở bệnh án đã được duyệt');
+      }
+      if (t.status == 'Pending') {
+        return _NotifInfo(icon: Icons.folder_open_rounded, color: const Color(0xFFFB8C00), message: 'Bệnh án đang được mở để Bác sĩ/KH chỉnh sửa');
+      }
+      if (t.status == 'WaitingConfirmation') {
+        return _NotifInfo(icon: Icons.hourglass_top_rounded, color: const Color(0xFF0097A7), message: 'Đã xác nhận sửa xong – Chờ đóng bệnh án');
+      }
+      if (t.status == 'Cancelled') {
+        return _NotifInfo(icon: Icons.lock_rounded, color: const Color(0xFF78909C), message: 'Bệnh án đã được đóng và khóa lại thành công');
+      }
+      return _NotifInfo(icon: Icons.folder_shared_outlined, color: Colors.grey, message: 'Yêu cầu mở bệnh án đang xem xét');
+    }
+
     if (t.status == 'WaitingConfirmation') {
-      return _NotifInfo(
-        icon: Icons.task_alt_rounded,
-        color: const Color(0xFFF59E0B),
-        message: 'IT đã xử lý xong – Cần xác nhận',
-      );
+      return _NotifInfo(icon: Icons.task_alt_rounded, color: const Color(0xFFF59E0B), message: 'IT đã xử lý xong – Cần xác nhận');
     }
     if (t.assigneeId == null && !_isCustomer) {
-      return _NotifInfo(
-        icon: Icons.notification_important_rounded,
-        color: const Color(0xFFE53935),
-        message: 'Chưa phân công – Cần xử lý ngay',
-      );
+      return _NotifInfo(icon: Icons.notification_important_rounded, color: const Color(0xFFE53935), message: 'Chưa phân công – Cần xử lý ngay');
     }
     if (t.status == 'Resolved') {
-      return _NotifInfo(
-        icon: Icons.check_circle_outline_rounded,
-        color: const Color(0xFF43A047),
-        message: 'Yêu cầu đã được giải quyết',
-      );
+      return _NotifInfo(icon: Icons.check_circle_outline_rounded, color: const Color(0xFF43A047), message: 'Yêu cầu đã được giải quyết');
+    }
+    if (t.status == 'Cancelled') {
+      return _NotifInfo(icon: Icons.cancel_rounded, color: const Color(0xFFE53935), message: 'Yêu cầu đã bị từ chối/hủy');
     }
     if (t.assigneeId != null && _isCustomer) {
-      return _NotifInfo(
-        icon: Icons.build_circle_outlined,
-        color: _indigo,
-        message: '${t.assigneeName ?? "IT"} đang xử lý yêu cầu',
-      );
+      return _NotifInfo(icon: Icons.build_circle_outlined, color: _indigo, message: '${t.assigneeName ?? "IT"} đang xử lý yêu cầu');
     }
-    return _NotifInfo(
-      icon: Icons.confirmation_number_outlined,
-      color: Colors.grey,
-      message: 'Yêu cầu đang được theo dõi',
-    );
+    return _NotifInfo(icon: Icons.confirmation_number_outlined, color: Colors.grey, message: 'Yêu cầu đang được theo dõi');
   }
 
   @override
@@ -208,7 +249,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   (ctx, i) {
                     final ticket = _notifications[i];
                     final info = _getInfo(ticket);
-                    final statusColor = _statusColor(ticket.status);
+                    final statusColor = _statusColor(ticket);
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -243,7 +284,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Row(children: [
                                   Text(
-                                    '#TKT-${ticket.ticketId.toString().padLeft(4, '0')}',
+                                    '${ticket.ticketType == 'reopen_medical' ? '#BA' : ticket.ticketType == 'feedback' ? '#GY' : '#TKT'}-${ticket.ticketId.toString().padLeft(4, '0')}',
                                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: _accentColor),
                                   ),
                                   const SizedBox(width: 6),
@@ -253,7 +294,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       color: statusColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: Text(_statusLabel(ticket.status), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor)),
+                                    child: Text(_statusLabel(ticket), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor)),
                                   ),
                                   const Spacer(),
                                   Text(_timeAgo(ticket.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey[400])),

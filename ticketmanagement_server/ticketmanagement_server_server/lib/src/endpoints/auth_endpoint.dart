@@ -43,6 +43,7 @@ class AuthEndpoint extends Endpoint {
     String? phone,
     int roleId,
     int? deptId,
+    String? permissions,
   ) async {
     final existing = await AppUser.db.findFirstRow(
       session,
@@ -59,6 +60,7 @@ class AuthEndpoint extends Endpoint {
       roleId: roleId,
       createdAt: DateTime.now().toUtc(),
       deptId: deptId,
+      permissions: permissions,
     );
     return AppUser.db.insertRow(session, user);
   }
@@ -71,12 +73,13 @@ class AuthEndpoint extends Endpoint {
     String? phone,
     int roleId,
     int? deptId,
+    String? permissions,
   ) async {
     final user = await AppUser.db.findById(session, userId);
     if (user == null) return null;
     return AppUser.db.updateRow(
       session,
-      user.copyWith(fullName: fullName, phone: phone, roleId: roleId, deptId: deptId),
+      user.copyWith(fullName: fullName, phone: phone, roleId: roleId, deptId: deptId, permissions: permissions),
     );
   }
 

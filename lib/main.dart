@@ -15,14 +15,13 @@ import 'services/windows_notification_service.dart';
 bool get _isDesktop =>
     !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-/// Gọi khi đang ở màn hình Login/Splash → cửa sổ nhỏ gọn (landscape, 2 cột)
+/// Gọi khi ở màn hình Login/Splash → giữ nguyên maximize (không thu nhỏ)
 Future<void> setLoginWindowSize() async {
   if (!_isDesktop) return;
-  await windowManager.setSize(const Size(820, 560));
-  await windowManager.setMinimumSize(const Size(700, 480));
-  await windowManager.setMaximumSize(const Size(1000, 700));
-  await windowManager.center();
-  await windowManager.setResizable(false);
+  await windowManager.setMaximumSize(const Size(9999, 9999));
+  await windowManager.setMinimumSize(const Size(800, 600));
+  await windowManager.setResizable(true);
+  await windowManager.maximize();
 }
 
 /// Gọi sau khi đăng nhập thành công → full màn hình / maximize
@@ -57,17 +56,15 @@ void main() async {
       if (_isDesktop) {
         await windowManager.ensureInitialized();
         const options = WindowOptions(
-          size: Size(820, 560),
-          minimumSize: Size(700, 480),
-          maximumSize: Size(1000, 700),
-          center: true,
+          minimumSize: Size(900, 600),
           backgroundColor: Colors.transparent,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
           title: 'IT Helpdesk',
         );
         await windowManager.waitUntilReadyToShow(options, () async {
-          await windowManager.setResizable(false);
+          await windowManager.maximize();
+          await windowManager.setResizable(true);
           await windowManager.show();
           await windowManager.focus();
         });
@@ -110,21 +107,16 @@ class HelpdeskApp extends StatelessWidget {
       title: 'IT Helpdesk',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
-      // Tăng cỡ chữ 1.2× trên Windows để dễ đọc hơn khi dùng desktop
-      builder: _isDesktop
-          ? (context, child) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: const TextScaler.linear(1.2)),
-              child: child!,
-            )
-          : null,
+      // textScaler bị xóa để tỉ lệ nhất quán giữa login và dashboard
+      builder: null,
       theme: ThemeData(
-        useMaterial3: false,
+        useMaterial3: kIsWeb,
+        colorScheme: kIsWeb ? ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)) : null,
         primaryColor: const Color(0xFF3949AB),
-        primarySwatch: Colors.indigo,
-        scaffoldBackgroundColor: const Color(0xFFF0F2F8),
-        fontFamily: 'Roboto',
+        primarySwatch: kIsWeb ? null : Colors.indigo,
+        scaffoldBackgroundColor: kIsWeb ? const Color(0xFFF8FAFC) : const Color(0xFFF0F2F8),
+        fontFamily: 'Inter', // Modern font for web if available, falls back to Roboto
+
         // Card theme
         cardTheme: CardThemeData(
           elevation: 1,

@@ -1,5 +1,6 @@
 /// Status: 'Open' | 'Pending' | 'Resolved' | 'Closed'
 /// Priority: 'High' | 'Medium' | 'Low'
+/// TicketType: 'ticket' | 'feedback' | 'reopen_medical'
 class Ticket {
   final int ticketId;
   final int requesterId;
@@ -22,6 +23,7 @@ class Ticket {
   final String? categoryName;
   final String? assetName;
   final String? requesterDeptName; // Phòng ban của người tạo ticket
+  final String ticketType; // 'ticket' | 'feedback'
 
   const Ticket({
     required this.ticketId,
@@ -43,6 +45,7 @@ class Ticket {
     this.categoryName,
     this.assetName,
     this.requesterDeptName,
+    this.ticketType = 'ticket',
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -92,6 +95,7 @@ class Ticket {
       categoryName:   categoryName,
       assetName:      (json['assetName'] ?? json['AssetName']) as String?,
       requesterDeptName: (json['requesterDeptName'] ?? json['RequesterDeptName']) as String?,
+      ticketType: (json['ticketType'] ?? json['TicketType']) as String? ?? 'ticket',
     );
   }
 
@@ -107,6 +111,7 @@ class Ticket {
     'Status': status,
     'Priority': priority,
     'CreatedAt': createdAt.toIso8601String(),
+    'TicketType': ticketType,
   };
 
   Ticket copyWith({
@@ -115,6 +120,7 @@ class Ticket {
     String? status,
     DateTime? finalDeadline,
     String? deadlineStatus,
+    String? ticketType,
   }) => Ticket(
     ticketId: ticketId,
     requesterId: requesterId,
@@ -135,5 +141,6 @@ class Ticket {
     categoryName:     categoryName,
     assetName:        assetName,
     requesterDeptName: requesterDeptName,
+    ticketType:       ticketType ?? this.ticketType,
   );
 }

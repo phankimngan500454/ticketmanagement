@@ -463,6 +463,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int?>(),
               nullable: true,
             ),
+            'permissions': _i1.ParameterDescription(
+              name: 'permissions',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -476,6 +481,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['phone'],
                 params['roleId'],
                 params['deptId'],
+                params['permissions'],
               ),
         ),
         'updateUser': _i1.MethodConnector(
@@ -506,6 +512,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int?>(),
               nullable: true,
             ),
+            'permissions': _i1.ParameterDescription(
+              name: 'permissions',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -518,6 +529,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['phone'],
                 params['roleId'],
                 params['deptId'],
+                params['permissions'],
               ),
         ),
         'resetPassword': _i1.MethodConnector(
@@ -932,6 +944,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int?>(),
               nullable: true,
             ),
+            'ticketType': _i1.ParameterDescription(
+              name: 'ticketType',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -946,6 +963,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     params['description'],
                     params['priority'],
                     params['assetId'],
+                    params['ticketType'],
                   ),
         ),
         'assignTicket': _i1.MethodConnector(

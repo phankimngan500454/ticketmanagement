@@ -9,3 +9,4 @@ fields:
   createdAt: DateTime
   deptId: int?
   fcmToken: String?
+  permissions: String?

@@ -349,6 +349,7 @@ class EndpointAuth extends _i2.EndpointRef {
     String? phone,
     int roleId,
     int? deptId,
+    String? permissions,
   ) => caller.callServerEndpoint<_i6.AppUser?>(
     'auth',
     'register',
@@ -359,6 +360,7 @@ class EndpointAuth extends _i2.EndpointRef {
       'phone': phone,
       'roleId': roleId,
       'deptId': deptId,
+      'permissions': permissions,
     },
   );
 
@@ -369,6 +371,7 @@ class EndpointAuth extends _i2.EndpointRef {
     String? phone,
     int roleId,
     int? deptId,
+    String? permissions,
   ) => caller.callServerEndpoint<_i6.AppUser?>(
     'auth',
     'updateUser',
@@ -378,6 +381,7 @@ class EndpointAuth extends _i2.EndpointRef {
       'phone': phone,
       'roleId': roleId,
       'deptId': deptId,
+      'permissions': permissions,
     },
   );
 
@@ -597,6 +601,7 @@ class EndpointTicket extends _i2.EndpointRef {
     String description,
     String priority,
     int? assetId,
+    String? ticketType,
   ) => caller.callServerEndpoint<_i12.Ticket>(
     'ticket',
     'createTicket',
@@ -607,6 +612,7 @@ class EndpointTicket extends _i2.EndpointRef {
       'description': description,
       'priority': priority,
       'assetId': assetId,
+      'ticketType': ticketType,
     },
   );
 

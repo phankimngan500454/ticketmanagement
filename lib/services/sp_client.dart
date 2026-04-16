@@ -1,19 +1,17 @@
 import 'package:ticketmanagement_server_client/ticketmanagement_server_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
-import 'package:flutter/foundation.dart';
+
+const String _serverHost = 'http://172.16.3.27:8080/';
+
+/// Địa chỉ IP máy chủ Serverpod — đổi về localhost để test local
+// const String _serverHost = 'http://localhost:8080/';
 
 /// Global Serverpod client — call [initServerpodClient] once in main().
 late Client client;
 
 void initServerpodClient() {
-  String host;
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    host = 'http://192.168.1.181:8080/';  // Android emulator → IP thật của server
-  } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-    host = 'http://192.168.1.181:8080/';  // iOS device → cũng dùng IP thật (không dùng localhost)
-  } else {
-    host = 'http://localhost:8080/';      // Web / Windows / Desktop
-  }
-  client = Client(host)
+  // Tất cả platform (Windows, Android, iOS) đều kết nối về TICKET-IT (172.16.3.27)
+  // Chỉ cần đổi _serverHost ở trên nếu IP server thay đổi
+  client = Client(_serverHost)
     ..connectivityMonitor = FlutterConnectivityMonitor();
 }

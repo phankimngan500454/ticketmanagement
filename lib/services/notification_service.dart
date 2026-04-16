@@ -111,6 +111,7 @@ class NotificationService {
           channelDescription: 'Thông báo về ticket IT Helpdesk',
           importance: Importance.high,
           priority: Priority.high,
+          visibility: NotificationVisibility.public,
           icon: '@mipmap/ic_launcher',
         ),
       ),

@@ -746,6 +746,7 @@ class _AuthEndpoint {
     String? phone,
     int roleId,
     int? deptId,
+    String? permissions,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -765,6 +766,7 @@ class _AuthEndpoint {
             'phone': phone,
             'roleId': roleId,
             'deptId': deptId,
+            'permissions': permissions,
           }),
           serializationManager: _serializationManager,
         );
@@ -788,6 +790,7 @@ class _AuthEndpoint {
     String? phone,
     int roleId,
     int? deptId,
+    String? permissions,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -806,6 +809,7 @@ class _AuthEndpoint {
             'phone': phone,
             'roleId': roleId,
             'deptId': deptId,
+            'permissions': permissions,
           }),
           serializationManager: _serializationManager,
         );
@@ -1496,6 +1500,7 @@ class _TicketEndpoint {
     String description,
     String priority,
     int? assetId,
+    String? ticketType,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1515,6 +1520,7 @@ class _TicketEndpoint {
             'description': description,
             'priority': priority,
             'assetId': assetId,
+            'ticketType': ticketType,
           }),
           serializationManager: _serializationManager,
         );

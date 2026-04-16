@@ -34,6 +34,7 @@ class FcmService {
   // ── Send to a single user ────────────────────────────────────
   /// Sends a push notification to [targetUserId].
   /// Silently skips if the user has no FCM token stored.
+  /// Auto-clears stale tokens on UNREGISTERED error.
   static Future<void> sendToUser(
     Session session, {
     required int targetUserId,
@@ -44,7 +45,10 @@ class FcmService {
     try {
       final user = await AppUser.db.findById(session, targetUserId);
       if (user?.fcmToken == null || user!.fcmToken!.isEmpty) return;
-      await _send(session, token: user.fcmToken!, title: title, body: body, data: data);
+      final unregistered = await _send(session, token: user.fcmToken!, title: title, body: body, data: data);
+      if (unregistered) {
+        await _clearToken(session, user);
+      }
     } catch (e, st) {
       session.log('[FcmService] sendToUser error: $e',
           level: LogLevel.warning, stackTrace: st);
@@ -53,6 +57,7 @@ class FcmService {
 
   // ── Send to all users of a role ──────────────────────────────
   /// Sends to every user with the given [roleId]. 1=Admin, 2=IT, 3=Customer.
+  /// Auto-clears stale tokens on UNREGISTERED error.
   static Future<void> sendToRole(
     Session session, {
     required int roleId,
@@ -67,7 +72,10 @@ class FcmService {
       );
       for (final user in users) {
         if (user.fcmToken != null && user.fcmToken!.isNotEmpty) {
-          await _send(session, token: user.fcmToken!, title: title, body: body, data: data);
+          final unregistered = await _send(session, token: user.fcmToken!, title: title, body: body, data: data);
+          if (unregistered) {
+            await _clearToken(session, user);
+          }
         }
       }
     } catch (e, st) {
@@ -76,8 +84,23 @@ class FcmService {
     }
   }
 
+  // ── Auto-clear stale FCM token from DB ───────────────────────
+  static Future<void> _clearToken(Session session, AppUser user) async {
+    try {
+      await AppUser.db.updateRow(session, user.copyWith(fcmToken: null));
+      session.log(
+        '[FcmService] Cleared stale FCM token for user ${user.id} (${user.fullName})',
+        level: LogLevel.info,
+      );
+    } catch (e) {
+      session.log('[FcmService] Failed to clear stale token: $e',
+          level: LogLevel.warning);
+    }
+  }
+
   // ── Internal FCM HTTP v1 call ────────────────────────────────
-  static Future<void> _send(
+  /// Returns `true` if the token is UNREGISTERED (stale), so callers can clean up.
+  static Future<bool> _send(
     Session session, {
     required String token,
     required String title,
@@ -101,8 +124,21 @@ class FcmService {
         if (data != null) 'data': data,
         'android': {
           'priority': 'HIGH',
-          'notification': {'sound': 'default', 'channel_id': 'ticket_alerts'},
+          'notification': {
+            'sound': 'default', 
+            'channel_id': 'ticket_alerts',
+            'visibility': 'PUBLIC',
+            'default_vibrate_timings': true,
+            'default_sound': true,
+          },
         },
+        'apns': {
+          'payload': {
+            'aps': {
+              'sound': 'default',
+            }
+          }
+        }
       }
     };
 
@@ -113,10 +149,21 @@ class FcmService {
     );
 
     if (response.statusCode != 200) {
-      session.log(
-        '[FcmService] FCM error ${response.statusCode}: ${response.body}',
-        level: LogLevel.warning,
-      );
+      // Check for UNREGISTERED token (stale/expired)
+      final isUnregistered = response.body.contains('UNREGISTERED');
+      if (isUnregistered) {
+        session.log(
+          '[FcmService] Token UNREGISTERED — will auto-clear from DB',
+          level: LogLevel.info,
+        );
+      } else {
+        session.log(
+          '[FcmService] FCM error ${response.statusCode}: ${response.body}',
+          level: LogLevel.warning,
+        );
+      }
+      return isUnregistered;
     }
+    return false;
   }
 }

@@ -50,3 +50,13 @@ app.*.map.json
 **/*.keystore
 **/*.jks
 my_analyze_output.txt
+
+# Build artifacts & temporary files
+*.zip
+scratch.dart
+analyze.txt
+analyze_out.txt
+*.exe
+
+# Serverpod devtools
+**/devtools_options.yaml
