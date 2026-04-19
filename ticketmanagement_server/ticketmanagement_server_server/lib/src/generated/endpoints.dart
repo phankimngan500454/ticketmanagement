@@ -1016,6 +1016,31 @@ class Endpoints extends _i1.EndpointDispatch {
                     params['status'],
                   ),
         ),
+        'updateCostDifference': _i1.MethodConnector(
+          name: 'updateCostDifference',
+          params: {
+            'ticketId': _i1.ParameterDescription(
+              name: 'ticketId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'costDifference': _i1.ParameterDescription(
+              name: 'costDifference',
+              type: _i1.getType<double>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['ticket'] as _i8.TicketEndpoint)
+                  .updateCostDifference(
+                    session,
+                    params['ticketId'],
+                    params['costDifference'],
+                  ),
+        ),
         'proposeDeadline': _i1.MethodConnector(
           name: 'proposeDeadline',
           params: {

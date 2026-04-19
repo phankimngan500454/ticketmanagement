@@ -110,9 +110,9 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
     setState(() => _submitting = true);
     try {
       final subject =
-          'Mở lại bệnh án - SBA: ${_medicalRecordController.text.trim()}';
+          'Mở lại bệnh án - MVP: ${_medicalRecordController.text.trim()}';
       final description = [
-        '📋 Số bệnh án: ${_medicalRecordController.text.trim()}',
+        '🏥 Mã viện phí: ${_medicalRecordController.text.trim()}',
         '👤 Người yêu cầu: ${_nameController.text.trim()}',
         '📞 SĐT: ${_phoneController.text.trim()}',
         '💰 Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
@@ -233,7 +233,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
                               ),
                               SizedBox(width: 4),
                               Text(
-                                '📋 Mở lại BA',
+                                'Mở lại BA',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.white,
@@ -365,19 +365,19 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Số bệnh án
-          _fieldLabel('Số bệnh án', required: true),
+          // Mã viện phí
+          _fieldLabel('Mã viện phí', required: true),
           const SizedBox(height: 6),
           TextFormField(
             controller: _medicalRecordController,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: _inputDeco(
-              hint: 'VD: 123456...',
-              icon: Icons.assignment_outlined,
+              hint: 'Nhập mã viện phí...',
+              icon: Icons.receipt_long_outlined,
             ),
             validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Vui lòng nhập số bệnh án'
+                ? 'Vui lòng nhập mã viện phí'
                 : null,
           ),
           const SizedBox(height: 16),

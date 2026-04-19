@@ -23,28 +23,33 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAutoLogin() async {
     final repo = TicketRepository.instance;
-    final User? user = await repo.tryAutoLogin();
-    
-    if (!mounted) return;
-    
-    if (user != null) {
-      // 🔔 Register FCM token for push notifications
-      NotificationService.init(user.userId);
-      // Expand to full window on desktop when auto-login succeeds
-      await setFullWindowSize();
+    try {
+      final User? user = await repo.tryAutoLogin();
+
       if (!mounted) return;
-      // Nếu có redirectUrl (từ F5 tại màn hình khác), quay về đó
-      final redirect = widget.redirectUrl;
-      if (redirect != null && redirect.isNotEmpty && redirect != '/') {
-        context.go(redirect);
-      } else if (user.role == 'Admin') {
-        context.go('/admin');
-      } else if (user.role == 'IT') {
-        context.go('/it');
+
+      if (user != null) {
+        // Windows không dùng FCM, nhưng các nền tảng khác vẫn có thể init ở đây.
+        NotificationService.init(user.userId);
+        // Expand to full window on desktop when auto-login succeeds
+        await setFullWindowSize();
+        if (!mounted) return;
+        // Nếu có redirectUrl (từ F5 tại màn hình khác), quay về đó
+        final redirect = widget.redirectUrl;
+        if (redirect != null && redirect.isNotEmpty && redirect != '/') {
+          context.go(redirect);
+        } else if (user.role == 'Admin') {
+          context.go('/admin');
+        } else if (user.role == 'IT') {
+          context.go('/it');
+        } else {
+          context.go('/customer');
+        }
       } else {
-        context.go('/customer');
+        context.go('/login');
       }
-    } else {
+    } catch (_) {
+      if (!mounted) return;
       context.go('/login');
     }
   }

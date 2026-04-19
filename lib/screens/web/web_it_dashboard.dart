@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
+import '../../services/browser_notification_service.dart';
 import 'web_it_sidebar.dart';
 import '../../app_router.dart' show TicketDetailWrapper;
 
@@ -25,6 +26,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
   Ticket? _selectedTicket;
   Timer? _refreshTimer;
   int? _processingId;
+  final Map<int, String> _knownVisibleTicketStates = {};
   
   static const _green = Color(0xFF00897B);
 
@@ -34,6 +36,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
   @override
   void initState() {
     super.initState();
+    BrowserNotificationService.init();
     _loadData();
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
   }
@@ -55,9 +58,37 @@ class _WebITDashboardState extends State<WebITDashboard> {
           _unassigned = List<Ticket>.from(results[0])..sort((a, b) => b.createdAt.compareTo(a.createdAt));
           _myTickets = List<Ticket>.from(results[1])..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+          final visibleTickets = [..._unassigned, ..._myTickets];
+          if (_knownVisibleTicketStates.isNotEmpty) {
+            final newTickets = visibleTickets.where(
+              (t) => !_knownVisibleTicketStates.containsKey(t.ticketId),
+            );
+            final changedTickets = visibleTickets.where((t) {
+              final previousStatus = _knownVisibleTicketStates[t.ticketId];
+              return previousStatus != null && previousStatus != t.status;
+            });
+            final latest = changedTickets.isNotEmpty
+                ? changedTickets.first
+                : (newTickets.isNotEmpty ? newTickets.first : null);
+            if (latest != null) {
+              final body = changedTickets.contains(latest)
+                  ? '${latest.subject} đã chuyển sang "${latest.status}"'
+                  : 'Có ticket mới cần xử lý: ${latest.subject}';
+              BrowserNotificationService.show(
+                title: 'MedHub IT',
+                body: body,
+                route: '/ticket/${latest.ticketId}',
+                tag: 'it-${latest.ticketId}',
+              );
+            }
+          }
+          _knownVisibleTicketStates
+            ..clear()
+            ..addEntries(visibleTickets.map((t) => MapEntry(t.ticketId, t.status)));
+
           if (_selectedTicket != null) {
             try {
-               final allVisible = [..._unassigned, ..._myTickets];
+               final allVisible = visibleTickets;
                _selectedTicket = allVisible.firstWhere((t) => t.ticketId == _selectedTicket!.ticketId);
             } catch (e) {
                _selectedTicket = null;

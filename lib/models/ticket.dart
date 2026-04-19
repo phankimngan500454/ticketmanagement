@@ -24,6 +24,7 @@ class Ticket {
   final String? assetName;
   final String? requesterDeptName; // Phòng ban của người tạo ticket
   final String ticketType; // 'ticket' | 'feedback'
+  final double? costDifference; // Lưu chi phí chênh lệch (Tài chính)
 
   const Ticket({
     required this.ticketId,
@@ -46,6 +47,7 @@ class Ticket {
     this.assetName,
     this.requesterDeptName,
     this.ticketType = 'ticket',
+    this.costDifference,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -96,6 +98,7 @@ class Ticket {
       assetName:      (json['assetName'] ?? json['AssetName']) as String?,
       requesterDeptName: (json['requesterDeptName'] ?? json['RequesterDeptName']) as String?,
       ticketType: (json['ticketType'] ?? json['TicketType']) as String? ?? 'ticket',
+      costDifference: (json['costDifference'] ?? json['CostDifference']) as double?,
     );
   }
 
@@ -112,6 +115,7 @@ class Ticket {
     'Priority': priority,
     'CreatedAt': createdAt.toIso8601String(),
     'TicketType': ticketType,
+    'CostDifference': costDifference,
   };
 
   Ticket copyWith({
@@ -121,6 +125,7 @@ class Ticket {
     DateTime? finalDeadline,
     String? deadlineStatus,
     String? ticketType,
+    double? costDifference,
   }) => Ticket(
     ticketId: ticketId,
     requesterId: requesterId,
@@ -142,5 +147,6 @@ class Ticket {
     assetName:        assetName,
     requesterDeptName: requesterDeptName,
     ticketType:       ticketType ?? this.ticketType,
+    costDifference:   costDifference ?? this.costDifference,
   );
 }

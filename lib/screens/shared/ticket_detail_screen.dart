@@ -42,18 +42,20 @@ class TicketDetailScreen extends StatefulWidget {
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // ── Repository & Controllers ─────────────────────────────────
   final _repo = TicketRepository.instance;
-  final TextEditingController _chatController = TextEditingController(); // Input chat
-  final ScrollController _scrollController = ScrollController();         // Cuộn danh sách chat
+  final TextEditingController _chatController =
+      TextEditingController(); // Input chat
+  final ScrollController _scrollController =
+      ScrollController(); // Cuộn danh sách chat
 
   // ── State variables ──────────────────────────────────────────
-  late Ticket _ticket;                          // Bản sao ticket (cập nhật khi có thay đổi)
-  List<TicketComment> _comments = [];          // Danh sách bình luận / tin nhắn
+  late Ticket _ticket; // Bản sao ticket (cập nhật khi có thay đổi)
+  List<TicketComment> _comments = []; // Danh sách bình luận / tin nhắn
   List<TicketAttachmentModel> _attachments = []; // Danh sách file đính kèm
-  List<User> _itStaff = [];                    // Danh sách nhân viên IT (chỉ Admin cần)
-  bool _loadingComments = true;                // Đang tải dữ liệu ban đầu?
-  bool _uploadingFile = false;                 // Đang upload file?
-  Asset? _linkedAsset;                         // Thông tin thiết bị liên kết đầy đủ
-  Timer? _refreshTimer;                        // Auto-refresh realtime
+  List<User> _itStaff = []; // Danh sách nhân viên IT (chỉ Admin cần)
+  bool _loadingComments = true; // Đang tải dữ liệu ban đầu?
+  bool _uploadingFile = false; // Đang upload file?
+  Asset? _linkedAsset; // Thông tin thiết bị liên kết đầy đủ
+  Timer? _refreshTimer; // Auto-refresh realtime
 
   // ── Theme  ───────────────────────────────────────────────────
   static const Color _themeColor = Color(0xFF2563EB); // Web primary blue
@@ -64,7 +66,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     _ticket = widget.ticket;
     _loadData();
     // Auto-refresh mỗi 10s để cập nhật comments và trạng thái mới nhất
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _loadData());
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _loadData(),
+    );
   }
 
   @override
@@ -85,7 +90,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       final results = await Future.wait([
         _repo.getComments(_ticket.ticketId),
         if (widget.isAdmin) _repo.getITStaff() else Future.value(<User>[]),
-        _repo.getTicketById(_ticket.ticketId).then((t) => t ?? _ticket).catchError((_) => _ticket),
+        _repo
+            .getTicketById(_ticket.ticketId)
+            .then((t) => t ?? _ticket)
+            .catchError((_) => _ticket),
         _repo.getAttachments(_ticket.ticketId),
       ]);
 
@@ -104,8 +112,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             _linkedAsset = assets.firstWhere(
               (a) => a.assetId == _ticket.assetId,
               orElse: () => Asset(
-                assetId: 0, assetName: _ticket.assetName ?? '', assetCode: '',
-                assetGroup: '', assetType: '', assetModel: '', status: '', categoryId: null),
+                assetId: 0,
+                assetName: _ticket.assetName ?? '',
+                assetCode: '',
+                assetGroup: '',
+                assetType: '',
+                assetModel: '',
+                status: '',
+                categoryId: null,
+              ),
             );
             if (mounted) setState(() {});
           } catch (_) {}
@@ -126,7 +141,18 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Future<void> _pickAndUploadFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+      allowedExtensions: [
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'pdf',
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+        'txt',
+      ],
       withData: true,
     );
     if (result == null || result.files.isEmpty) return;
@@ -135,8 +161,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     // 5MB limit
     if (file.size > 5 * 1024 * 1024) {
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('❌ File không được vượt quá 5MB'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ File không được vượt quá 5MB'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
       return;
     }
@@ -153,17 +183,27 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         fileSize: file.size,
       );
       if (mounted && context.mounted) {
-        setState(() { _attachments.add(attachment); _uploadingFile = false; });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('📎 Đã đính kèm: ${file.name}'),
-          backgroundColor: const Color(0xFF3949AB),
-          behavior: SnackBarBehavior.floating));
+        setState(() {
+          _attachments.add(attachment);
+          _uploadingFile = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('📎 Đã đính kèm: ${file.name}'),
+            backgroundColor: const Color(0xFF3949AB),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted && context.mounted) {
         setState(() => _uploadingFile = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -176,9 +216,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         title: const Text('Xoá file đính kèm?'),
         content: Text(a.fileName),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xoá', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -190,57 +235,78 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // 2d. Ánh xạ đuôi file → MIME type
   String _getMimeType(String ext) {
     switch (ext.toLowerCase()) {
-      case 'jpg': case 'jpeg': return 'image/jpeg';
-      case 'png': return 'image/png';
-      case 'gif': return 'image/gif';
-      case 'pdf': return 'application/pdf';
-      case 'doc': return 'application/msword';
-      case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      case 'xls': return 'application/vnd.ms-excel';
-      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      default: return 'application/octet-stream';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      default:
+        return 'application/octet-stream';
     }
   }
 
   // 2c. Xem file đính kèm (chỉ hỗ trợ xem ảnh trực tiếp)
   void _viewAttachment(TicketAttachmentModel a) {
     if (!a.isImage) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('📄 ${a.fileName} (${a.fileSizeLabel}) — chỉ xem trực tiếp được ảnh'),
-        behavior: SnackBarBehavior.floating));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '📄 ${a.fileName} (${a.fileSizeLabel}) — chỉ xem trực tiếp được ảnh',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
     final bytes = base64Decode(a.fileData);
-    showDialog(context: context, builder: (ctx) {
-      final maxH = MediaQuery.of(ctx).size.height * 0.85;
-      return Dialog(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxH),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            AppBar(
-              title: Text(a.fileName, style: const TextStyle(fontSize: 14)),
-              backgroundColor: const Color(0xFF3949AB),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              toolbarHeight: 44,
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx))
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final maxH = MediaQuery.of(ctx).size.height * 0.85;
+        return Dialog(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBar(
+                  title: Text(a.fileName, style: const TextStyle(fontSize: 14)),
+                  backgroundColor: const Color(0xFF3949AB),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  toolbarHeight: 44,
+                  automaticallyImplyLeading: false,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                Flexible(
+                  child: InteractiveViewer(
+                    child: Image.memory(bytes, fit: BoxFit.contain),
+                  ),
+                ),
               ],
             ),
-            Flexible(
-              child: InteractiveViewer(
-                child: Image.memory(bytes, fit: BoxFit.contain)),
-            ),
-          ]),
-        ),
-      );
-    });
-
+          ),
+        );
+      },
+    );
   }
-
 
   // ════════════════════════════════════════════════════════════
   // TÍNH NĂNG 3 — CHAT / TRAO ĐỔI
@@ -258,7 +324,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
     setState(() => _comments.add(comment));
     Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -272,38 +342,79 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 12),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 20),
-          const Text('Chọn người xử lý', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1C1C2E))),
-          const SizedBox(height: 6),
-          Text('Phân công nhân viên IT cho ticket này', style: TextStyle(fontSize: 13, color: Colors.grey[500])),
-          const SizedBox(height: 16),
-          ..._itStaff.map((staff) => ListTile(
-            leading: CircleAvatar(backgroundColor: _themeColor.withValues(alpha: 0.12), child: const Icon(Icons.person, color: _themeColor, size: 20)),
-            title: Text(staff.fullName, style: const TextStyle(fontWeight: FontWeight.w500)),
-            subtitle: Text(staff.deptName ?? '', style: const TextStyle(fontSize: 11)),
-            trailing: _ticket.assigneeId == staff.userId
-                ? const Icon(Icons.check_circle, color: Color(0xFF43A047))
-                : const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: () async {
-              Navigator.pop(context);
-              final updated = await _repo.assignTicket(_ticket.ticketId, staff.userId);
-              setState(() => _ticket = updated);
-              if (mounted && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('✅ Đã giao việc cho ${staff.fullName}'),
-                  backgroundColor: const Color(0xFF43A047),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ));
-              }
-            },
-          )),
-          const SizedBox(height: 24),
-        ]),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Chọn người xử lý',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1C1C2E),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Phân công nhân viên IT cho ticket này',
+              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 16),
+            ..._itStaff.map(
+              (staff) => ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: _themeColor.withValues(alpha: 0.12),
+                  child: const Icon(Icons.person, color: _themeColor, size: 20),
+                ),
+                title: Text(
+                  staff.fullName,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  staff.deptName ?? '',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                trailing: _ticket.assigneeId == staff.userId
+                    ? const Icon(Icons.check_circle, color: Color(0xFF43A047))
+                    : const Icon(Icons.chevron_right, color: Colors.grey),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final updated = await _repo.assignTicket(
+                    _ticket.ticketId,
+                    staff.userId,
+                  );
+                  setState(() => _ticket = updated);
+                  if (mounted && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ Đã giao việc cho ${staff.fullName}'),
+                        backgroundColor: const Color(0xFF43A047),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -313,20 +424,29 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // ════════════════════════════════════════════════════════════
   Color _getPriorityColor(String? priority) {
     switch (priority) {
-      case 'High': return const Color(0xFFE53935);
-      case 'Medium': return const Color(0xFFFB8C00);
-      default: return const Color(0xFF29B6F6);
+      case 'High':
+        return const Color(0xFFE53935);
+      case 'Medium':
+        return const Color(0xFFFB8C00);
+      default:
+        return const Color(0xFF29B6F6);
     }
   }
 
   Color _statusColor(String s) {
     switch (s) {
-      case 'Open': return const Color(0xFF3B82F6);
-      case 'Pending': return const Color(0xFFF59E0B);
-      case 'WaitingConfirmation': return const Color(0xFF8B5CF6);
-      case 'Resolved': return const Color(0xFF10B981);
-      case 'Cancelled': return const Color(0xFF64748B);
-      default: return Colors.grey;
+      case 'Open':
+        return const Color(0xFF3B82F6);
+      case 'Pending':
+        return const Color(0xFFF59E0B);
+      case 'WaitingConfirmation':
+        return const Color(0xFF8B5CF6);
+      case 'Resolved':
+        return const Color(0xFF10B981);
+      case 'Cancelled':
+        return const Color(0xFF64748B);
+      default:
+        return Colors.grey;
     }
   }
 
@@ -345,11 +465,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Row(children: [
-          Icon(Icons.cancel_outlined, color: Color(0xFF78909C)),
-          SizedBox(width: 8),
-          Text('Hủy yêu cầu?'),
-        ]),
+        title: const Row(
+          children: [
+            Icon(Icons.cancel_outlined, color: Color(0xFF78909C)),
+            SizedBox(width: 8),
+            Text('Hủy yêu cầu?'),
+          ],
+        ),
         content: const Text(
           'Bạn có chắc muốn hủy yêu cầu này không?\nHành động này không thể hoàn tác.',
           style: TextStyle(fontSize: 14),
@@ -363,7 +485,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF78909C),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Hủy yêu cầu'),
@@ -376,20 +500,26 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       final updated = await _repo.updateStatus(_ticket.ticketId, 'Cancelled');
       if (mounted && context.mounted) {
         setState(() => _ticket = updated);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('🚫 Yêu cầu đã được hủy'),
-          backgroundColor: const Color(0xFF78909C),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('🚫 Yêu cầu đã được hủy'),
+            backgroundColor: const Color(0xFF78909C),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -397,25 +527,36 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // 5b. IT/Admin: hoàn thành → chờ customer xác nhận
   Future<void> _markResolved() async {
     try {
-      final updated = await _repo.updateStatus(_ticket.ticketId, 'WaitingConfirmation');
+      final updated = await _repo.updateStatus(
+        _ticket.ticketId,
+        'WaitingConfirmation',
+      );
       if (mounted && context.mounted) {
         setState(() => _ticket = updated);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('✅ Đã gửi yêu cầu xác nhận'),
-          backgroundColor: const Color(0xFFF59E0B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ Đã gửi yêu cầu xác nhận'),
+            backgroundColor: const Color(0xFFF59E0B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     }
   }
@@ -427,22 +568,36 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       final updated = await _repo.updateStatus(_ticket.ticketId, newStatus);
       if (mounted && context.mounted) {
         setState(() => _ticket = updated);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(confirm ? '✅ Yêu cầu đã được xác nhận hoàn thành' : '🔄 Đã mở lại yêu cầu'),
-          backgroundColor: confirm ? const Color(0xFF43A047) : const Color(0xFFE53935),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              confirm
+                  ? '✅ Yêu cầu đã được xác nhận hoàn thành'
+                  : '🔄 Đã mở lại yêu cầu',
+            ),
+            backgroundColor: confirm
+                ? const Color(0xFF43A047)
+                : const Color(0xFFE53935),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     }
   }
@@ -457,23 +612,149 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       final updated = await _repo.updateStatus(_ticket.ticketId, newStatus);
       if (mounted && context.mounted) {
         setState(() => _ticket = updated);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(successMsg),
-          backgroundColor: const Color(0xFF43A047),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(successMsg),
+            backgroundColor: const Color(0xFF43A047),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
+
+  Future<void> _showCloseMedicalDialog() async {
+    final TextEditingController costController = TextEditingController();
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline_rounded, color: Color(0xFF78909C)),
+              SizedBox(width: 8),
+              Text('Đóng bệnh án', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Nhập chi phí chênh lệch để thông báo cho người dùng (nếu có, có thể bỏ trống).', style: TextStyle(fontSize: 13, height: 1.4)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: costController,
+                decoration: InputDecoration(
+                  labelText: 'Chi phí chênh lệch (VNĐ)',
+                  hintText: 'VD: 50.000',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.monetization_on_outlined, color: Colors.orange),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            if (isSubmitting)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else ...[
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Huỷ', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF78909C),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  setS(() => isSubmitting = true);
+                  final cost = costController.text.trim();
+                  if (cost.isNotEmpty) {
+                    try {
+                      final comment = await _repo.addComment(
+                        ticketId: _ticket.ticketId, 
+                        userId: widget.currentUser.userId, 
+                        commentText: '💰 Thông báo từ Tài chính:\nPhát sinh chi phí chênh lệch: $cost VNĐ'
+                      );
+                      if (mounted) {
+                        setState(() => _comments.add(comment));
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (_scrollController.hasClients) {
+                            _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+                          }
+                        });
+                      }
+                    } catch (_) {} // Ignore comment error
+                  }
+                  
+                  // Proceed to save cost to database and close the ticket
+                  try {
+                    // Update cost statistics if provided
+                    if (cost.isNotEmpty) {
+                      final double? parsedCost = double.tryParse(cost.replaceAll(RegExp(r'[^0-9.]'), ''));
+                      if (parsedCost != null) {
+                        await _repo.updateCostDifference(_ticket.ticketId, parsedCost);
+                      }
+                    }
+
+                    // Update status
+                    final updated = await _repo.updateStatus(_ticket.ticketId, 'Cancelled');
+                    if (mounted && context.mounted) {
+                      setState(() => _ticket = updated);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('🔒 Đã đóng bệnh án thành công!'),
+                          backgroundColor: const Color(0xFF43A047),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    setS(() => isSubmitting = false);
+                    if (mounted && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+                          backgroundColor: Colors.red.shade700,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Đóng bệnh án'),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildMedicalWorkflowCard({
     required IconData icon,
@@ -488,54 +769,93 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: buttonColor.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 4))],
-      ),
-      child: Column(children: [
-        Container(
-          height: 5,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [buttonColor, buttonColor.withValues(alpha: 0.6)]),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        boxShadow: [
+          BoxShadow(
+            color: buttonColor.withValues(alpha: 0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-          child: Column(children: [
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: buttonColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: buttonColor, size: 22),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [buttonColor, buttonColor.withValues(alpha: 0.6)],
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1C1C2E))),
-                const SizedBox(height: 3),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-              ])),
-            ]),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: Icon(icon, size: 18),
-                label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                onPressed: onPressed,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
               ),
             ),
-          ]),
-        ),
-      ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: buttonColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: buttonColor, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Color(0xFF1C1C2E),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: Icon(icon, size: 18),
+                    label: Text(
+                      buttonLabel,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: buttonColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: onPressed,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -553,92 +873,167 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 32,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Đề xuất Deadline',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Chọn ngày hoàn thành mong muốn. Admin sẽ xem xét và phê duyệt.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final result = await showDatePicker(
+                    context: ctx,
+                    initialDate:
+                        _ticket.proposedDeadline ??
+                        now.add(const Duration(days: 3)),
+                    firstDate: now,
+                    lastDate: now.add(const Duration(days: 365)),
+                    builder: (c, child) => Theme(
+                      data: Theme.of(c).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: Color(0xFF3949AB),
+                        ),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (result != null) setS(() => picked = result);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: picked != null
+                        ? const Color(0xFFEEF2FF)
+                        : const Color(0xFFF4F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: picked != null
+                          ? const Color(0xFF3949AB)
+                          : Colors.grey.shade200,
+                      width: picked != null ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 18,
+                        color: picked != null
+                            ? const Color(0xFF3949AB)
+                            : Colors.grey[400],
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        picked != null ? fmt(picked!) : 'Chọn ngày...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: picked != null
+                              ? const Color(0xFF1C1C2E)
+                              : Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.send_rounded, size: 17),
+                  label: const Text(
+                    'Gửi đề xuất',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: picked != null
+                        ? const Color(0xFF3949AB)
+                        : Colors.grey.shade300,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: picked == null
+                      ? null
+                      : () async {
+                          Navigator.pop(ctx);
+                          try {
+                            final updated = await _repo.proposeDeadline(
+                              _ticket.ticketId,
+                              widget.currentUser.userId,
+                              picked!,
+                            );
+                            if (mounted && context.mounted) {
+                              setState(() => _ticket = updated);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    '📅 Đã gửi đề xuất deadline, chờ Admin phê duyệt',
+                                  ),
+                                  backgroundColor: const Color(0xFF3949AB),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Đã xảy ra lỗi, vui lòng thử lại!',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                ),
+              ),
+            ],
+          ),
         ),
-        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 32),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Center(child: Container(width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-          const SizedBox(height: 16),
-          const Text('Đề xuất Deadline', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('Chọn ngày hoàn thành mong muốn. Admin sẽ xem xét và phê duyệt.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () async {
-              final now = DateTime.now();
-              final result = await showDatePicker(
-                context: ctx,
-                initialDate: _ticket.proposedDeadline ?? now.add(const Duration(days: 3)),
-                firstDate: now,
-                lastDate: now.add(const Duration(days: 365)),
-                builder: (c, child) => Theme(data: Theme.of(c).copyWith(
-                    colorScheme: const ColorScheme.light(primary: Color(0xFF3949AB))), child: child!),
-              );
-              if (result != null) setS(() => picked = result);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: picked != null ? const Color(0xFFEEF2FF) : const Color(0xFFF4F5F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: picked != null ? const Color(0xFF3949AB) : Colors.grey.shade200,
-                  width: picked != null ? 1.5 : 1,
-                ),
-              ),
-              child: Row(children: [
-                Icon(Icons.calendar_today_rounded, size: 18,
-                    color: picked != null ? const Color(0xFF3949AB) : Colors.grey[400]),
-                const SizedBox(width: 10),
-                Text(
-                  picked != null ? fmt(picked!) : 'Chọn ngày...',
-                  style: TextStyle(fontSize: 14,
-                      color: picked != null ? const Color(0xFF1C1C2E) : Colors.grey[500]),
-                ),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.send_rounded, size: 17),
-              label: const Text('Gửi đề xuất', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: picked != null ? const Color(0xFF3949AB) : Colors.grey.shade300,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: picked == null ? null : () async {
-                Navigator.pop(ctx);
-                try {
-                  final updated = await _repo.proposeDeadline(_ticket.ticketId, widget.currentUser.userId, picked!);
-                  if (mounted && context.mounted) {
-                    setState(() => _ticket = updated);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('📅 Đã gửi đề xuất deadline, chờ Admin phê duyệt'),
-                      backgroundColor: const Color(0xFF3949AB),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ));
-                  }
-                } catch (e) {
-                  if (mounted && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
-                  }
-                }
-              },
-            ),
-          ),
-        ]),
-      )),
+      ),
     );
   }
 
@@ -667,7 +1062,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final priorityColor = _getPriorityColor(_ticket.priority);
     final isAssigned = _ticket.assigneeId != null;
     // isLocked: ticket đã kết thúc → khóa mọi tương tác
-    final isLocked = _ticket.status == 'Resolved' || _ticket.status == 'Cancelled';
+    final isLocked =
+        _ticket.status == 'Resolved' || _ticket.status == 'Cancelled';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F8),
@@ -680,152 +1076,257 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             ),
             child: SafeArea(
               bottom: false,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
-                  child: Row(children: [
-                    if (!widget.isEmbedded)
-                      IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.grey.shade700),
-                        onPressed: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            final user = TicketRepository.instance.currentUser;
-                            if (user?.role == 'Admin') {
-                              context.go('/admin');
-                            } else if (user?.role == 'IT') {
-                              context.go('/it');
-                            } else {
-                              context.go('/customer');
-                            }
-                          }
-                        },
-                      )
-                    else
-                      const SizedBox(width: 16), // Padding instead of back button
-                    if (!widget.isEmbedded) ...[
-                      // #TKT-xxxx
-                      Text('#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
-                          style: TextStyle(color: Colors.grey.shade600,
-                              fontSize: 13, fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 8),
-                    ],
-                    // Priority badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                      decoration: BoxDecoration(
-                          color: priorityColor.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Text(_ticket.priority,
-                          style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 6),
-                    // Status badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _statusColor(_ticket.status).withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _statusColor(_ticket.status).withValues(alpha: 0.6)),
-                      ),
-                      child: Text(
-                        _ticket.status == 'Open' ? 'Đang mở'
-                          : _ticket.status == 'Pending' ? 'Chờ xử lý'
-                          : _ticket.status == 'Resolved' ? 'Đã xong'
-                          : _ticket.status == 'WaitingConfirmation' ? 'Chờ xác nhận'
-                          : _ticket.status == 'Cancelled' ? 'Đã hủy'
-                          : _ticket.status,
-                        style: TextStyle(fontSize: 11,
-                            color: _statusColor(_ticket.status), fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ]),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    // Tiêu đề ticket
-                    Text(_ticket.subject,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B), height: 1.3)),
-
-                    if (_ticket.status == 'Cancelled') ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.cancel_outlined, size: 13, color: Colors.grey.shade600),
-                          const SizedBox(width: 5),
-                          Text('Yêu cầu này đã bị hủy bởi người dùng',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-                        ]),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      CircleAvatar(radius: 14, backgroundColor: const Color(0xFFEFF6FF),
-                          child: Text(
-                            (_ticket.requesterName ?? widget.currentUser.fullName).isNotEmpty
-                                ? (_ticket.requesterName ?? widget.currentUser.fullName)[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(color: Color(0xFF2563EB), fontSize: 12, fontWeight: FontWeight.bold))),
-                      const SizedBox(width: 10),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        // Tên requester
-                        Text(
-                          _ticket.requesterName ?? widget.currentUser.fullName,
-                          style: const TextStyle(fontSize: 14, color: Color(0xFF334155), fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        // Info chips — wrap xuống dòng
-                        Wrap(spacing: 6, runSpacing: 6, children: [
-                          // Phòng ban
-                          if ((_ticket.requesterDeptName ?? widget.currentUser.deptName) != null)
-                            _infoChip(
-                              icon: Icons.business_outlined,
-                              label: _ticket.requesterDeptName ?? widget.currentUser.deptName!,
-                              color: Colors.blue.shade700,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
+                    child: Row(
+                      children: [
+                        if (!widget.isEmbedded)
+                          IconButton(
+                            icon: Icon(
+                              Icons.arrow_back,
+                              color: Colors.grey.shade700,
                             ),
-                          // Số điện thoại
-                          if ((_ticket.requesterPhone ?? widget.currentUser.phone).isNotEmpty)
-                            _infoChip(
-                              icon: Icons.phone_outlined,
-                              label: _ticket.requesterPhone ?? widget.currentUser.phone,
-                              color: Colors.green.shade700,
+                            onPressed: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                final user =
+                                    TicketRepository.instance.currentUser;
+                                if (user?.role == 'Admin') {
+                                  context.go('/admin');
+                                } else if (user?.role == 'IT') {
+                                  context.go('/it');
+                                } else {
+                                  context.go('/customer');
+                                }
+                              }
+                            },
+                          )
+                        else
+                          const SizedBox(
+                            width: 16,
+                          ), // Padding instead of back button
+                        if (!widget.isEmbedded) ...[
+                          // #TKT-xxxx
+                          Text(
+                            '#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
-                          // Danh mục
-                          if (_ticket.categoryName != null)
-                            _infoChip(
-                              icon: Icons.folder_outlined,
-                              label: _ticket.categoryName!,
-                              color: Colors.orange.shade700,
-                            ),
-                          // Thiết bị
-                          if (_ticket.assetName != null)
-                            _infoChip(
-                              icon: Icons.devices_rounded,
-                              label: _ticket.assetName!,
-                              color: Colors.purple.shade700,
-                            ),
-                          // Thời gian tạo
-                          _infoChip(
-                            icon: Icons.access_time_rounded,
-                            label: _formatExactTime(_ticket.createdAt),
-                            color: Colors.grey.shade600,
                           ),
-                        ]),
-                      ])),
-                    ]),
+                          const SizedBox(width: 8),
+                        ],
+                        // Priority badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: priorityColor.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _ticket.priority,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // Status badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _statusColor(
+                              _ticket.status,
+                            ).withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _statusColor(
+                                _ticket.status,
+                              ).withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: Text(
+                            _ticket.status == 'Open'
+                                ? 'Đang mở'
+                                : _ticket.status == 'Pending'
+                                ? 'Chờ xử lý'
+                                : _ticket.status == 'Resolved'
+                                ? 'Đã xong'
+                                : _ticket.status == 'WaitingConfirmation'
+                                ? 'Chờ xác nhận'
+                                : _ticket.status == 'Cancelled'
+                                ? 'Đã hủy'
+                                : _ticket.status,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _statusColor(_ticket.status),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Tiêu đề ticket
+                        Text(
+                          _ticket.subject,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E293B),
+                            height: 1.3,
+                          ),
+                        ),
 
-                  ]),
-                ),
-              ]),
+                        if (_ticket.status == 'Cancelled') ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel_outlined,
+                                  size: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Yêu cầu này đã bị hủy bởi người dùng',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: const Color(0xFFEFF6FF),
+                              child: Text(
+                                (_ticket.requesterName ??
+                                            widget.currentUser.fullName)
+                                        .isNotEmpty
+                                    ? (_ticket.requesterName ??
+                                              widget.currentUser.fullName)[0]
+                                          .toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: Color(0xFF2563EB),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Tên requester
+                                  Text(
+                                    _ticket.requesterName ??
+                                        widget.currentUser.fullName,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF334155),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  // Info chips — wrap xuống dòng
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: [
+                                      // Phòng ban
+                                      if ((_ticket.requesterDeptName ??
+                                              widget.currentUser.deptName) !=
+                                          null)
+                                        _infoChip(
+                                          icon: Icons.business_outlined,
+                                          label:
+                                              _ticket.requesterDeptName ??
+                                              widget.currentUser.deptName!,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      // Số điện thoại
+                                      if ((_ticket.requesterPhone ??
+                                              widget.currentUser.phone)
+                                          .isNotEmpty)
+                                        _infoChip(
+                                          icon: Icons.phone_outlined,
+                                          label:
+                                              _ticket.requesterPhone ??
+                                              widget.currentUser.phone,
+                                          color: Colors.green.shade700,
+                                        ),
+                                      // Danh mục
+                                      if (_ticket.categoryName != null)
+                                        _infoChip(
+                                          icon: Icons.folder_outlined,
+                                          label: _ticket.categoryName!,
+                                          color: Colors.orange.shade700,
+                                        ),
+                                      // Thiết bị
+                                      if (_ticket.assetName != null)
+                                        _infoChip(
+                                          icon: Icons.devices_rounded,
+                                          label: _ticket.assetName!,
+                                          color: Colors.purple.shade700,
+                                        ),
+                                      // Thời gian tạo
+                                      _infoChip(
+                                        icon: Icons.access_time_rounded,
+                                        label: _formatExactTime(
+                                          _ticket.createdAt,
+                                        ),
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -835,168 +1336,636 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               padding: EdgeInsets.zero,
               children: [
                 // ── SLA Card ──────────────────────────────────────────
-                Builder(builder: (ctx) {
-                  if (_ticket.status == 'Resolved' || _ticket.status == 'Cancelled') {
-                    return const SizedBox.shrink();
-                  }
-                  final hasFinalDeadline = _ticket.finalDeadline != null;
-                  final slaHours = _ticket.priority == 'High' ? 4
-                      : _ticket.priority == 'Medium' ? 24
-                      : 72;
-                  final slaDeadline = _ticket.finalDeadline ??
-                      _ticket.createdAt.add(Duration(hours: slaHours));
-                  final now = DateTime.now();
-                  final total = slaDeadline.difference(_ticket.createdAt).inMinutes.toDouble();
-                  final elapsed = now.difference(_ticket.createdAt).inMinutes.toDouble();
-                  final progress = (elapsed / total).clamp(0.0, 1.0);
-                  final remaining = slaDeadline.difference(now);
-                  final isOverdue = remaining.isNegative;
-                  final isSoon = !isOverdue && remaining.inHours <= 4;
-                  final barColor = isOverdue ? const Color(0xFFE53935)
-                      : isSoon ? const Color(0xFFFB8C00)
-                      : const Color(0xFF43A047);
-                  String remainStr;
-                  if (isOverdue) {
-                    final abs = remaining.abs();
-                    remainStr = abs.inHours >= 1
-                        ? 'Trễ ${abs.inHours}h ${abs.inMinutes % 60}p'
-                        : 'Trễ ${abs.inMinutes}p';
-                  } else {
-                    remainStr = remaining.inHours >= 1
-                        ? 'Còn ${remaining.inHours}h ${remaining.inMinutes % 60}p'
-                        : 'Còn ${remaining.inMinutes}p';
-                  }
-                  final dlLabel = '${slaDeadline.day.toString().padLeft(2,'0')}/${slaDeadline.month.toString().padLeft(2,'0')} '
-                      '${slaDeadline.hour.toString().padLeft(2,'0')}:${slaDeadline.minute.toString().padLeft(2,'0')}';
+                Builder(
+                  builder: (ctx) {
+                    if (_ticket.status == 'Resolved' ||
+                        _ticket.status == 'Cancelled') {
+                      return const SizedBox.shrink();
+                    }
+                    final hasFinalDeadline = _ticket.finalDeadline != null;
+                    final slaHours = _ticket.priority == 'High'
+                        ? 4
+                        : _ticket.priority == 'Medium'
+                        ? 24
+                        : 72;
+                    final slaDeadline =
+                        _ticket.finalDeadline ??
+                        _ticket.createdAt.add(Duration(hours: slaHours));
+                    final now = DateTime.now();
+                    final total = slaDeadline
+                        .difference(_ticket.createdAt)
+                        .inMinutes
+                        .toDouble();
+                    final elapsed = now
+                        .difference(_ticket.createdAt)
+                        .inMinutes
+                        .toDouble();
+                    final progress = (elapsed / total).clamp(0.0, 1.0);
+                    final remaining = slaDeadline.difference(now);
+                    final isOverdue = remaining.isNegative;
+                    final isSoon = !isOverdue && remaining.inHours <= 4;
+                    final barColor = isOverdue
+                        ? const Color(0xFFE53935)
+                        : isSoon
+                        ? const Color(0xFFFB8C00)
+                        : const Color(0xFF43A047);
+                    String remainStr;
+                    if (isOverdue) {
+                      final abs = remaining.abs();
+                      remainStr = abs.inHours >= 1
+                          ? 'Trễ ${abs.inHours}h ${abs.inMinutes % 60}p'
+                          : 'Trễ ${abs.inMinutes}p';
+                    } else {
+                      remainStr = remaining.inHours >= 1
+                          ? 'Còn ${remaining.inHours}h ${remaining.inMinutes % 60}p'
+                          : 'Còn ${remaining.inMinutes}p';
+                    }
+                    final dlLabel =
+                        '${slaDeadline.day.toString().padLeft(2, '0')}/${slaDeadline.month.toString().padLeft(2, '0')} '
+                        '${slaDeadline.hour.toString().padLeft(2, '0')}:${slaDeadline.minute.toString().padLeft(2, '0')}';
 
-                  return Container(
-                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: barColor.withValues(alpha: 0.35)),
-                      boxShadow: [BoxShadow(color: barColor.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
-                    ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        Icon(isOverdue ? Icons.warning_rounded : Icons.timer_outlined,
-                            size: 16, color: barColor),
-                        const SizedBox(width: 6),
-                        Text('SLA / Thời hạn xử lý',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: barColor)),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
+                    return Container(
+                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: barColor.withValues(alpha: 0.35),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
                             color: barColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                          child: Text(remainStr,
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: barColor)),
-                        ),
-                      ]),
-                      const SizedBox(height: 10),
-                      // Progress bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 6,
-                          backgroundColor: Colors.grey.shade200,
-                          valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        Icon(Icons.event_rounded, size: 12, color: Colors.grey[500]),
-                        const SizedBox(width: 4),
-                        Text(
-                          hasFinalDeadline ? 'Deadline đã xác nhận: $dlLabel' : 'SLA tự động ($slaHours giờ): $dlLabel',
-                          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                        ),
-                      ]),
-                    ]),
-                  );
-                }),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                isOverdue
+                                    ? Icons.warning_rounded
+                                    : Icons.timer_outlined,
+                                size: 16,
+                                color: barColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'SLA / Thời hạn xử lý',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: barColor,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: barColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  remainStr,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: barColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          // Progress bar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 6,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                barColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_rounded,
+                                size: 12,
+                                color: Colors.grey[500],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                hasFinalDeadline
+                                    ? 'Deadline đã xác nhận: $dlLabel'
+                                    : 'SLA tự động ($slaHours giờ): $dlLabel',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
 
                 // ── Card: Vị trí hỗ trợ (Phòng ban + Số phòng) ──────────
-                Builder(builder: (ctx) {
-                  final dept = _ticket.requesterDeptName;
-                  // Parse số phòng từ description (dòng đầu dạng "📍 Vị trí: ...")
-                  final lines = _ticket.description.split('\n');
-                  String? locationLine;
-                  for (final line in lines) {
-                    if (line.trimLeft().startsWith('📍 Vị trí:')) {
-                      locationLine = line.replaceFirst(RegExp(r'^📍 Vị trí:\s*'), '').trim();
-                      break;
+                Builder(
+                  builder: (ctx) {
+                    final dept = _ticket.requesterDeptName;
+                    // Parse số phòng từ description (dòng đầu dạng "📍 Vị trí: ...")
+                    final lines = _ticket.description.split('\n');
+                    String? locationLine;
+                    for (final line in lines) {
+                      if (line.trimLeft().startsWith('📍 Vị trí:')) {
+                        locationLine = line
+                            .replaceFirst(RegExp(r'^📍 Vị trí:\s*'), '')
+                            .trim();
+                        break;
+                      }
                     }
-                  }
-                  if (dept == null && locationLine == null) return const SizedBox.shrink();
-                  return Container(
-                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF43A047).withValues(alpha: 0.4)),
-                      boxShadow: [BoxShadow(color: const Color(0xFF43A047).withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
-                    ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Row(children: [
-                        Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF2E7D32)),
-                        SizedBox(width: 6),
-                        Text('Vị trí hỗ trợ',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2E7D32))),
-                        SizedBox(width: 6),
-                        Text('— IT đến đây để hỗ trợ',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF388E3C))),
-                      ]),
-                      const SizedBox(height: 10),
-                      if (dept != null)
-                        Row(children: [
-                          const Icon(Icons.business_rounded, size: 14, color: Color(0xFF388E3C)),
-                          const SizedBox(width: 8),
-                          Text('Phòng ban: ', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                          Expanded(child: Text(dept,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)))),
-                        ]),
-                      if (dept != null && locationLine != null) const SizedBox(height: 6),
-                      if (locationLine != null)
-                        Row(children: [
-                          const Icon(Icons.meeting_room_rounded, size: 14, color: Color(0xFF388E3C)),
-                          const SizedBox(width: 8),
-                          Text('Số phòng: ', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                          Expanded(child: Text(locationLine,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)))),
-                        ]),
-                    ]),
-                  );
-                }),
+                    if (dept == null && locationLine == null)
+                      return const SizedBox.shrink();
+                    return Container(
+                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFF43A047).withValues(alpha: 0.4),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF43A047,
+                            ).withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 16,
+                                color: Color(0xFF2E7D32),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Vị trí hỗ trợ',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                '— IT đến đây để hỗ trợ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF388E3C),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (dept != null)
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.business_rounded,
+                                  size: 14,
+                                  color: Color(0xFF388E3C),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Phòng ban: ',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    dept,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1B5E20),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (dept != null && locationLine != null)
+                            const SizedBox(height: 6),
+                          if (locationLine != null)
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.meeting_room_rounded,
+                                  size: 14,
+                                  color: Color(0xFF388E3C),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Số phòng: ',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    locationLine,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1B5E20),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
 
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Row(children: [
-                      Icon(Icons.description_outlined, size: 16, color: Color(0xFF2563EB)),
-                      SizedBox(width: 6),
-                      Text('Mô tả', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2563EB))),
-                    ]),
-                    const SizedBox(height: 8),
-                    // Lọc bỏ dòng "📍 Vị trí:" khỏi mô tả (đã hiển thị riêng ở card trên)
-                    Builder(builder: (ctx) {
-                      final cleaned = _ticket.description
-                          .split('\n')
-                          .where((l) => !l.trimLeft().startsWith('📍 Vị trí:'))
-                          .join('\n')
-                          .trim();
-                      return Text(cleaned.isNotEmpty ? cleaned : _ticket.description,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.5));
-                    }),
-                  ]),
+                Builder(
+                  builder: (ctx) {
+                    // ── Smart Description Card ────────────────
+                    final isReopenMedical =
+                        _ticket.ticketType == 'reopen_medical';
+
+                    if (isReopenMedical) {
+                      // Parse các dòng "key: value" từ description
+                      final lines = _ticket.description.split('\n');
+                      final Map<String, String> fields = {};
+                      String reasonText = '';
+                      bool inReason = false;
+                      final List<String> reasonLines = [];
+
+                      for (final raw in lines) {
+                        final line = raw.trim();
+                        if (line.isEmpty) continue;
+
+                        // Nhận diện dòng lý do mở lại (mọi thứ sau dòng "Lý do mở lại:")
+                        if (line.contains('Lý do mở lại') || inReason) {
+                          if (line.contains('Lý do mở lại') &&
+                              line.contains(':')) {
+                            final afterColon = line
+                                .substring(line.indexOf(':') + 1)
+                                .trim();
+                            if (afterColon.isNotEmpty)
+                              reasonLines.add(afterColon);
+                            inReason = true;
+                          } else {
+                            reasonLines.add(line);
+                          }
+                          continue;
+                        }
+
+                        // Parse dạng "Label: Value" — bỏ prefix emoji nếu có
+                        final colonIdx = line.indexOf(':');
+                        if (colonIdx > 0) {
+                          final rawKey = line.substring(0, colonIdx).trim();
+                          // Bỏ emoji ở đầu key
+                          final key = rawKey
+                              .replaceAll(
+                                RegExp(
+                                  r'^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\s]+',
+                                  unicode: true,
+                                ),
+                                '',
+                              )
+                              .trim();
+                          final value = line.substring(colonIdx + 1).trim();
+                          if (key.isNotEmpty && value.isNotEmpty) {
+                            fields[key] = value;
+                          }
+                        }
+                      }
+                      reasonText = reasonLines.join('\n').trim();
+
+                      // Map key → (icon, color)
+                      IconData iconFor(String k) {
+                        if (k.contains('viện phí') ||
+                            k.contains('MVP') ||
+                            k.contains('MVP'))
+                          return Icons.receipt_long_outlined;
+                        if (k.contains('yêu cầu') || k.contains('Người'))
+                          return Icons.person_outline_rounded;
+                        if (k.contains('SĐT') || k.contains('điện thoại'))
+                          return Icons.phone_outlined;
+                        if (k.contains('tài chính'))
+                          return Icons.monetization_on_outlined;
+                        return Icons.info_outline_rounded;
+                      }
+
+                      Color colorFor(String k) {
+                        if (k.contains('viện phí') ||
+                            k.contains('MVP') ||
+                            k.contains('MVP'))
+                          return const Color(0xFF2563EB);
+                        if (k.contains('yêu cầu') || k.contains('Người'))
+                          return const Color(0xFF7C3AED);
+                        if (k.contains('SĐT') || k.contains('điện thoại'))
+                          return const Color(0xFF059669);
+                        if (k.contains('tài chính'))
+                          return const Color(0xFFD97706);
+                        return Colors.blueGrey;
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Card thông tin bệnh án ──
+                          Container(
+                            margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFF2563EB,
+                                ).withValues(alpha: 0.18),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header
+                                Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    14,
+                                    12,
+                                    14,
+                                    10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF2563EB,
+                                    ).withValues(alpha: 0.06),
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(15),
+                                    ),
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: const Color(
+                                          0xFF2563EB,
+                                        ).withValues(alpha: 0.12),
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.folder_open_rounded,
+                                        size: 16,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                      SizedBox(width: 7),
+                                      Text(
+                                        'Thông tin yêu cầu mở bệnh án',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Color(0xFF2563EB),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Các dòng key-value
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  child: Column(
+                                    children: fields.entries.map((e) {
+                                      final ic = iconFor(e.key);
+                                      final col = colorFor(e.key);
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: col.withValues(
+                                                  alpha: 0.10,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Icon(
+                                                ic,
+                                                size: 14,
+                                                color: col,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    e.key,
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.grey[500],
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    e.value,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Color(0xFF1E293B),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // ── Card lý do mở lại ──
+                          if (reasonText.isNotEmpty)
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.edit_note_rounded,
+                                        size: 16,
+                                        color: Color(0xFF7C3AED),
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Lý do mở lại',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Color(0xFF7C3AED),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF7C3AED,
+                                      ).withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFF7C3AED,
+                                        ).withValues(alpha: 0.15),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      reasonText,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[800],
+                                        height: 1.55,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      );
+                    }
+
+                    // ── Ticket thường → hiển thị text thô như cũ ──
+                    return Container(
+                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.description_outlined,
+                                size: 16,
+                                color: Color(0xFF2563EB),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Mô tả',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Color(0xFF2563EB),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Builder(
+                            builder: (ctx) {
+                              final cleaned = _ticket.description
+                                  .split('\n')
+                                  .where(
+                                    (l) =>
+                                        !l.trimLeft().startsWith('📍 Vị trí:'),
+                                  )
+                                  .join('\n')
+                                  .trim();
+                              return Text(
+                                cleaned.isNotEmpty
+                                    ? cleaned
+                                    : _ticket.description,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[700],
+                                  height: 1.5,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
 
                 // ── Thiết bị liên quan ────────────────────
@@ -1007,69 +1976,166 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF6D4C41).withValues(alpha: 0.25)),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+                      border: Border.all(
+                        color: const Color(0xFF6D4C41).withValues(alpha: 0.25),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Row(children: [
-                        Icon(Icons.devices_rounded, size: 16, color: Color(0xFF6D4C41)),
-                        SizedBox(width: 6),
-                        Text('Thiết bị liên quan',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF6D4C41))),
-                      ]),
-                      const SizedBox(height: 10),
-                      if (_linkedAsset != null) ...[
-                        _assetInfoRow(Icons.label_rounded, 'Tên thiết bị', _linkedAsset!.assetName),
-                        if (_linkedAsset!.assetType.isNotEmpty)
-                          _assetInfoRow(Icons.category_rounded, 'Loại', _linkedAsset!.assetType),
-                        if (_linkedAsset!.assetModel.isNotEmpty)
-                          _assetInfoRow(Icons.info_outline_rounded, 'Model', _linkedAsset!.assetModel),
-                        if (_linkedAsset!.assetCode.isNotEmpty)
-                          _assetInfoRow(Icons.qr_code_2_rounded, 'Mã / Serial', _linkedAsset!.assetCode),
-                      ] else
-                        Text(_ticket.assetName ?? '#${_ticket.assetId}',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                    ]),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.devices_rounded,
+                              size: 16,
+                              color: Color(0xFF6D4C41),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Thiết bị liên quan',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Color(0xFF6D4C41),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (_linkedAsset != null) ...[
+                          _assetInfoRow(
+                            Icons.label_rounded,
+                            'Tên thiết bị',
+                            _linkedAsset!.assetName,
+                          ),
+                          if (_linkedAsset!.assetType.isNotEmpty)
+                            _assetInfoRow(
+                              Icons.category_rounded,
+                              'Loại',
+                              _linkedAsset!.assetType,
+                            ),
+                          if (_linkedAsset!.assetModel.isNotEmpty)
+                            _assetInfoRow(
+                              Icons.info_outline_rounded,
+                              'Model',
+                              _linkedAsset!.assetModel,
+                            ),
+                          if (_linkedAsset!.assetCode.isNotEmpty)
+                            _assetInfoRow(
+                              Icons.qr_code_2_rounded,
+                              'Mã / Serial',
+                              _linkedAsset!.assetCode,
+                            ),
+                        ] else
+                          Text(
+                            _ticket.assetName ?? '#${_ticket.assetId}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
 
                 if (widget.isAdmin)
                   Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white, borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isAssigned ? const Color(0xFF43A047).withValues(alpha: 0.3) : const Color(0xFFE53935).withValues(alpha: 0.3)),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    child: Row(children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isAssigned ? const Color(0xFF43A047).withValues(alpha: 0.1) : const Color(0xFFE53935).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.support_agent, color: isAssigned ? const Color(0xFF43A047) : const Color(0xFFE53935), size: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isAssigned
+                            ? const Color(0xFF43A047).withValues(alpha: 0.3)
+                            : const Color(0xFFE53935).withValues(alpha: 0.3),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Người xử lý', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                        const SizedBox(height: 2),
-                        Text(_ticket.assigneeName ?? 'CHƯA PHÂN CÔNG',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold,
-                                color: isAssigned ? const Color(0xFF43A047) : const Color(0xFFE53935))),
-                      ])),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.manage_accounts, size: 15),
-                        label: Text(isAssigned ? 'Đổi người' : 'Giao việc'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _themeColor, side: const BorderSide(color: _themeColor),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        onPressed: _showAssignBottomSheet,
-                      ),
-                    ]),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isAssigned
+                                ? const Color(0xFF43A047).withValues(alpha: 0.1)
+                                : const Color(
+                                    0xFFE53935,
+                                  ).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.support_agent,
+                            color: isAssigned
+                                ? const Color(0xFF43A047)
+                                : const Color(0xFFE53935),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Người xử lý',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _ticket.assigneeName ?? 'CHƯA PHÂN CÔNG',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isAssigned
+                                      ? const Color(0xFF43A047)
+                                      : const Color(0xFFE53935),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.manage_accounts, size: 15),
+                          label: Text(isAssigned ? 'Đổi người' : 'Giao việc'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _themeColor,
+                            side: const BorderSide(color: _themeColor),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: _showAssignBottomSheet,
+                        ),
+                      ],
+                    ),
                   ),
 
                 // ── Nút IT tự nhận việc ────────────────────
@@ -1088,32 +2154,49 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           backgroundColor: const Color(0xFF00897B),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                           elevation: 2,
                         ),
                         onPressed: () async {
                           try {
                             final updated = await _repo.assignTicket(
-                              _ticket.ticketId, widget.currentUser.userId);
+                              _ticket.ticketId,
+                              widget.currentUser.userId,
+                            );
                             if (mounted) {
                               setState(() => _ticket = updated);
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: const Text('⚡ Đã nhận xử lý ticket này!'),
-                                  backgroundColor: const Color(0xFF00897B),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text(
+                                      '⚡ Đã nhận xử lý ticket này!',
+                                    ),
+                                    backgroundColor: const Color(0xFF00897B),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
                               }
                             }
                           } catch (e) {
                             if (mounted && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: const Text('❌ Không thể nhận việc, thử lại!'),
-                                backgroundColor: Colors.red,
-                                behavior: SnackBarBehavior.floating,
-                              ));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    '❌ Không thể nhận việc, thử lại!',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             }
                           }
                         },
@@ -1136,8 +2219,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           backgroundColor: const Color(0xFF43A047),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         onPressed: _markResolved,
                       ),
@@ -1146,7 +2234,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
                 // ══════════════════════════════════════════════════════
                 // WORKFLOW BỆNH ÁN (chỉ cho reopen_medical)
-                // Luồng: Admin/Manager duyệt (Resolved) → BH mở BA (Pending) → 
+                // Luồng: Admin/Manager duyệt (Resolved) → BH mở BA (Pending) →
                 //        Customer sửa xong (WaitingConfirmation) → BH đóng BA (Cancelled)
                 // ══════════════════════════════════════════════════════
 
@@ -1157,23 +2245,33 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   _buildMedicalWorkflowCard(
                     icon: Icons.check_circle_outline,
                     title: 'Duyệt yêu cầu mở lại bệnh án',
-                    subtitle: 'Xác nhận duyệt yêu cầu này. Sau khi duyệt, phòng ban phụ trách sẽ nhận được thông báo để mở lại bệnh án.',
+                    subtitle:
+                        'Xác nhận duyệt yêu cầu này. Sau khi duyệt, phòng ban phụ trách sẽ nhận được thông báo để mở lại bệnh án.',
                     buttonLabel: '✅ Duyệt yêu cầu',
                     buttonColor: const Color(0xFF43A047),
-                    onPressed: () => _updateMedicalStatus('Resolved', '✅ Đã duyệt! Phòng ban phụ trách sẽ nhận được yêu cầu mở bệnh án.'),
+                    onPressed: () => _updateMedicalStatus(
+                      'Resolved',
+                      '✅ Đã duyệt! Phòng ban phụ trách sẽ nhận được yêu cầu mở bệnh án.',
+                    ),
                   ),
 
                 // ── Bảo hiểm: Nút "Đã mở lại BA" (khi Resolved) ──
                 if (_ticket.ticketType == 'reopen_medical' &&
                     _ticket.status == 'Resolved' &&
-                    (widget.currentUser.permissions ?? '').contains('insurance'))
+                    (widget.currentUser.permissions ?? '').contains(
+                      'insurance',
+                    ))
                   _buildMedicalWorkflowCard(
                     icon: Icons.folder_open_rounded,
                     title: 'Xác nhận mở lại bệnh án',
-                    subtitle: 'Manager đã duyệt yêu cầu này. Nhấn để xác nhận đã mở lại bệnh án cho ${_ticket.requesterName ?? 'người yêu cầu'} sửa.',
+                    subtitle:
+                        'Manager đã duyệt yêu cầu này. Nhấn để xác nhận đã mở lại bệnh án cho ${_ticket.requesterName ?? 'người yêu cầu'} sửa.',
                     buttonLabel: '📂 Đã mở lại bệnh án',
                     buttonColor: const Color.fromARGB(255, 148, 182, 234),
-                    onPressed: () => _updateMedicalStatus('Pending', '📂 Đã xác nhận mở lại bệnh án!'),
+                    onPressed: () => _updateMedicalStatus(
+                      'Pending',
+                      '📂 Đã xác nhận mở lại bệnh án!',
+                    ),
                   ),
 
                 // ── Customer: Nút "Đã sửa xong" (khi Pending = BA đang mở) ──
@@ -1183,23 +2281,31 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   _buildMedicalWorkflowCard(
                     icon: Icons.edit_note_rounded,
                     title: 'Bệnh án đã được mở',
-                    subtitle: 'Phòng ban phụ trách đã mở lại bệnh án. Khi bạn sửa xong, nhấn nút bên dưới để thông báo.',
-                    buttonLabel: '✅ Đã sửa xong',
+                    subtitle:
+                        'Phòng ban phụ trách đã mở lại bệnh án. Khi bạn sửa xong, nhấn nút bên dưới để thông báo.\n⚠️ Lưu ý: Vui lòng CHỐT LẠI sau khi sửa xong để các bộ phận khác tiếp tục xử lý!',
+                    buttonLabel: '✅ Đã sửa xong (Chốt lại)',
                     buttonColor: const Color(0xFF43A047),
-                    onPressed: () => _updateMedicalStatus('WaitingConfirmation', '✅ Đã thông báo sửa xong! Chờ đóng bệnh án.'),
+                    onPressed: () => _updateMedicalStatus(
+                      'WaitingConfirmation',
+                      '✅ Đã thông báo sửa xong! Chờ đóng bệnh án.',
+                    ),
                   ),
 
                 // ── Bảo hiểm: Nút "Đóng bệnh án" (khi WaitingConfirmation = Customer sửa xong) ──
                 if (_ticket.ticketType == 'reopen_medical' &&
                     _ticket.status == 'WaitingConfirmation' &&
-                    (widget.currentUser.permissions ?? '').contains('insurance'))
+                    (widget.currentUser.permissions ?? '').contains(
+                      'insurance',
+                    ))
                   _buildMedicalWorkflowCard(
                     icon: Icons.lock_rounded,
-                    title: '${_ticket.requesterName ?? 'Người yêu cầu'} đã sửa xong',
-                    subtitle: '${_ticket.requesterName ?? 'Người yêu cầu'} đã hoàn tất chỉnh sửa. Nhấn để đóng/khóa lại bệnh án.',
+                    title:
+                        '${_ticket.requesterName ?? 'Người yêu cầu'} đã sửa xong',
+                    subtitle:
+                        '${_ticket.requesterName ?? 'Người yêu cầu'} đã hoàn tất chỉnh sửa. Nhấn để đóng/khóa lại bệnh án.',
                     buttonLabel: '🔒 Đóng bệnh án',
                     buttonColor: const Color(0xFF78909C),
-                    onPressed: () => _updateMedicalStatus('Cancelled', '🔒 Đã đóng bệnh án thành công!'),
+                    onPressed: _showCloseMedicalDialog,
                   ),
 
                 // ── Deadline Card ─────────────────────────
@@ -1210,7 +2316,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
                 // ── Nút Hủy yêu cầu (Customer, chỉ khi Open/Pending, chưa khóa) ──
                 if (!isLocked &&
-                    !widget.isAdmin && widget.currentUser.role != 'IT' &&
+                    !widget.isAdmin &&
+                    widget.currentUser.role != 'IT' &&
                     (_ticket.status == 'Open' || _ticket.status == 'Pending'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -1223,132 +2330,406 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           foregroundColor: const Color(0xFF78909C),
                           side: const BorderSide(color: Color(0xFF78909C)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         onPressed: _cancelTicket,
                       ),
                     ),
                   ),
 
-                if (!isLocked && !widget.isAdmin && widget.currentUser.role != 'IT' && _ticket.status == 'WaitingConfirmation')
+                if (!isLocked &&
+                    !widget.isAdmin &&
+                    widget.currentUser.role != 'IT' &&
+                    _ticket.status == 'WaitingConfirmation')
                   Container(
                     margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 4))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Column(children: [
-                      Container(height: 5, decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)]), borderRadius: BorderRadius.vertical(top: Radius.circular(18)))),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-                        child: Column(children: [
-                          Row(children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)]), borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(Icons.task_alt_rounded, color: Colors.white, size: 22),
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              const Text('IT đã hoàn thành xử lý', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1C1C2E))),
-                              const SizedBox(height: 3),
-                              Text('${_ticket.assigneeName ?? 'Nhân viên IT'} đã gửi kết quả xử lý', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                            ])),
-                          ]),
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(color: const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3))),
-                            child: const Row(children: [
-                              Icon(Icons.help_outline_rounded, color: Color(0xFFF59E0B), size: 16),
-                              SizedBox(width: 8),
-                              Expanded(child: Text('Vấn đề của bạn đã được giải quyết chưa?', style: TextStyle(fontSize: 13, color: Color(0xFF92400E), fontWeight: FontWeight.w500))),
-                            ]),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(18),
+                            ),
                           ),
-                          const SizedBox(height: 14),
-                          Row(children: [
-                            Expanded(child: DecoratedBox(
-                              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF2E7D32)]), borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: const Color(0xFF43A047).withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))]),
-                              child: ElevatedButton.icon(
-                                onPressed: () => _customerConfirm(true),
-                                icon: const Icon(Icons.check_rounded, size: 17),
-                                label: const Text('Xác nhận xong'),
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFF59E0B),
+                                          Color(0xFFFBBF24),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.task_alt_rounded,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'IT đã hoàn thành xử lý',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: Color(0xFF1C1C2E),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '${_ticket.assigneeName ?? 'Nhân viên IT'} đã gửi kết quả xử lý',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            )),
-                            const SizedBox(width: 10),
-                            Expanded(child: OutlinedButton.icon(
-                              onPressed: () => _customerConfirm(false),
-                              icon: const Icon(Icons.refresh_rounded, size: 17),
-                              label: const Text('Mở lại'),
-                              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFE53935), side: const BorderSide(color: Color(0xFFE53935)), backgroundColor: const Color(0xFFE53935).withValues(alpha: 0.05), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                            )),
-                          ]),
-                        ]),
-                      ),
-                    ]),
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFFBEB),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFFF59E0B,
+                                    ).withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.help_outline_rounded,
+                                      color: Color(0xFFF59E0B),
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Vấn đề của bạn đã được giải quyết chưa?',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF92400E),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF43A047),
+                                            Color(0xFF2E7D32),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFF43A047,
+                                            ).withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        onPressed: () => _customerConfirm(true),
+                                        icon: const Icon(
+                                          Icons.check_rounded,
+                                          size: 17,
+                                        ),
+                                        label: const Text('Xác nhận xong'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          textStyle: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => _customerConfirm(false),
+                                      icon: const Icon(
+                                        Icons.refresh_rounded,
+                                        size: 17,
+                                      ),
+                                      label: const Text('Mở lại'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(
+                                          0xFFE53935,
+                                        ),
+                                        side: const BorderSide(
+                                          color: Color(0xFFE53935),
+                                        ),
+                                        backgroundColor: const Color(
+                                          0xFFE53935,
+                                        ).withValues(alpha: 0.05),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        textStyle: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-                  child: Row(children: [
-                    const Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFF3949AB)),
-                    const SizedBox(width: 6),
-                    Text('Trao đổi (${_comments.length})', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF3949AB))),
-                  ]),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.chat_bubble_outline,
+                        size: 16,
+                        color: Color(0xFF3949AB),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Trao đổi (${_comments.length})',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3949AB),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 if (_loadingComments)
-                  const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()))
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
                 else if (_comments.isEmpty)
-                  Padding(padding: const EdgeInsets.all(24), child: Center(child: Text('Chưa có tin nhắn nào. Hãy bắt đầu trao đổi!', style: TextStyle(color: Colors.grey[500], fontStyle: FontStyle.italic), textAlign: TextAlign.center)))
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'Chưa có tin nhắn nào. Hãy bắt đầu trao đổi!',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
                 else
                   ..._comments.map((comment) {
                     final isMe = comment.userId == widget.currentUser.userId;
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                        mainAxisAlignment: isMe
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
                         children: [
                           if (!isMe) ...[
                             CircleAvatar(
                               radius: 16,
-                              backgroundColor: const Color(0xFF3949AB).withValues(alpha: 0.1),
-                              child: (comment.authorName != null && comment.authorName!.isNotEmpty)
-                                  ? Text(comment.authorName![0].toUpperCase(),
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF3949AB)))
-                                  : const Icon(Icons.person, size: 16, color: Color(0xFF3949AB)),
+                              backgroundColor: const Color(
+                                0xFF3949AB,
+                              ).withValues(alpha: 0.1),
+                              child:
+                                  (comment.authorName != null &&
+                                      comment.authorName!.isNotEmpty)
+                                  ? Text(
+                                      comment.authorName![0].toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF3949AB),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person,
+                                      size: 16,
+                                      color: Color(0xFF3949AB),
+                                    ),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          Flexible(child: Column(
-                            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                            children: [
-                              if (!isMe) Padding(padding: const EdgeInsets.only(bottom: 4, left: 4), child: Text(comment.authorName ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w600))),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isMe ? const Color(0xFF3949AB) : Colors.white,
-                                  borderRadius: BorderRadius.only(topLeft: const Radius.circular(18), topRight: const Radius.circular(18), bottomLeft: isMe ? const Radius.circular(18) : const Radius.circular(4), bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(18)),
-                                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 6, offset: const Offset(0, 2))],
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                              children: [
+                                if (!isMe)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 4,
+                                      left: 4,
+                                    ),
+                                    child: Text(
+                                      comment.authorName ?? '',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isMe
+                                        ? const Color(0xFF3949AB)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(18),
+                                      topRight: const Radius.circular(18),
+                                      bottomLeft: isMe
+                                          ? const Radius.circular(18)
+                                          : const Radius.circular(4),
+                                      bottomRight: isMe
+                                          ? const Radius.circular(4)
+                                          : const Radius.circular(18),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.07,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    comment.commentText,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isMe
+                                          ? Colors.white
+                                          : const Color(0xFF1C1C2E),
+                                      height: 1.4,
+                                    ),
+                                  ),
                                 ),
-                                child: Text(comment.commentText, style: TextStyle(fontSize: 13, color: isMe ? Colors.white : const Color(0xFF1C1C2E), height: 1.4)),
-                              ),
-                              Padding(padding: const EdgeInsets.only(top: 4, left: 4, right: 4), child: Text(_formatTime(comment.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey[400]))),
-                            ],
-                          )),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 4,
+                                    left: 4,
+                                    right: 4,
+                                  ),
+                                  child: Text(
+                                    _formatTime(comment.createdAt),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           if (isMe) ...[
                             const SizedBox(width: 8),
                             CircleAvatar(
                               radius: 16,
                               backgroundColor: const Color(0xFF3949AB),
                               child: (widget.currentUser.fullName.isNotEmpty)
-                                  ? Text(widget.currentUser.fullName[0].toUpperCase(),
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))
-                                  : const Icon(Icons.person, size: 16, color: Colors.white),
+                                  ? Text(
+                                      widget.currentUser.fullName[0]
+                                          .toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
                             ),
                           ],
                         ],
@@ -1367,50 +2748,117 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 color: _ticket.status == 'Cancelled'
                     ? const Color(0xFFF5F5F5)
                     : const Color(0xFFF1F8E9),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, -2))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
               ),
               child: SafeArea(
                 top: false,
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(
-                    _ticket.status == 'Cancelled' ? Icons.lock_rounded : Icons.check_circle_rounded,
-                    size: 16,
-                    color: _ticket.status == 'Cancelled' ? const Color(0xFF78909C) : const Color(0xFF43A047),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _ticket.status == 'Cancelled'
-                        ? 'Yêu cầu đã bị hủy — không thể tương tác'
-                        : 'Yêu cầu đã hoàn thành — không thể tương tác',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: _ticket.status == 'Cancelled' ? const Color(0xFF78909C) : Colors.green[700],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _ticket.status == 'Cancelled'
+                          ? Icons.lock_rounded
+                          : Icons.check_circle_rounded,
+                      size: 16,
+                      color: _ticket.status == 'Cancelled'
+                          ? const Color(0xFF78909C)
+                          : const Color(0xFF43A047),
                     ),
-                  ),
-                ]),
+                    const SizedBox(width: 8),
+                    Text(
+                      _ticket.status == 'Cancelled'
+                          ? 'Yêu cầu đã bị hủy — không thể tương tác'
+                          : 'Yêu cầu đã hoàn thành — không thể tương tác',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: _ticket.status == 'Cancelled'
+                            ? const Color(0xFF78909C)
+                            : Colors.green[700],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           else
             Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, -2))]),
-              child: SafeArea(top: false, child: Row(children: [
-                Expanded(child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(color: const Color(0xFFF0F2F8), borderRadius: BorderRadius.circular(24)),
-                  child: TextField(controller: _chatController, maxLines: null, decoration: InputDecoration(hintText: 'Nhập tin nhắn...', hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(vertical: 10))),
-                )),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)]), shape: BoxShape.circle, boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3))]),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
                   ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F2F8),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: TextField(
+                          controller: _chatController,
+                          maxLines: null,
+                          decoration: InputDecoration(
+                            hintText: 'Nhập tin nhắn...',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF3949AB,
+                              ).withValues(alpha: 0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ])),
+              ),
             ),
         ],
       ),
@@ -1434,11 +2882,17 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   // Thời gian chính xác cho header ticket
   String _formatExactTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')} ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    final local = dt.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}  '
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
   // Chip hiển thị thông tin trong header (phòng ban, SĐT, thiết bị...)
-  Widget _infoChip({required IconData icon, required String label, required Color color}) {
+  Widget _infoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -1446,16 +2900,27 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: color),
-        const SizedBox(width: 4),
-        Flexible(child: Text(label,
-          style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500),
-          overflow: TextOverflow.ellipsis, maxLines: 1)),
-      ]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
-
 
   // ════════════════════════════════════════════════════════════
   // TÍNH NĂNG 7 — ADMIN: DUYỆT / ĐIỀU CHỈNH DEADLINE
@@ -1473,16 +2938,22 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       final updated = await _repo.approveDeadline(_ticket.ticketId, 'approve');
       if (mounted && context.mounted) {
         setState(() => _ticket = updated);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✅ Đã phê duyệt deadline'),
-          backgroundColor: Color(0xFF43A047),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Đã phê duyệt deadline'),
+            backgroundColor: Color(0xFF43A047),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
+          SnackBar(
+            content: Text('Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -1497,112 +2968,190 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 32),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Center(child: Container(width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-          const SizedBox(height: 16),
-          const Text('Điều chỉnh Deadline', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('Chọn ngày deadline cuối cùng. Sẽ ghi đè đề xuất của user.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () async {
-              final now = DateTime.now();
-              final result = await showDatePicker(
-                context: ctx,
-                initialDate: _ticket.proposedDeadline ?? now.add(const Duration(days: 3)),
-                firstDate: now,
-                lastDate: now.add(const Duration(days: 365)),
-                builder: (c, child) => Theme(data: Theme.of(c).copyWith(
-                    colorScheme: const ColorScheme.light(primary: Color(0xFF3949AB))), child: child!),
-              );
-              if (result != null) setS(() => picked = result);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: picked != null ? const Color(0xFFEEF2FF) : const Color(0xFFF4F5F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: picked != null ? const Color(0xFF3949AB) : Colors.grey.shade200,
-                  width: picked != null ? 1.5 : 1,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 32,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              child: Row(children: [
-                Icon(Icons.calendar_today_rounded, size: 18,
-                    color: picked != null ? const Color(0xFF3949AB) : Colors.grey[400]),
-                const SizedBox(width: 10),
-                Text(
-                  picked != null ? fmt(picked!) : 'Chọn ngày điều chỉnh...',
-                  style: TextStyle(fontSize: 14,
-                      color: picked != null ? const Color(0xFF1C1C2E) : Colors.grey[500]),
-                ),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Ghi chú Admin
-          TextField(
-            controller: noteCtrl,
-            maxLines: 2,
-            style: const TextStyle(fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Ghi chú cho user (tuỳ chọn)...',
-              hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
-              filled: true,
-              fillColor: const Color(0xFFF4F5F9),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.tune_rounded, size: 17),
-              label: const Text('Xác nhận điều chỉnh', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: picked != null ? const Color(0xFF1976D2) : Colors.grey.shade300,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: 16),
+              const Text(
+                'Điều chỉnh Deadline',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
-              onPressed: picked == null ? null : () async {
-                final note = noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim();
-                Navigator.pop(ctx);
-                try {
-                  final updated = await _repo.approveDeadline(
-                    _ticket.ticketId, 'adjust',
-                    finalDeadline: picked,
-                    adminNote: note,
+              const SizedBox(height: 4),
+              Text(
+                'Chọn ngày deadline cuối cùng. Sẽ ghi đè đề xuất của user.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final result = await showDatePicker(
+                    context: ctx,
+                    initialDate:
+                        _ticket.proposedDeadline ??
+                        now.add(const Duration(days: 3)),
+                    firstDate: now,
+                    lastDate: now.add(const Duration(days: 365)),
+                    builder: (c, child) => Theme(
+                      data: Theme.of(c).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: Color(0xFF3949AB),
+                        ),
+                      ),
+                      child: child!,
+                    ),
                   );
+                  if (result != null) setS(() => picked = result);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: picked != null
+                        ? const Color(0xFFEEF2FF)
+                        : const Color(0xFFF4F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: picked != null
+                          ? const Color(0xFF3949AB)
+                          : Colors.grey.shade200,
+                      width: picked != null ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 18,
+                        color: picked != null
+                            ? const Color(0xFF3949AB)
+                            : Colors.grey[400],
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        picked != null
+                            ? fmt(picked!)
+                            : 'Chọn ngày điều chỉnh...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: picked != null
+                              ? const Color(0xFF1C1C2E)
+                              : Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Ghi chú Admin
+              TextField(
+                controller: noteCtrl,
+                maxLines: 2,
+                style: const TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Ghi chú cho user (tuỳ chọn)...',
+                  hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                  filled: true,
+                  fillColor: const Color(0xFFF4F5F9),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.tune_rounded, size: 17),
+                  label: const Text(
+                    'Xác nhận điều chỉnh',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: picked != null
+                        ? const Color(0xFF1976D2)
+                        : Colors.grey.shade300,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: picked == null
+                      ? null
+                      : () async {
+                          final note = noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim();
+                          Navigator.pop(ctx);
+                          try {
+                            final updated = await _repo.approveDeadline(
+                              _ticket.ticketId,
+                              'adjust',
+                              finalDeadline: picked,
+                              adminNote: note,
+                            );
 
-                  if (mounted && context.mounted) {
-                    setState(() => _ticket = updated);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('📅 Đã điều chỉnh deadline'),
-                      backgroundColor: Color(0xFF1976D2),
-                      behavior: SnackBarBehavior.floating,
-                    ));
-                  }
-                } catch (e) {
-                  if (mounted && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
-                  }
-                }
-              },
-            ),
+                            if (mounted && context.mounted) {
+                              setState(() => _ticket = updated);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('📅 Đã điều chỉnh deadline'),
+                                  backgroundColor: Color(0xFF1976D2),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Đã xảy ra lỗi, vui lòng thử lại!',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                ),
+              ),
+            ],
           ),
-        ]),
-      )),
+        ),
+      ),
     );
   }
 
@@ -1620,43 +3169,96 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
-        Row(children: [
-          const Icon(Icons.attach_file_rounded, size: 15, color: _themeColor),
-          const SizedBox(width: 6),
-          Text('Đính kèm (${_attachments.length})',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _themeColor)),
-          const Spacer(),
-          if (_uploadingFile)
-            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _themeColor))
-          else if (_ticket.status != 'Resolved' && _ticket.status != 'Cancelled')
-            GestureDetector(
-              onTap: _pickAndUploadFile,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _themeColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.upload_file_rounded, size: 13, color: _themeColor),
-                  SizedBox(width: 4),
-                  Text('Thêm file', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _themeColor)),
-                ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              const Icon(
+                Icons.attach_file_rounded,
+                size: 15,
+                color: _themeColor,
               ),
-            ),
-        ]),
-        if (_attachments.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text('Chưa có file nào', style: TextStyle(fontSize: 12, color: Colors.grey[400], fontStyle: FontStyle.italic)),
-          )
-        else
-          ...(_attachments.map((a) => _buildAttachmentTile(a))),
-      ]),
+              const SizedBox(width: 6),
+              Text(
+                'Đính kèm (${_attachments.length})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: _themeColor,
+                ),
+              ),
+              const Spacer(),
+              if (_uploadingFile)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _themeColor,
+                  ),
+                )
+              else if (_ticket.status != 'Resolved' &&
+                  _ticket.status != 'Cancelled')
+                GestureDetector(
+                  onTap: _pickAndUploadFile,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _themeColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.upload_file_rounded,
+                          size: 13,
+                          color: _themeColor,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Thêm file',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _themeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (_attachments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Chưa có file nào',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[400],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          else
+            ...(_attachments.map((a) => _buildAttachmentTile(a))),
+        ],
+      ),
     );
   }
 
@@ -1669,11 +3271,23 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final isOwner = a.uploaderId == widget.currentUser.userId || widget.isAdmin;
     IconData icon;
     Color iconColor;
-    if (a.isImage) { icon = Icons.image_rounded; iconColor = Colors.teal; }
-    else if (a.isPdf) { icon = Icons.picture_as_pdf_rounded; iconColor = Colors.red; }
-    else if (a.mimeType.contains('word')) { icon = Icons.description_rounded; iconColor = const Color(0xFF1976D2); }
-    else if (a.mimeType.contains('excel') || a.mimeType.contains('spreadsheet')) { icon = Icons.table_chart_rounded; iconColor = Colors.green; }
-    else { icon = Icons.insert_drive_file_rounded; iconColor = Colors.grey; }
+    if (a.isImage) {
+      icon = Icons.image_rounded;
+      iconColor = Colors.teal;
+    } else if (a.isPdf) {
+      icon = Icons.picture_as_pdf_rounded;
+      iconColor = Colors.red;
+    } else if (a.mimeType.contains('word')) {
+      icon = Icons.description_rounded;
+      iconColor = const Color(0xFF1976D2);
+    } else if (a.mimeType.contains('excel') ||
+        a.mimeType.contains('spreadsheet')) {
+      icon = Icons.table_chart_rounded;
+      iconColor = Colors.green;
+    } else {
+      icon = Icons.insert_drive_file_rounded;
+      iconColor = Colors.grey;
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -1686,37 +3300,65 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: _themeColor.withValues(alpha: 0.1)),
           ),
-          child: Row(children: [
-            // Thumbnail / icon
-            if (a.isImage)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.memory(base64Decode(a.fileData),
-                  width: 36, height: 36, fit: BoxFit.cover),
-              )
-            else
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                child: Icon(icon, size: 18, color: iconColor),
-              ),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(a.fileName,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text(a.fileSizeLabel,
-                style: TextStyle(fontSize: 10, color: Colors.grey[500])),
-            ])),
-            if (isOwner)
-              GestureDetector(
-                onTap: () => _deleteAttachment(a),
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+          child: Row(
+            children: [
+              // Thumbnail / icon
+              if (a.isImage)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.memory(
+                    base64Decode(a.fileData),
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(icon, size: 18, color: iconColor),
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a.fileName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1C1C2E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      a.fileSizeLabel,
+                      style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                    ),
+                  ],
                 ),
               ),
-          ]),
+              if (isOwner)
+                GestureDetector(
+                  onTap: () => _deleteAttachment(a),
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1734,7 +3376,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final canPropose = !widget.isAdmin; // Customer AND IT Staff
     final proposed = _ticket.proposedDeadline;
     final finalDL = _ticket.finalDeadline;
-    final status = _ticket.deadlineStatus; // 'Pending' | 'Approved' | 'Adjusted' | null
+    final status =
+        _ticket.deadlineStatus; // 'Pending' | 'Approved' | 'Adjusted' | null
 
     // Admin không thấy card nếu chưa có đề xuất nào
     if (proposed == null && widget.isAdmin) return const SizedBox.shrink();
@@ -1761,7 +3404,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
 
     // Admin: chỉ hiện nút hành động khi deadline đang Pending
-    final adminCanAct = widget.isAdmin && proposed != null && status == 'Pending';
+    final adminCanAct =
+        widget.isAdmin && proposed != null && status == 'Pending';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -1770,107 +3414,207 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: proposed != null ? statusColor.withValues(alpha: 0.3) : Colors.grey.shade200,
+          color: proposed != null
+              ? statusColor.withValues(alpha: 0.3)
+              : Colors.grey.shade200,
         ),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Header row ─────────────────────────────────────
-        Row(children: [
-          Icon(Icons.event_note_rounded, size: 15, color: _themeColor),
-          const SizedBox(width: 6),
-          const Text('Deadline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _themeColor)),
-          const Spacer(),
-          if (canPropose && _ticket.status != 'Resolved' && _ticket.status != 'Cancelled')
-            GestureDetector(
-              onTap: _showProposeDeadlineSheet,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _themeColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.edit_calendar_rounded, size: 13, color: _themeColor),
-                  const SizedBox(width: 4),
-                  Text(proposed == null ? 'Đề xuất' : 'Cập nhật',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _themeColor)),
-                ]),
-              ),
-            ),
-        ]),
-        const SizedBox(height: 10),
-
-        // ── Proposed deadline row ───────────────────────────
-        if (proposed == null)
-          Text('Chưa có đề xuất deadline', style: TextStyle(fontSize: 13, color: Colors.grey[400], fontStyle: FontStyle.italic))
-        else ...[
-          Row(children: [
-            Icon(Icons.person_outline, size: 14, color: Colors.grey[500]),
-            const SizedBox(width: 5),
-            Text('Đề xuất: ', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            Text(fmt(proposed), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E))),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(statusIcon, size: 10, color: statusColor),
-                const SizedBox(width: 3),
-                Text(statusLabel, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
-              ]),
-            ),
-          ]),
-          if (finalDL != null) ...[
-            const SizedBox(height: 6),
-            Row(children: [
-              Icon(Icons.admin_panel_settings_rounded, size: 14, color: Colors.grey[500]),
-              const SizedBox(width: 5),
-              Text('Admin quyết định: ', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-              Text(fmt(finalDL), style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.bold,
-                  color: status == 'Adjusted' ? const Color(0xFF1976D2) : Colors.green)),
-            ]),
-          ],
-
-          // ── Admin action buttons ────────────────────────
-          if (adminCanAct) ...[
-            const SizedBox(height: 14),
-            Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _approveDeadline,
-                  icon: const Icon(Icons.check_circle_outline, size: 16),
-                  label: const Text('Duyệt'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.green,
-                    side: const BorderSide(color: Colors.green),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showAdjustDeadlineSheet,
-                  icon: const Icon(Icons.tune_rounded, size: 16),
-                  label: const Text('Điều chỉnh'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1976D2),
-                    side: const BorderSide(color: Color(0xFF1976D2)),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ]),
-          ],
-
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
-      ]),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header row ─────────────────────────────────────
+          Row(
+            children: [
+              Icon(Icons.event_note_rounded, size: 15, color: _themeColor),
+              const SizedBox(width: 6),
+              const Text(
+                'Deadline',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: _themeColor,
+                ),
+              ),
+              const Spacer(),
+              if (canPropose &&
+                  _ticket.status != 'Resolved' &&
+                  _ticket.status != 'Cancelled')
+                GestureDetector(
+                  onTap: _showProposeDeadlineSheet,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _themeColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_calendar_rounded,
+                          size: 13,
+                          color: _themeColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          proposed == null ? 'Đề xuất' : 'Cập nhật',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _themeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // ── Proposed deadline row ───────────────────────────
+          if (proposed == null)
+            Text(
+              'Chưa có đề xuất deadline',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[400],
+                fontStyle: FontStyle.italic,
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                Icon(Icons.person_outline, size: 14, color: Colors.grey[500]),
+                const SizedBox(width: 5),
+                Text(
+                  'Đề xuất: ',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+                Text(
+                  fmt(proposed),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1C1C2E),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 10, color: statusColor),
+                      const SizedBox(width: 3),
+                      Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (finalDL != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.admin_panel_settings_rounded,
+                    size: 14,
+                    color: Colors.grey[500],
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Admin quyết định: ',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                  Text(
+                    fmt(finalDL),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: status == 'Adjusted'
+                          ? const Color(0xFF1976D2)
+                          : Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // ── Admin action buttons ────────────────────────
+            if (adminCanAct) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _approveDeadline,
+                      icon: const Icon(Icons.check_circle_outline, size: 16),
+                      label: const Text('Duyệt'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.green,
+                        side: const BorderSide(color: Colors.green),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _showAdjustDeadlineSheet,
+                      icon: const Icon(Icons.tune_rounded, size: 16),
+                      label: const Text('Điều chỉnh'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1976D2),
+                        side: const BorderSide(color: Color(0xFF1976D2)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ],
+      ),
     );
   }
 
@@ -1881,13 +3625,26 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // ────────────────────────────────────────────────────────────
   Widget _assetInfoRow(IconData icon, String label, String value) => Padding(
     padding: const EdgeInsets.only(bottom: 7),
-    child: Row(children: [
-      Icon(icon, size: 14, color: Colors.grey[400]),
-      const SizedBox(width: 8),
-      Text('$label: ', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-      Expanded(child: Text(value,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)),
-        overflow: TextOverflow.ellipsis)),
-    ]),
+    child: Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey[400]),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1C1C2E),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
   );
 }

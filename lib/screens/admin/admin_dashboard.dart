@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../widgets/dashboard_header.dart';
-import '../../widgets/admin_sidebar.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
+import '../web/web_sidebar.dart';
+import '../../app_router.dart' show TicketDetailWrapper;
 import '../../services/windows_notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -16,52 +16,34 @@ class AdminDashboard extends StatefulWidget {
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard>
-    with SingleTickerProviderStateMixin {
+class _AdminDashboardState extends State<AdminDashboard> {
+  int _sidebarIndex = 0;
   final _repo = TicketRepository.instance;
   List<Ticket> _tickets = [];
   List<User> _itStaff = [];
   bool _loading = true;
   String _filterStatus = 'Tất cả';
-  String _priorityFilter = 'Tất cả';
-  String? _categoryFilter;
+  String _filterType = 'Tất cả';
   String _searchQuery = '';
-  final TextEditingController _searchCtrl = TextEditingController();
-  late TabController _tabController;
-  int _sidebarIndex = 0;
-  int _currentPage = 0;
-  static const int _pageSize = 15;
+  Ticket? _selectedTicket;
+  Timer? _refreshTimer;
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
+  double _leftPaneWidth = 500.0; // Chiều rộng kéo được cho cột danh sách
 
   // Real-time: track new tickets since last bell-tap
   final Set<int> _knownTicketIds = {};
-  int _newNotifCount = 0;
-  Timer? _refreshTimer;
-
-  static const _softwareCats = {
-    'Lỗi phần mềm',
-    'Yêu cầu cấp quyền',
-    'Cài đặt / Nâng cấp',
-    'Khác',
-  };
-  static const _hardwareCats = {'Lỗi phần cứng', 'Lỗi mạng'};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _searchCtrl.addListener(() {
-      setState(() { _searchQuery = _searchCtrl.text; _currentPage = 0; });
-    });
     _loadData();
-    // Auto-refresh every 15 seconds to detect new tickets
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    _tabController.dispose();
-    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -74,12 +56,11 @@ class _AdminDashboardState extends State<AdminDashboard>
       setState(() {
         final rawTickets = List<Ticket>.from(results[0]);
         rawTickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        // Detect genuinely new tickets (unknown IDs)
+        
+        // Detect genuinely new tickets
         if (_knownTicketIds.isNotEmpty) {
           final newTickets = rawTickets.where((t) => !_knownTicketIds.contains(t.ticketId)).toList();
           if (newTickets.isNotEmpty) {
-            _newNotifCount += newTickets.length;
-            // 🔔 Windows toast notification cho ticket mới nhất
             final latest = newTickets.first;
             WindowsNotificationService.showNewTicket(
               ticketId: latest.ticketId,
@@ -89,110 +70,18 @@ class _AdminDashboardState extends State<AdminDashboard>
           }
         }
         _knownTicketIds.addAll(rawTickets.map((t) => t.ticketId));
+        
         _tickets = rawTickets;
         _itStaff = List<User>.from(results[1]);
         _loading = false;
+        
+        if (_selectedTicket != null) {
+          try {
+            _selectedTicket = _tickets.firstWhere((t) => t.ticketId == _selectedTicket!.ticketId);
+          } catch (_) { _selectedTicket = null; }
+        }
       });
     }
-  }
-
-  List<Ticket> get _filtered {
-    final statusFilter = _filterStatus;
-    final priorityFilter = _priorityFilter;
-    final catFilter = _categoryFilter;
-    final q = _searchQuery.toLowerCase().trim();
-    return _tickets.where((t) {
-      final matchStatus = statusFilter == 'Tất cả' || t.status == statusFilter;
-      final matchPriority =
-          priorityFilter == 'Tất cả' || t.priority == priorityFilter;
-      final cat = t.categoryName ?? '';
-      final matchCategory = catFilter == null || catFilter == 'Tất cả'
-          ? true
-          : catFilter == 'Phần mềm'
-          ? _softwareCats.contains(cat)
-          : _hardwareCats.contains(cat);
-      final matchSearch =
-          q.isEmpty ||
-          t.subject.toLowerCase().contains(q) ||
-          (t.requesterName ?? '').toLowerCase().contains(q) ||
-          (t.categoryName ?? '').toLowerCase().contains(q) ||
-          '#tkt-${t.ticketId.toString().padLeft(4, '0')}'.contains(q) ||
-          t.ticketId.toString().contains(q);
-      return matchStatus && matchPriority && matchCategory && matchSearch;
-    }).toList();
-  }
-
-  List<Ticket> get _paginatedTickets {
-    final all = _filtered;
-    final start = _currentPage * _pageSize;
-    if (start >= all.length) return [];
-    return all.sublist(start, (start + _pageSize).clamp(0, all.length));
-  }
-
-  // ── SLA rules: High=4h, Medium=24h, Low=72h ────────────────────
-  DateTime _slaDeadline(Ticket t) {
-    final hours = t.priority == 'High' ? 4
-        : t.priority == 'Medium' ? 24
-        : 72;
-    return t.createdAt.add(Duration(hours: hours));
-  }
-
-  // effective deadline: manual first, then SLA
-  DateTime? _effectiveDeadline(Ticket t) {
-    if (t.status == 'Resolved' || t.status == 'Cancelled') return null;
-    if (t.finalDeadline != null) return t.finalDeadline;
-    return _slaDeadline(t);
-  }
-
-  // deadline warning: null | 'overdue' | 'soon'
-  String? _dlWarning(Ticket t) {
-    final dl = _effectiveDeadline(t);
-    if (dl == null) return null;
-    final diff = dl.difference(DateTime.now());
-    if (diff.isNegative) return 'overdue';
-    if (diff.inHours <= 4) return 'soon';
-    return null;
-  }
-
-  Color _statusColor(String s) {
-    switch (s) {
-      case 'Open': return const Color(0xFFE53935);
-      case 'Pending': return const Color(0xFFFB8C00);
-      case 'WaitingConfirmation': return const Color(0xFFF59E0B);
-      case 'Resolved': return const Color(0xFF43A047);
-      case 'Cancelled': return const Color(0xFF78909C);
-      default: return Colors.grey;
-    }
-  }
-
-  Color _priorityColor(String p) {
-    switch (p) {
-      case 'High': return const Color(0xFFE53935);
-      case 'Medium': return const Color(0xFFFB8C00);
-      default: return const Color(0xFF29B6F6);
-    }
-  }
-
-  String _statusLabel(String s) {
-    switch (s) {
-      case 'Open': return 'Đang mở';
-      case 'Pending': return 'Chờ xử lý';
-      case 'WaitingConfirmation': return 'Chờ xác nhận';
-      case 'Resolved': return 'Đã xong';
-      case 'Cancelled': return 'Đã hủy';
-      default: return s;
-    }
-  }
-
-
-
-  String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'Vừa xong';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m trước';
-    if (diff.inHours < 24) return '${diff.inHours}h trước';
-    if (diff.inDays < 7) return '${diff.inDays}d trước';
-    return '${dt.day}/${dt.month}/${dt.year}';
   }
 
   Future<void> _assignTicket(Ticket ticket, User? staff) async {
@@ -200,547 +89,764 @@ class _AdminDashboardState extends State<AdminDashboard>
     await _loadData();
   }
 
+  // ── Ticket type helpers ────────────────────────────────────
+  static const _typeColors = {
+    'ticket': Color(0xFF3949AB),
+    'feedback': Color(0xFF00897B),
+    'reopen_medical': Color(0xFF5C6BC0),
+  };
+  static const _typeLabels = {
+    'ticket': 'IT Ticket',
+    'feedback': 'Góp ý',
+    'reopen_medical': 'Mở lại BA',
+  };
+  static const _typeIcons = {
+    'ticket': Icons.build_circle_rounded,
+    'feedback': Icons.feedback_rounded,
+    'reopen_medical': Icons.folder_open_rounded,
+  };
+  static const _typePrefixes = {
+    'ticket': 'TK',
+    'feedback': 'GY',
+    'reopen_medical': 'BA',
+  };
+
+  Color _statusColor(String s) {
+    switch (s) {
+      case 'Open': return const Color(0xFF3B82F6);
+      case 'Pending': return const Color(0xFFF59E0B);
+      case 'Resolved': return const Color(0xFF10B981);
+      case 'Cancelled': return const Color(0xFFE53935);
+      case 'Closed': return const Color(0xFF64748B);
+      default: return Colors.grey;
+    }
+  }
+
+  String _statusLabel(String s) {
+    switch (s) {
+      case 'Open': return 'Mở';
+      case 'Pending': return 'Đang xử lý';
+      case 'WaitingConfirmation': return 'Chờ xác nhận';
+      case 'Resolved': return 'Hoàn thành';
+      case 'Cancelled': return 'Từ chối';
+      case 'Closed': return 'Đã đóng';
+      default: return s;
+    }
+  }
+
+  String _getTicketStatusLabel(Ticket t) {
+    if (t.ticketType == 'reopen_medical') {
+      switch (t.status) {
+        case 'Open': return 'Chờ duyệt';
+        case 'Pending': return 'Đang mở BA';
+        case 'WaitingConfirmation': return 'Chờ đóng BA';
+        case 'Resolved': return 'Đã duyệt';
+        case 'Cancelled': return 'Từ chối';
+        case 'Closed': return 'Đã đóng';
+      }
+    } else if (t.ticketType == 'feedback') {
+      switch (t.status) {
+        case 'Open': return 'Chờ tiếp nhận';
+        case 'Pending': return 'Đang xem xét';
+        case 'Resolved': return 'Đã tiếp nhận';
+        case 'Cancelled': return 'Từ chối';
+      }
+    }
+    return _statusLabel(t.status);
+  }
+
+  Color _priorityColor(String p) {
+    switch (p) {
+      case 'High': return const Color(0xFFE53935);
+      case 'Medium': return const Color(0xFFFB8C00);
+      case 'Low': return const Color(0xFF43A047);
+      default: return Colors.grey;
+    }
+  }
+
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Vừa xong';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m trước';
+    if (diff.inHours < 24) return '${diff.inHours}h trước';
+    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  List<Ticket> get _filtered {
+    var list = _tickets.toList();
+    // Type filter
+    if (_filterType != 'Tất cả') {
+      list = list.where((t) => t.ticketType == _filterType).toList();
+    }
+    // Status filter
+    if (_filterStatus != 'Tất cả') {
+      list = list.where((t) => t.status == _filterStatus).toList();
+    }
+    // Search
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((t) =>
+        t.subject.toLowerCase().contains(q) ||
+        (t.requesterName ?? '').toLowerCase().contains(q) ||
+        t.ticketId.toString().contains(q)
+      ).toList();
+    }
+    return list;
+  }
+
+  int _countByType(String type) => _tickets.where((t) => t.ticketType == type).length;
+  int _countByStatus(String status) {
+    var list = _filterType == 'Tất cả'
+        ? _tickets
+        : _tickets.where((t) => t.ticketType == _filterType);
+    return list.where((t) => t.status == status).length;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
-    final total = _tickets.length;
-    final openCount = _tickets.where((t) => t.status == 'Open').length;
-    final pendingCount = _tickets.where((t) => t.status == 'Pending').length;
-    final resolvedCount = _tickets.where((t) => t.status == 'Resolved').length;
-    final unassigned = _tickets.where((t) => t.assigneeId == null).length;
-    final slaOverdue = _tickets.where((t) => _dlWarning(t) == 'overdue').length;
-    final slaSoon = _tickets.where((t) => _dlWarning(t) == 'soon').length;
-
+    final isWide = MediaQuery.of(context).size.width >= 900;
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
-      drawer: AdminSidebar(
-        currentUser: widget.currentUser,
-        selectedIndex: _sidebarIndex,
-        onItemSelected: (index) {
-          setState(() => _sidebarIndex = index);
-          if (index == 1) {
-            context.push('/admin/reports');
-          } else if (index == 2) {
-            context.push('/notifications');
-          } else if (index == 3) {
-            context.push('/admin/it-workload');
-          } else if (index == 4) {
-            context.push('/admin/emergency-contacts');
-          }
-        },
+      backgroundColor: const Color(0xFFF8FAFC),
+      drawer: isWide ? null : Drawer(
+        child: WebSidebar(
+          currentUser: widget.currentUser,
+          selectedIndex: _sidebarIndex,
+          onItemSelected: (index) {
+            setState(() => _sidebarIndex = index);
+            if (index == 1) context.push('/admin/reports');
+            if (index == 2) context.push('/admin/it-workload');
+            if (index == 3) context.push('/admin/emergency-contacts');
+          },
+        ),
       ),
-      body: Builder(
-        builder: (scaffoldCtx) => Column(
-          children: [
-            // ── HEADER ──────────────────────────────────────────
-            DashboardHeader(
-              title: 'Admin Dashboard',
-              userName: widget.currentUser.fullName,
-              greeting: '',
-              gradientColors: const [Color(0xFF1A237E), Color(0xFF3949AB)],
-              showGreeting: false,
-              notificationCount: _newNotifCount,
-              onNotificationTap: () {
-                setState(() => _newNotifCount = 0); // clear badge
-                context.push('/notifications');
+      body: Row(
+        children: [
+          // 1. Sidebar
+          if (isWide)
+            WebSidebar(
+              currentUser: widget.currentUser,
+              selectedIndex: _sidebarIndex,
+              onItemSelected: (index) {
+                setState(() => _sidebarIndex = index);
+                if (index == 1) context.push('/admin/reports');
+                if (index == 2) context.push('/admin/it-workload');
+                if (index == 3) context.push('/admin/emergency-contacts');
               },
-              leadingAction: IconButton(
-                icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 24),
-                onPressed: () => Scaffold.of(scaffoldCtx).openDrawer(),
-              ),
-              bottomContent: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stat row
-                  Row(children: [
-                    _statCard('Tổng', '$total', const Color(0xFF90CAF9)),
-                    const SizedBox(width: 8),
-                    _statCard('Đang mở', '$openCount', const Color(0xFFEF9A9A)),
-                    const SizedBox(width: 8),
-                    _statCard('Chờ xử lý', '$pendingCount', const Color(0xFFFFCC80)),
-                    const SizedBox(width: 8),
-                    _statCard('Đã xong', '$resolvedCount', const Color(0xFFA5D6A7)),
-                  ]),
-                  const SizedBox(height: 12),
-                  // Tab bar
-                  Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      labelColor: const Color(0xFF1A237E),
-                      unselectedLabelColor: Colors.white,
-                      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-                      tabs: [
-                        Tab(text: 'TẤT CẢ ($total)'),
-                        Tab(child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Flexible(child: Text('CHƯA PHÂN CÔNG', overflow: TextOverflow.ellipsis)),
-                          if (unassigned > 0) ...[
-                            const SizedBox(width: 5),
-                            CircleAvatar(radius: 9, backgroundColor: const Color(0xFFE53935),
-                              child: Text('$unassigned', style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold))),
-                          ],
-                        ])),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ),
-
-            // ── FILTER BAR ──────────────────────────────────────
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-              child: Column(children: [
-                // Status summary chips row — dùng Row có Flexible để không overflow
-                Row(children: [
-                  Flexible(
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        _summaryChip('$openCount Đang mở', const Color(0xFFE53935)),
-                        _summaryChip('$pendingCount Chờ xử lý', const Color(0xFFFB8C00)),
-                        _summaryChip('$resolvedCount Đã xong', const Color(0xFF43A047)),
-                        if (slaOverdue > 0)
-                          _summaryChip('$slaOverdue SLA QH', const Color(0xFFB71C1C), icon: Icons.warning_rounded),
-                        if (slaSoon > 0 && slaOverdue == 0)
-                          _summaryChip('$slaSoon SLA Sắp hết', Colors.orange, icon: Icons.timer_outlined),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Priority filter
-                  PopupMenuButton<String>(
-                    initialValue: _priorityFilter,
-                    offset: const Offset(0, 36),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    onSelected: (v) => setState(() { _priorityFilter = v; _currentPage = 0; }),
-                    itemBuilder: (_) => ['Tất cả', 'High', 'Medium', 'Low']
-                        .map((p) => PopupMenuItem(value: p, child: Text(p == 'High' ? '🔴 Cao' : p == 'Medium' ? '🟠 Trung bình' : p == 'Low' ? '🔵 Thấp' : '⚪ Tất cả')))
-                        .toList(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB) : Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(20),
-                        color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB).withValues(alpha: 0.08) : Colors.transparent,
+          // 2. Main content
+          Expanded(
+            child: _selectedTicket != null && isWide
+                ? Row(
+                    children: [
+                      SizedBox(
+                        width: _leftPaneWidth,
+                        child: _buildMainContent(isWide),
                       ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.filter_list, size: 13, color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB) : Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          _priorityFilter == 'Tất cả' ? 'Ưu tiên' : _priorityFilter,
-                          style: TextStyle(fontSize: 11, color: _priorityFilter != 'Tất cả' ? const Color(0xFF3949AB) : Colors.grey[700], fontWeight: FontWeight.w600),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.resizeColumn,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onPanUpdate: (details) {
+                            setState(() {
+                              _leftPaneWidth += details.delta.dx;
+                              if (_leftPaneWidth < 350) _leftPaneWidth = 350;
+                              final maxWidth = MediaQuery.of(context).size.width - 300; // Để lại 300px min cho cột sau
+                              if (_leftPaneWidth > maxWidth) _leftPaneWidth = maxWidth;
+                            });
+                          },
+                          child: Container(
+                            width: 6,
+                            color: Colors.white,
+                            child: Center(
+                              child: Container(
+                                width: 3,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        const Icon(Icons.arrow_drop_down, size: 15, color: Colors.grey),
-                      ]),
+                      ),
+                      Expanded(child: _buildDetailPane()),
+                    ],
+                  )
+                : _buildMainContent(isWide),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent(bool isWide) {
+    final filtered = _filtered;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Header ──────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.fromLTRB(28, 22, 28, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (!isWide)
+                  Builder(
+                    builder: (ctx) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B)),
+                        onPressed: () => Scaffold.of(ctx).openDrawer(),
+                      ),
                     ),
                   ),
+                Expanded(
+                  child: const Text(
+                    'Quản lý yêu cầu',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: Color(0xFF1E293B)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  _buildRefreshButton(),
+                  const SizedBox(width: 12),
+                  _buildCreateButton(),
                 ]),
-                const SizedBox(height: 10),
-                // Category + Status filter chips row
+              ],
+            ),
+            const SizedBox(height: 18),
+            // ── Type tabs ─────────────────────────────────────
+            _buildTypeTabs(),
+            const SizedBox(height: 14),
+            // ── Search + Status filters ─────────────────────
+            Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                // Search
+                SizedBox(
+                  width: 220,
+                  height: 36,
+                  child: TextField(
+                    onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 1; }),
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Tìm kiếm...',
+                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                      prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      filled: true,
+                      fillColor: const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.5)),
+                    ),
+                  ),
+                ),
+                // Status chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: Row(children: [
-                    _catChip('Tất cả', Icons.apps_rounded, const Color(0xFF3949AB)),
-                    const SizedBox(width: 6),
-                    _catChip('Phần mềm', Icons.computer_rounded, const Color(0xFF1565C0)),
-                    const SizedBox(width: 6),
-                    _catChip('Phần cứng', Icons.memory_rounded, const Color(0xFF0277BD)),
-                    Container(margin: const EdgeInsets.symmetric(horizontal: 10), width: 1, height: 22, color: Colors.grey.shade300),
-                     ...['Tất cả', 'Open', 'Pending', 'Resolved', 'Cancelled'].map((s) {
-                      final selected = _filterStatus == s;
-                      final color = s == 'Open' ? const Color(0xFFE53935)
-                          : s == 'Pending' ? const Color(0xFFFB8C00)
-                          : s == 'Resolved' ? const Color(0xFF43A047)
-                          : s == 'Cancelled' ? const Color(0xFF78909C)
-                          : const Color(0xFF3949AB);
-                      return GestureDetector(
-                        onTap: () => setState(() { _filterStatus = s; _currentPage = 0; }),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: selected ? color : Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: selected ? color : Colors.grey.shade300),
-                          ),
-                          child: Text(
-                            s == 'Tất cả' ? 'Tất cả' : _statusLabel(s),
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                              color: selected ? Colors.white : Colors.grey[600]),
-                          ),
-                        ),
-                      );
-                    }),
-                  ]),
-                ),
-                const SizedBox(height: 10),
-              ]),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    _statusChip('Tất cả', null),
+                  _statusChip('Open', _statusColor('Open')),
+                  _statusChip('Pending', _statusColor('Pending')),
+                  _statusChip('WaitingConfirmation', _statusColor('WaitingConfirmation')),
+                  _statusChip('Resolved', _statusColor('Resolved')),
+                  _statusChip('Cancelled', _statusColor('Cancelled')),
+                ]),
+              ),
+            ],
             ),
-
-            // ── TABLE HEADER ────────────────────────────────────
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-              child: const Divider(height: 1, color: Color(0xFFE8EAED)),
-            ),
-            Container(
-              color: const Color(0xFFF8F9FB),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(children: [
-                const SizedBox(width: 6),
-                const SizedBox(width: 28), // priority icon
-                Expanded(flex: 1, child: Text('KEY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5))),
-                Expanded(flex: 3, child: Text('TIÊU ĐỀ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5))),
-                Expanded(flex: 2, child: Text('NGƯỜI GỬI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5))),
-                Expanded(flex: 2, child: Text('NGƯỜI XỬ LÝ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5))),
-                Expanded(flex: 2, child: Text('TRẠNG THÁI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5))),
-                Expanded(flex: 1, child: Text('THỜI GIAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5))),
-                const SizedBox(width: 8),
-              ]),
-            ),
-            const Divider(height: 1, color: Color(0xFFE8EAED)),
-
-            // ── TICKET TABLE ─────────────────────────────────────
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF3949AB)))
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      color: const Color(0xFF3949AB),
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildTableList(_paginatedTickets),
-                          _buildTableList(_paginatedTickets.where((t) => t.assigneeId == null).toList()),
-                        ],
-                      ),
-                    ),
-            ),
-
-            // ── PAGINATION BAR ───────────────────────────────────
-            if (!_loading) _buildPaginationBar(filtered.length),
-          ],
+          ]),
         ),
-      ),
+        // ── Result count ────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 14, 28, 8),
+          child: Text(
+            '${filtered.length} kết quả',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade500),
+          ),
+        ),
+        // ── Ticket list ─────────────────────────────────────
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF3949AB)))
+              : filtered.isEmpty
+                  ? _buildEmptyState()
+                  : _buildListWithPagination(filtered),
+        ),
+      ],
     );
   }
 
-  Widget _buildPaginationBar(int totalCount) {
-    final totalPages = (totalCount / _pageSize).ceil().clamp(1, 9999);
-    final start = totalCount == 0 ? 0 : _currentPage * _pageSize + 1;
-    final end = ((_currentPage + 1) * _pageSize).clamp(0, totalCount);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
+  // ── Type tabs ────────────────────────────────────────────
+  Widget _buildTypeTabs() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(children: [
-        Text('$start–$end / $totalCount kết quả',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        const Spacer(),
-        // First
-        _pageBtn(Icons.first_page, _currentPage > 0, () => setState(() => _currentPage = 0)),
-        const SizedBox(width: 4),
-        // Prev
-        _pageBtn(Icons.chevron_left, _currentPage > 0, () => setState(() => _currentPage--)),
+        _typeTab('Tất cả', 'Tất cả', Icons.dashboard_rounded, _tickets.length, const Color(0xFF64748B)),
         const SizedBox(width: 8),
-        // Page indicator
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3949AB),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text('${_currentPage + 1} / $totalPages',
-              style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
-        ),
+        _typeTab('ticket', 'IT Ticket', Icons.build_circle_rounded, _countByType('ticket'), _typeColors['ticket']!),
         const SizedBox(width: 8),
-        // Next
-        _pageBtn(Icons.chevron_right, _currentPage < totalPages - 1, () => setState(() => _currentPage++)),
-        const SizedBox(width: 4),
-        // Last
-        _pageBtn(Icons.last_page, _currentPage < totalPages - 1, () => setState(() => _currentPage = totalPages - 1)),
+        _typeTab('feedback', 'Góp ý', Icons.feedback_rounded, _countByType('feedback'), _typeColors['feedback']!),
+        const SizedBox(width: 8),
+        _typeTab('reopen_medical', 'Mở lại BA', Icons.folder_open_rounded, _countByType('reopen_medical'), _typeColors['reopen_medical']!),
       ]),
     );
   }
 
-  Widget _pageBtn(IconData icon, bool enabled, VoidCallback onTap) => GestureDetector(
-    onTap: enabled ? onTap : null,
-    child: Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: enabled ? const Color(0xFF3949AB).withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, size: 18, color: enabled ? const Color(0xFF3949AB) : Colors.grey[300]),
-    ),
-  );
-
-
-
-
-  Widget _summaryChip(String label, Color color, {IconData? icon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (icon != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Icon(icon, size: 11, color: color),
-          )
-        else
-          Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 5), decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-      ]),
-    );
-  }
-
-  // ── TABLE LIST ────────────────────────────────────────────────
-  Widget _buildTableList(List<Ticket> tickets) {
-    if (tickets.isEmpty) {
-      return Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: const Color(0xFF3949AB).withValues(alpha: 0.07), shape: BoxShape.circle),
-            child: Icon(Icons.check_circle_outline, size: 56, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 16),
-          Text('Không có yêu cầu nào', style: TextStyle(color: Colors.grey[500], fontSize: 15, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 6),
-          Text('Thử thay đổi bộ lọc', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-        ]),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 24),
-      itemCount: tickets.length,
-      itemBuilder: (ctx, i) => _buildTableRow(ctx, tickets[i]),
-    );
-  }
-
-  Widget _buildTableRow(BuildContext ctx, Ticket ticket) {
-    final statusColor = _statusColor(ticket.status);
-    final priorityColor = _priorityColor(ticket.priority);
-    final isAssigned = ticket.assigneeId != null;
-    final requesterInitial = (ticket.requesterName?.isNotEmpty == true)
-        ? ticket.requesterName![0].toUpperCase() : '?';
-    final slaWarn = _dlWarning(ticket);
-    final rowBg = slaWarn == 'overdue'
-        ? const Color(0xFFFFEBEE)
-        : slaWarn == 'soon'
-            ? const Color(0xFFFFF8E1)
-            : Colors.white;
-
+  Widget _typeTab(String value, String label, IconData icon, int count, Color color) {
+    final isSelected = _filterType == value;
     return InkWell(
-      onTap: () async {
-        _refreshTimer?.cancel();
-        await context.push('/ticket/${ticket.ticketId}', extra: ticket);
-        _loadData();
-        _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
-      },
-      child: Container(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => setState(() {
+        _filterType = value;
+        _filterStatus = 'Tất cả';
+        _currentPage = 1;
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: rowBg,
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? color.withValues(alpha: 0.4) : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1,
+          ),
         ),
-        child: IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            // Priority left border stripe
-            Container(width: 4, color: priorityColor),
-            const SizedBox(width: 8),
-
-            // Priority icon box
-            SizedBox(
-              width: 28,
-              child: Center(
-                child: Container(
-                  width: 20, height: 20,
-                  decoration: BoxDecoration(
-                    color: priorityColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Icon(
-                    ticket.priority == 'High' ? Icons.keyboard_double_arrow_up
-                        : ticket.priority == 'Medium' ? Icons.drag_handle
-                        : Icons.keyboard_double_arrow_down,
-                    size: 12, color: priorityColor,
-                  ),
-                ),
-              ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 16, color: isSelected ? color : Colors.grey.shade400),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? color : Colors.grey.shade600,
+          )),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isSelected ? color.withValues(alpha: 0.15) : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(6),
             ),
+            child: Text('$count', style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? color : Colors.grey.shade500,
+            )),
+          ),
+        ]),
+      ),
+    );
+  }
 
-            // KEY
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Text(
-                  '#${ticket.ticketId.toString().padLeft(4, '0')}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF3949AB), fontSize: 12),
-                ),
-              ),
+  // ── Status chip ──────────────────────────────────────────
+  Widget _statusChip(String value, Color? color) {
+    final isSelected = _filterStatus == value;
+    final count = value == 'Tất cả' ? _filtered.length : _countByStatus(value);
+    final displayLabel = value == 'Tất cả' ? 'Tất cả' : _statusLabel(value);
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => setState(() { _filterStatus = value; _currentPage = 1; }),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: isSelected ? (color ?? const Color(0xFF64748B)).withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? (color ?? const Color(0xFF64748B)).withValues(alpha: 0.4) : Colors.grey.shade200,
             ),
-
-            // TIÊU ĐỀ
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(ticket.subject,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)),
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                  if (ticket.categoryName != null)
-                    Text(ticket.categoryName!,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                  // deadline warning badge
-                  Builder(builder: (ctx) {
-                    final warn = _dlWarning(ticket);
-                    if (warn == null) return const SizedBox.shrink();
-                    final isOverdue = warn == 'overdue';
-                    final warnColor = isOverdue ? Colors.red : Colors.orange;
-                    final dl = ticket.finalDeadline ?? ticket.proposedDeadline;
-                    final dlStr = dl != null ? '${dl.day.toString().padLeft(2,'0')}/${dl.month.toString().padLeft(2,'0')}' : '';
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(isOverdue ? Icons.warning_rounded : Icons.timer_outlined, size: 10, color: warnColor),
-                        const SizedBox(width: 3),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: warnColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                          child: Text(
-                            isOverdue ? 'QUÁ HẠN $dlStr' : 'SẮP HẼT $dlStr',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: warnColor),
-                          ),
-                        ),
-                      ]),
-                    );
-                  }),
-                ]),
-              ),
-            ),
-
-            // NGƯỜI GỬI
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 14, 8, 14),
-                child: Row(children: [
-                  CircleAvatar(
-                    radius: 13,
-                    backgroundColor: const Color(0xFF3949AB).withValues(alpha: 0.1),
-                    child: Text(requesterInitial,
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3949AB))),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(ticket.requesterName ?? 'N/A',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                    maxLines: 1, overflow: TextOverflow.ellipsis)),
-                ]),
-              ),
-            ),
-
-            // NGƯỜI XỬ LÝ
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 14, 10, 14),
-                child: GestureDetector(
-                  onTap: () => _showAssignSheet(ticket),
-                  child: isAssigned
-                      ? Row(children: [
-                          CircleAvatar(
-                            radius: 13,
-                            backgroundColor: const Color(0xFF00897B).withValues(alpha: 0.1),
-                            child: Text(ticket.assigneeName![0].toUpperCase(),
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00897B))),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(ticket.assigneeName!,
-                            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                            maxLines: 1, overflow: TextOverflow.ellipsis)),
-                        ])
-                      : Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.person_add_outlined, size: 12, color: Colors.orange),
-                            const SizedBox(width: 4),
-                            const Flexible(child: Text('Giao việc',
-                              overflow: TextOverflow.ellipsis, maxLines: 1,
-                              style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold))),
-                          ]),
-                        ),
-                ),
-              ),
-            ),
-
-            // TRẠNG THÁI
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(_statusLabel(ticket.status).toUpperCase(),
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
-                  ),
-                ),
-              ),
-            ),
-
-            // THỜI GIAN
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                child: Row(children: [
-                  Icon(Icons.access_time_rounded, size: 11, color: Colors.grey[400]),
-                  const SizedBox(width: 3),
-                  Expanded(child: Text(_timeAgo(ticket.createdAt),
-                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                    maxLines: 1, overflow: TextOverflow.ellipsis)),
-                ]),
-              ),
-            ),
-            const SizedBox(width: 8),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (color != null) ...[
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 5),
+            ],
+            Text(displayLabel, style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? (color ?? const Color(0xFF64748B)) : Colors.grey.shade600,
+            )),
+            const SizedBox(width: 4),
+            Text('$count', style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
           ]),
         ),
       ),
+    );
+  }
+
+  Widget _buildListWithPagination(List<Ticket> filtered) {
+    final totalPages = (filtered.length / _itemsPerPage).ceil();
+    if (_currentPage > totalPages && totalPages > 0) _currentPage = totalPages;
+    final paginated = filtered.skip((_currentPage - 1) * _itemsPerPage).take(_itemsPerPage).toList();
+    
+    return Column(
+      children: [
+        Expanded(child: _buildList(paginated)),
+        if (totalPages > 1) 
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+                ),
+                Text('Trang $_currentPage / $totalPages', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _currentPage < totalPages ? () => setState(() => _currentPage++) : null,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildList(List<Ticket> tickets) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+      itemCount: tickets.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (ctx, i) {
+        final t = tickets[i];
+        final isSelected = _selectedTicket?.ticketId == t.ticketId;
+        final typeColor = _typeColors[t.ticketType] ?? Colors.grey;
+        final prefix = _typePrefixes[t.ticketType] ?? 'TK';
+        final typeLabel = _typeLabels[t.ticketType] ?? 'Ticket';
+        final typeIcon = _typeIcons[t.ticketType] ?? Icons.confirmation_number;
+        final statusColor = _statusColor(t.status);
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => _selectedTicket = t),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isSelected ? typeColor.withValues(alpha: 0.04) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? typeColor.withValues(alpha: 0.5) : Colors.grey.shade100,
+                width: isSelected ? 1.5 : 1,
+              ),
+              boxShadow: [
+                if (isSelected)
+                  BoxShadow(color: typeColor.withValues(alpha: 0.1), blurRadius: 12, offset: const Offset(0, 4))
+                else
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 1)),
+              ],
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Row 1: Type badge + ID + Status + Time
+              Row(children: [
+                // Type badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: typeColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(typeIcon, size: 11, color: typeColor),
+                    const SizedBox(width: 3),
+                    Text(typeLabel, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: typeColor)),
+                  ]),
+                ),
+                const SizedBox(width: 6),
+                // Ticket ID
+                Text(
+                  '#$prefix-${t.ticketId.toString().padLeft(4, '0')}',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500),
+                ),
+                const Spacer(),
+                // Status
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _getTicketStatusLabel(t),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              // Row 2: Subject
+              Text(
+                t.subject,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              if (t.ticketType == 'reopen_medical' && t.description.isNotEmpty) ...[
+                Builder(builder: (context) {
+                  final desc = t.description;
+                  final idx = desc.indexOf('Lý do mở lại:');
+                  final reason = idx != -1 ? desc.substring(idx + 13).trim().replaceAll('\n', ' ') : desc.trim().replaceAll('\n', ' ');
+                  return reason.isNotEmpty ? Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Lý do: $reason',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontStyle: FontStyle.italic),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ) : const SizedBox();
+                }),
+              ],
+              if (t.ticketType == 'reopen_medical' && t.description.toLowerCase().contains('ảnh hưởng tài chính: có'))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(children: [
+                    const Icon(Icons.monetization_on_rounded, size: 12, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 4),
+                    Text('Có ảnh hưởng tài chính', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange.shade700)),
+                  ]),
+                ),
+              // Row 3: Requester + Department + Priority + Assignee + Time
+              Row(children: [
+                Icon(Icons.person_outline, size: 13, color: Colors.grey.shade400),
+                const SizedBox(width: 3),
+                Expanded(child: Text(
+                  t.requesterName ?? 'Người dùng đã xóa',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  overflow: TextOverflow.ellipsis,
+                )),
+                if (t.requesterDeptName != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.apartment_rounded, size: 12, color: Colors.grey.shade400),
+                  const SizedBox(width: 3),
+                  Expanded(child: Text(
+                    t.requesterDeptName!,
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    overflow: TextOverflow.ellipsis,
+                  )),
+                ],
+                const SizedBox(width: 8),
+                // Priority dot
+                if (t.ticketType == 'ticket') ...[
+                  Container(
+                    width: 7, height: 7,
+                    decoration: BoxDecoration(color: _priorityColor(t.priority), shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(t.priority, style: TextStyle(fontSize: 10, color: _priorityColor(t.priority), fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                ],
+                // Time
+                Icon(Icons.access_time_rounded, size: 12, color: Colors.grey.shade400),
+                const SizedBox(width: 3),
+                Text(_relativeTime(t.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+              ]),
+              
+              const SizedBox(height: 12),
+              Container(height: 1, color: Colors.grey.shade100, margin: const EdgeInsets.only(bottom: 12)),
+              // Row 4: Actions (Assign + Accept)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (t.ticketType == 'ticket')
+                    GestureDetector(
+                      onTap: () => _showAssignSheet(t),
+                      child: t.assigneeId != null
+                          ? Row(children: [
+                              CircleAvatar(
+                                radius: 11,
+                                backgroundColor: const Color(0xFF00897B).withValues(alpha: 0.1),
+                                child: Text(t.assigneeName![0].toUpperCase(),
+                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00897B))),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(t.assigneeName!, style: TextStyle(fontSize: 11, color: Colors.grey[700]), overflow: TextOverflow.ellipsis),
+                            ])
+                          : Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.person_add_outlined, size: 12, color: Colors.orange),
+                                const SizedBox(width: 4),
+                                const Text('Giao việc', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                              ]),
+                            ),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                    
+                  if (t.ticketType == 'reopen_medical' && t.status == 'Open')
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF43A047),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.check_rounded, size: 16),
+                      label: const Text('Duyệt Mở Lại', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      onPressed: () async {
+                        try {
+                          await _repo.updateStatus(t.ticketId, 'Resolved');
+                          _loadData();
+                          if (mounted && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('✅ Đã duyệt yêu cầu mở lại bệnh án'),
+                              backgroundColor: Color(0xFF43A047),
+                              behavior: SnackBarBehavior.floating,
+                            ));
+                          }
+                        } catch (e) {
+                          if (mounted && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('❌ Lỗi cập nhật trạng thái!'),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ));
+                          }
+                        }
+                      },
+                    )
+                  else
+                    const SizedBox.shrink(),
+                ],
+              ),
+            ]),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Detail pane ──────────────────────────────────────────
+  Widget _buildDetailPane() {
+    return Container(
+      color: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4)],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  tooltip: 'Đóng chi tiết',
+                  onPressed: () => setState(() => _selectedTicket = null),
+                ),
+                const SizedBox(width: 4),
+                // Type + ID badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (_typeColors[_selectedTicket!.ticketType] ?? Colors.grey).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(_typeIcons[_selectedTicket!.ticketType] ?? Icons.confirmation_number, size: 13,
+                      color: _typeColors[_selectedTicket!.ticketType] ?? Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      '#${_typePrefixes[_selectedTicket!.ticketType] ?? 'TK'}-${_selectedTicket!.ticketId.toString().padLeft(4, '0')}',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
+                        color: _typeColors[_selectedTicket!.ticketType] ?? Colors.grey),
+                    ),
+                  ]),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  tooltip: 'Mở trang riêng',
+                  onPressed: () {
+                    final t = _selectedTicket;
+                    context.push('/ticket/${t!.ticketId}', extra: t);
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TicketDetailWrapper(
+              key: ValueKey('detail_${_selectedTicket!.ticketId}_${_selectedTicket!.ticketType}'),
+              ticketId: _selectedTicket!.ticketId,
+              ticket: _selectedTicket,
+              currentUser: widget.currentUser,
+              isAdmin: true,
+              isEmbedded: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helper widgets ────────────────────────────────────────
+  Widget _buildRefreshButton() {
+    return Material(
+      borderRadius: BorderRadius.circular(8),
+      color: const Color(0xFFF1F5F9),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          setState(() => _loading = true);
+          _loadData();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(Icons.refresh_rounded, size: 20, color: Colors.grey.shade600),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateButton() {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      icon: const Icon(Icons.add_rounded, size: 18),
+      label: const Text('Tạo mới', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      onPressed: () => context.push('/create-ticket'),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.inbox_rounded, size: 56, color: Colors.grey.shade300),
+        const SizedBox(height: 12),
+        Text('Không có yêu cầu nào', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey.shade400)),
+        const SizedBox(height: 4),
+        Text('Thử đổi bộ lọc hoặc tìm kiếm khác', style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+      ]),
     );
   }
 
@@ -789,52 +895,5 @@ class _AdminDashboardState extends State<AdminDashboard>
     if (selected != null || ticket.assigneeId != null) {
       await _assignTicket(ticket, selected);
     }
-  }
-
-
-  // ── HELPERS ───────────────────────────────────────────────────
-  Widget _statCard(String label, String value, Color color) {
-    return Expanded(child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-      ),
-      child: Column(children: [
-        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
-      ]),
-    ));
-  }
-
-  Widget _catChip(String label, IconData icon, Color color) {
-    final selected = (_categoryFilter ?? 'Tất cả') == label;
-    int count;
-    if (label == 'Tất cả') {
-      count = _tickets.length;
-    } else if (label == 'Phần mềm') {
-      count = _tickets.where((t) => _softwareCats.contains(t.categoryName ?? '')).length;
-    } else {
-      count = _tickets.where((t) => _hardwareCats.contains(t.categoryName ?? '')).length;
-    }
-    return GestureDetector(
-      onTap: () => setState(() { _categoryFilter = label; _currentPage = 0; }),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected ? color : Colors.grey.shade300),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 12, color: selected ? Colors.white : color),
-          const SizedBox(width: 4),
-          Text('$label ($count)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : Colors.grey[700])),
-        ]),
-      ),
-    );
   }
 }

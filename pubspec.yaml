@@ -23,6 +23,7 @@ dependencies:
   go_router: ^17.1.0
   window_manager: ^0.4.3
   local_notifier: ^0.1.6
+  toastification: ^3.1.0
 
 dev_dependencies:
   flutter_test:

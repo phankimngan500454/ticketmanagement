@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../app_router.dart';
 import '../data/ticket_repository.dart';
 
 // ── Background message handler (must be top-level) ───────────────
@@ -23,9 +24,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class NotificationService {
   static final _messaging = FirebaseMessaging.instance;
   static final _localNotif = FlutterLocalNotificationsPlugin();
-
-  // Global navigator key to navigate from notification tap
-  static final navigatorKey = GlobalKey<NavigatorState>();
 
   // ── Initialise ────────────────────────────────────────────────
   static Future<void> init(int userId) async {
@@ -134,10 +132,7 @@ class NotificationService {
     final ticketId = int.tryParse(ticketIdStr.toString());
     if (ticketId == null) return;
 
-    // Navigate to the ticket — the route handler in main.dart will load it
-    navigatorKey.currentState?.pushNamed(
-      '/ticket',
-      arguments: ticketId,
-    );
+    // App dùng go_router với route dạng /ticket/:id, nên điều hướng qua router toàn cục.
+    appRouter.push('/ticket/$ticketId');
   }
 }

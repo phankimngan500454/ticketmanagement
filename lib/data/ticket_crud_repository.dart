@@ -140,4 +140,12 @@ mixin TicketCrudRepository on RepositoryBase {
       return true;
     }).map(mapTicket).toList();
   }
+
+  // ── Cập nhật Chi phí chênh lệch ──────────────────────────────
+  Future<Ticket> updateCostDifference(int ticketId, double costDifference) async {
+    await warmCache();
+    final t = await client.ticket.updateCostDifference(ticketId, costDifference);
+    if (t == null) throw Exception('Ticket not found');
+    return mapTicket(t);
+  }
 }

@@ -13,7 +13,7 @@ class AuthEndpoint extends Endpoint {
   ) async {
     final user = await AppUser.db.findFirstRow(
       session,
-      where: (t) => t.username.equals(username),
+      where: (t) => t.username.ilike(username),
     );
     if (user == null) return null;
     final valid = BCrypt.checkpw(password, user.passwordHash);

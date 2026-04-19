@@ -45,6 +45,7 @@ ticket:
   - createTicket:
   - assignTicket:
   - updateStatus:
+  - updateCostDifference:
   - proposeDeadline:
   - approveDeadline:
   - confirmDeadline:

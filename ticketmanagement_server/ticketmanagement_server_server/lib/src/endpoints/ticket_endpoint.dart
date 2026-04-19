@@ -248,6 +248,21 @@ class TicketEndpoint extends Endpoint {
     return updated;
   }
 
+  /// Update cost difference (used when finance closes medical record)
+  Future<Ticket?> updateCostDifference(
+    Session session,
+    int ticketId,
+    double costDifference,
+  ) async {
+    final ticket = await Ticket.db.findById(session, ticketId);
+    if (ticket == null) return null;
+    
+    return await Ticket.db.updateRow(
+      session, 
+      ticket.copyWith(costDifference: costDifference)
+    );
+  }
+
   // ── DEADLINE ─────────────────────────────────────────────────
   /// Propose a deadline for a ticket. Notifies Admins.
   Future<Ticket?> proposeDeadline(

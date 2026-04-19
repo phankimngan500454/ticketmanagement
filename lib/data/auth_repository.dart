@@ -3,6 +3,8 @@
 //  auth_repository.dart
 //  Đăng nhập / đăng ký / quản lý người dùng
 // ============================================================
+import 'dart:async';
+
 import 'repository_base.dart';
 import '../models/user.dart';
 import '../models/department.dart';
@@ -11,15 +13,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 
 mixin AuthRepository on RepositoryBase {
+  static const Duration _authTimeout = Duration(seconds: 12);
+
   // ── Đăng nhập ───────────────────────────────────────────────
   Future<User?> login(String username, String password) async {
     try {
-      final u = await client.auth.login(username, password);
+      final u = await client.auth
+          .login(username, password)
+          .timeout(_authTimeout);
       if (u == null) return null;
       userCache = [];
       deptCache = []; // reset để load lại departments mới nhất
       // Load departments trước để mapUser join được deptName
-      final depts = await client.reference.getDepartments();
+      final depts = await client.reference
+          .getDepartments()
+          .timeout(_authTimeout);
       deptCache = depts.map((d) => Department(deptId: d.id ?? 0, deptName: d.name)).toList();
       
       // Save credentials for auto-login

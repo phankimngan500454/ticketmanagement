@@ -13,6 +13,7 @@ import '../../models/ticket.dart';
 import '../../models/ticket_comment.dart';
 import '../../models/ticket_attachment.dart';
 import '../../models/user.dart';
+import 'package:flutter/services.dart';
 
 class FeedbackDetailScreen extends StatefulWidget {
   final Ticket ticket;
@@ -370,7 +371,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(Icons.access_time_rounded, size: 11, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
-                        Text(_relativeTime(_ticket.createdAt),
+                        Text(_formatTime(_ticket.createdAt),
                           style: TextStyle(fontSize: 10, color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
                       ]),
                     ),
@@ -797,7 +798,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
             child: Icon(icon, size: 16, color: _themeColor),
           ),
           const SizedBox(width: 10),
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), letterSpacing: 0.2)),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), letterSpacing: 0.2), maxLines: 2, overflow: TextOverflow.ellipsis)),
         ]),
         const SizedBox(height: 16),
         child,
@@ -805,17 +806,6 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(children: [
-        Icon(icon, size: 16, color: Colors.grey[400]),
-        const SizedBox(width: 10),
-        SizedBox(width: 90, child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500))),
-        Expanded(child: Text(value, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)))),
-      ]),
-    );
-  }
 
   Widget _buildParsedDescription(String text) {
     if (text.isEmpty) {
@@ -847,12 +837,21 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
          final value = line.substring(colonIdx + 1).trim();
          final label = rawLabel.replaceAll(RegExp(r'[^\w\sÀ-ỹ]'), '').trim();
          
+         // Detect icon + color
          IconData icon = Icons.info_outline;
-         Color iconColor = Colors.grey;
-         if (label.toLowerCase().contains('số bệnh án')) { icon = Icons.assignment_rounded; iconColor = const Color(0xFF1976D2); }
-         else if (label.toLowerCase().contains('người yêu cầu')) { icon = Icons.person_rounded; iconColor = const Color(0xFF43A047); }
-         else if (label.toLowerCase().contains('sđt') || label.toLowerCase().contains('điện thoại')) { icon = Icons.phone_rounded; iconColor = const Color(0xFF8E24AA); }
-         else if (label.toLowerCase().contains('tài chính')) { icon = Icons.monetization_on_rounded; iconColor = const Color.fromARGB(255, 148, 182, 234); }
+         Color iconColor = Colors.blueGrey;
+         bool isMVP = false;
+         
+         if (label.toLowerCase().contains('viện phí') || label.toLowerCase().contains('myp') || label.toLowerCase().contains('số bệnh án')) {
+           icon = Icons.receipt_long_outlined; iconColor = const Color(0xFF2563EB);
+           isMVP = true;
+         } else if (label.toLowerCase().contains('người yêu cầu')) {
+           icon = Icons.person_outline_rounded; iconColor = const Color(0xFF7C3AED);
+         } else if (label.toLowerCase().contains('sđt') || label.toLowerCase().contains('điện thoại')) {
+           icon = Icons.phone_outlined; iconColor = const Color(0xFF059669);
+         } else if (label.toLowerCase().contains('tài chính')) {
+           icon = Icons.monetization_on_outlined; iconColor = const Color(0xFFD97706);
+         }
          
          widgets.add(
            Padding(
@@ -862,7 +861,38 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                  Icon(icon, size: 16, color: iconColor),
                  const SizedBox(width: 10),
                  SizedBox(width: 130, child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500))),
-                 Expanded(child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)), textAlign: TextAlign.right)),
+                 Expanded(
+                   child: Row(
+                     mainAxisAlignment: MainAxisAlignment.end,
+                     children: [
+                       Flexible(child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)), textAlign: TextAlign.right)),
+                       if (isMVP) ...[
+                         const SizedBox(width: 6),
+                         Material(
+                           color: const Color(0xFFE0E7FF),
+                           borderRadius: BorderRadius.circular(6),
+                           child: InkWell(
+                             borderRadius: BorderRadius.circular(6),
+                             onTap: () {
+                               Clipboard.setData(ClipboardData(text: value));
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(
+                                   content: Text('Đã sao chép mã thành công!', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                   backgroundColor: Colors.green,
+                                   duration: Duration(seconds: 2),
+                                 ),
+                               );
+                             },
+                             child: const Padding(
+                               padding: EdgeInsets.all(5),
+                               child: Icon(Icons.copy_rounded, size: 14, color: Color(0xFF2563EB)),
+                             ),
+                           ),
+                         ),
+                       ],
+                     ],
+                   ),
+                 ),
                ]
              )
            )

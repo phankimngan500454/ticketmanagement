@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
+import '../../services/browser_notification_service.dart';
 import 'web_manager_sidebar.dart';
 import '../../app_router.dart' show TicketDetailWrapper;
 
@@ -27,12 +28,14 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
   Timer? _refreshTimer;
   int _currentPage = 1;
   final int _itemsPerPage = 10;
+  final Map<int, String> _knownTicketStates = {};
 
   static const _purple = Color(0xFF00897B);
 
   @override
   void initState() {
     super.initState();
+    BrowserNotificationService.init();
     _loadData();
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadData());
   }
@@ -49,6 +52,32 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
       if (mounted) {
         setState(() {
           _feedbacks = List.from(feedbacks)..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          if (_knownTicketStates.isNotEmpty) {
+            final newTickets = _feedbacks.where(
+              (t) => !_knownTicketStates.containsKey(t.ticketId),
+            );
+            final changedTickets = _feedbacks.where((t) {
+              final previousStatus = _knownTicketStates[t.ticketId];
+              return previousStatus != null && previousStatus != t.status;
+            });
+            final latest = changedTickets.isNotEmpty
+                ? changedTickets.first
+                : (newTickets.isNotEmpty ? newTickets.first : null);
+            if (latest != null) {
+              final body = changedTickets.contains(latest)
+                  ? '${latest.subject} đã chuyển sang "${_statusLabel(latest)}"'
+                  : 'Có yêu cầu mới cần duyệt: ${latest.subject}';
+              BrowserNotificationService.show(
+                title: 'MedHub Phê Duyệt',
+                body: body,
+                route: '/ticket/${latest.ticketId}',
+                tag: 'manager-${latest.ticketId}',
+              );
+            }
+          }
+          _knownTicketStates
+            ..clear()
+            ..addEntries(_feedbacks.map((t) => MapEntry(t.ticketId, t.status)));
           
           if (_selectedTicket != null) {
             try {

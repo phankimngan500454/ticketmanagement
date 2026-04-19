@@ -15,11 +15,11 @@ add_executable(${BINARY_NAME} WIN32
   "Runner.rc"
   "runner.exe.manifest"
   # Stub implementations of VS2022 STL intrinsics required by Firebase SDK prebuilt libs
-  "msvc_stl_stubs.c"
+  # "msvc_stl_stubs.c"
 )
 
 # Compile the Firebase STL stub as plain C and relax warnings
-set_source_files_properties("msvc_stl_stubs.c" PROPERTIES LANGUAGE C COMPILE_FLAGS "/W0")
+# set_source_files_properties("msvc_stl_stubs.c" PROPERTIES LANGUAGE C COMPILE_FLAGS "/W0")
 
 
 # Apply the standard set of build settings.

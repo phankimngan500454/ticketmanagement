@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
+import '../../services/browser_notification_service.dart';
 import 'web_customer_sidebar.dart';
 import '../../app_router.dart' show TicketDetailWrapper;
 
@@ -25,10 +26,12 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
   String _searchQuery = '';
   Ticket? _selectedTicket;
   Timer? _refreshTimer;
+  final Map<int, String> _knownTicketStates = {};
 
   @override
   void initState() {
     super.initState();
+    BrowserNotificationService.init();
     _loadData();
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 15),
@@ -51,6 +54,32 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
         setState(() {
           _tickets = List<Ticket>.from(tickets)
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          if (_knownTicketStates.isNotEmpty) {
+            final newTickets = _tickets.where(
+              (t) => !_knownTicketStates.containsKey(t.ticketId),
+            );
+            final changedTickets = _tickets.where((t) {
+              final previousStatus = _knownTicketStates[t.ticketId];
+              return previousStatus != null && previousStatus != t.status;
+            });
+            final latest = changedTickets.isNotEmpty
+                ? changedTickets.first
+                : (newTickets.isNotEmpty ? newTickets.first : null);
+            if (latest != null) {
+              final body = changedTickets.contains(latest)
+                  ? '${latest.subject} đã chuyển sang "${_statusLabel(latest.status, latest.ticketType)}"'
+                  : 'Yêu cầu của bạn có cập nhật mới: ${latest.subject}';
+              BrowserNotificationService.show(
+                title: 'MedHub Thông Báo',
+                body: body,
+                route: '/ticket/${latest.ticketId}',
+                tag: 'customer-${latest.ticketId}',
+              );
+            }
+          }
+          _knownTicketStates
+            ..clear()
+            ..addEntries(_tickets.map((t) => MapEntry(t.ticketId, t.status)));
           // Thêm logic cập nhật _selectedTicket nếu nó vừa bị thay đổi trạng thái
           if (_selectedTicket != null) {
             try {
@@ -168,7 +197,19 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
     if (_selectedType != null) {
       list = list.where((t) => t.ticketType == _selectedType).toList();
     }
-    if (_filterStatus != 'Tất cả') {
+
+    // Lọc theo trạng thái bệnh án (4 tab riêng)
+    if (_selectedType == 'reopen_medical' && _filterStatus != 'Tất cả') {
+      list = list.where((t) {
+        switch (_filterStatus) {
+          case 'BA_Open':   return t.status == 'Open';
+          case 'BA_Processing': return t.status == 'Resolved' || t.status == 'Pending';
+          case 'BA_Done':   return t.status == 'WaitingConfirmation';
+          case 'BA_Closed': return t.status == 'Cancelled';
+          default: return true;
+        }
+      }).toList();
+    } else if (_filterStatus != 'Tất cả') {
       if (_filterStatus == 'Open') {
         list = list
             .where(
@@ -214,6 +255,17 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
     var list = _selectedType == null
         ? _tickets
         : _tickets.where((t) => t.ticketType == _selectedType);
+    // 4-tab bệnh án
+    if (_selectedType == 'reopen_medical') {
+      switch (category) {
+        case 'Tất cả':       return list.length;
+        case 'BA_Open':      return list.where((t) => t.status == 'Open').length;
+        case 'BA_Processing': return list.where((t) => t.status == 'Resolved' || t.status == 'Pending').length;
+        case 'BA_Done':      return list.where((t) => t.status == 'WaitingConfirmation').length;
+        case 'BA_Closed':    return list.where((t) => t.status == 'Cancelled').length;
+        default: return list.length;
+      }
+    }
     if (category == 'Open') {
       return list
           .where(
@@ -255,6 +307,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
               setState(() {
                 _selectedType = type;
                 _selectedTicket = null;
+                _filterStatus = 'Tất cả'; // reset filter khi đổi loại
               });
             },
           ),
@@ -369,23 +422,53 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _statusChip('Tất cả', null, 'Tất cả'),
-                          _statusChip(
-                            'Open',
-                            const Color(0xFF3B82F6),
-                            'Đang xử lý',
-                          ),
-                          _statusChip(
-                            'Resolved',
-                            const Color(0xFF10B981),
-                            'Đã xong',
-                          ),
-                          if (_selectedType != 'reopen_medical')
+                          if (_selectedType == 'reopen_medical') ...[
+                            // ── 4 tab trạng thái riêng cho bệnh án ──
+                            _statusChip('Tất cả', null, 'Tất cả',
+                                icon: Icons.list_rounded),
+                            _statusChip(
+                              'BA_Open',
+                              const Color(0xFF3B82F6),
+                              'Yêu cầu mở',
+                              icon: Icons.hourglass_empty_rounded,
+                            ),
+                            _statusChip(
+                              'BA_Processing',
+                              const Color(0xFFF59E0B),
+                              'Khoa xử lý',
+                              icon: Icons.folder_open_rounded,
+                            ),
+                            _statusChip(
+                              'BA_Done',
+                              const Color(0xFF8B5CF6),
+                              'Đã sửa xong',
+                              icon: Icons.edit_note_rounded,
+                            ),
+                            _statusChip(
+                              'BA_Closed',
+                              const Color(0xFF64748B),
+                              'Đóng bệnh án',
+                              icon: Icons.lock_rounded,
+                            ),
+                          ] else ...[
+                            // ── Chip trạng thái thông thường ──
+                            _statusChip('Tất cả', null, 'Tất cả'),
+                            _statusChip(
+                              'Open',
+                              const Color(0xFF3B82F6),
+                              'Đang xử lý',
+                            ),
+                            _statusChip(
+                              'Resolved',
+                              const Color(0xFF10B981),
+                              'Đã xong',
+                            ),
                             _statusChip(
                               'Cancelled',
                               const Color(0xFF64748B),
                               'Đã hủy',
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -417,34 +500,49 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
     );
   }
 
-  Widget _statusChip(String value, Color? color, String displayLabel) {
+  Widget _statusChip(
+    String value,
+    Color? color,
+    String displayLabel, {
+    IconData? icon,
+  }) {
     final isSelected = _filterStatus == value;
     final count = _countByStatusCategory(value);
+    final effectiveColor = color ?? const Color(0xFF2563EB);
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () => setState(() => _filterStatus = value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? (color ?? const Color(0xFF2563EB)).withValues(alpha: 0.1)
+                ? effectiveColor.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected
-                  ? (color ?? const Color(0xFF2563EB)).withValues(alpha: 0.4)
+                  ? effectiveColor.withValues(alpha: 0.5)
                   : Colors.grey.shade200,
+              width: isSelected ? 1.5 : 1,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (color != null) ...[
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 12,
+                  color: isSelected ? effectiveColor : Colors.grey.shade500,
+                ),
+                const SizedBox(width: 4),
+              ] else if (color != null) ...[
                 Container(
-                  width: 8,
-                  height: 8,
+                  width: 7,
+                  height: 7,
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
@@ -457,15 +555,26 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected
-                      ? (color ?? const Color(0xFF2563EB))
-                      : Colors.grey.shade600,
+                  color: isSelected ? effectiveColor : Colors.grey.shade600,
                 ),
               ),
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? effectiveColor.withValues(alpha: 0.15)
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? effectiveColor : Colors.grey.shade500,
+                  ),
+                ),
               ),
             ],
           ),

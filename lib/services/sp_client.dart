@@ -1,10 +1,22 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ticketmanagement_server_client/ticketmanagement_server_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-const String _serverHost = 'http://172.16.3.27:8080/';
+/// Lấy tự động: nếu người dùng truy cập từ web Cloudflare thì nối vào API từ Cloudflare
+/// Nếu truy cập mạng nội bộ thì dùng IP LAN của máy chủ.
+// String get _serverHost {
+//   if (kIsWeb) {
+//     if (Uri.base.host.contains('bvkhanhhoa.cloud')) {
+//       // Nhớ config Cloudflare Tunnel cho subdomain này trỏ về 172.16.3.27:8080!
+//       return 'https://api-hotrocntt.bvkhanhhoa.cloud/';
+//     }
+//   }
+//   return 'http://172.16.3.27:8080/';
+// }
+// const String _serverHost = 'https://api-hotrocntt.bvkhanhhoa.cloud/';
 
-/// Địa chỉ IP máy chủ Serverpod — đổi về localhost để test local
-// const String _serverHost = 'http://localhost:8080/';
+// /// Địa chỉ IP máy chủ Serverpod — đổi về localhost để test local
+const String _serverHost = 'http://localhost:8080/';
 
 /// Global Serverpod client — call [initServerpodClient] once in main().
 late Client client;

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
+import '../../app_router.dart' show appRouter;
+import '../../services/windows_notification_service.dart';
 
 class ManagerDashboard extends StatefulWidget {
   final User currentUser;
@@ -24,8 +26,8 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
   final TextEditingController _searchCtrl = TextEditingController();
   Timer? _refreshTimer;
 
-  // Notification badge: track known ticket IDs to detect new ones
-  final Set<int> _knownTicketIds = {};
+  // Notification state: track IDs and statuses to detect new/updated tickets
+  final Map<int, String> _knownTicketStates = {};
   int _newNotifCount = 0;
 
   static const _purple = Color(0xFF00897B);     // teal
@@ -88,13 +90,34 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       final feedbacks = await _repo.getFeedbackTickets();
       if (mounted) {
         setState(() {
-          // Detect new tickets not seen before
-          if (_knownTicketIds.isNotEmpty) {
-            final newOnes = feedbacks.where((t) => !_knownTicketIds.contains(t.ticketId)).length;
-            if (newOnes > 0) _newNotifCount += newOnes;
+          final nextFeedbacks = List<Ticket>.from(feedbacks)
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          if (_knownTicketStates.isNotEmpty) {
+            final newTickets = nextFeedbacks.where(
+              (t) => !_knownTicketStates.containsKey(t.ticketId),
+            ).toList();
+            final changedTickets = nextFeedbacks.where((t) {
+              final previousStatus = _knownTicketStates[t.ticketId];
+              return previousStatus != null && previousStatus != t.status;
+            }).toList();
+            _newNotifCount += newTickets.length + changedTickets.length;
+            final latest = changedTickets.isNotEmpty
+                ? changedTickets.first
+                : (newTickets.isNotEmpty ? newTickets.first : null);
+            if (latest != null) {
+              WindowsNotificationService.showTicketUpdate(
+                ticketId: latest.ticketId,
+                message: changedTickets.contains(latest)
+                    ? '${latest.subject}\nTrạng thái: ${_getStatusLabel(latest)}'
+                    : 'Có yêu cầu mới cần duyệt',
+                onTap: () => appRouter.push('/ticket/${latest.ticketId}'),
+              );
+            }
           }
-          _knownTicketIds.addAll(feedbacks.map((t) => t.ticketId));
-          _feedbacks = feedbacks;
+          _knownTicketStates
+            ..clear()
+            ..addEntries(nextFeedbacks.map((t) => MapEntry(t.ticketId, t.status)));
+          _feedbacks = nextFeedbacks;
           _loading = false;
         });
       }

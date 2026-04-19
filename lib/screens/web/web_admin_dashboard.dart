@@ -300,15 +300,18 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
 
   // ── Type tabs ────────────────────────────────────────────
   Widget _buildTypeTabs() {
-    return Row(children: [
-      _typeTab('Tất cả', 'Tất cả', Icons.dashboard_rounded, _tickets.length, const Color(0xFF64748B)),
-      const SizedBox(width: 8),
-      _typeTab('ticket', 'IT Ticket', Icons.build_circle_rounded, _countByType('ticket'), _typeColors['ticket']!),
-      const SizedBox(width: 8),
-      _typeTab('feedback', 'Góp ý', Icons.feedback_rounded, _countByType('feedback'), _typeColors['feedback']!),
-      const SizedBox(width: 8),
-      _typeTab('reopen_medical', 'Mở lại BA', Icons.folder_open_rounded, _countByType('reopen_medical'), _typeColors['reopen_medical']!),
-    ]);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: [
+        _typeTab('Tất cả', 'Tất cả', Icons.dashboard_rounded, _tickets.length, const Color(0xFF64748B)),
+        const SizedBox(width: 8),
+        _typeTab('ticket', 'IT Ticket', Icons.build_circle_rounded, _countByType('ticket'), _typeColors['ticket']!),
+        const SizedBox(width: 8),
+        _typeTab('feedback', 'Góp ý', Icons.feedback_rounded, _countByType('feedback'), _typeColors['feedback']!),
+        const SizedBox(width: 8),
+        _typeTab('reopen_medical', 'Mở lại BA', Icons.folder_open_rounded, _countByType('reopen_medical'), _typeColors['reopen_medical']!),
+      ]),
+    );
   }
 
   Widget _typeTab(String value, String label, IconData icon, int count, Color color) {

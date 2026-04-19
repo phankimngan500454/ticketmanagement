@@ -16,3 +16,4 @@ fields:
   adminNote: String?
   proposedByUserId: int?
   ticketType: String?
+  costDifference: double?

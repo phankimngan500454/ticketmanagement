@@ -643,6 +643,19 @@ class EndpointTicket extends _i2.EndpointRef {
     },
   );
 
+  /// Update cost difference (used when finance closes medical record)
+  _i3.Future<_i12.Ticket?> updateCostDifference(
+    int ticketId,
+    double costDifference,
+  ) => caller.callServerEndpoint<_i12.Ticket?>(
+    'ticket',
+    'updateCostDifference',
+    {
+      'ticketId': ticketId,
+      'costDifference': costDifference,
+    },
+  );
+
   /// Propose a deadline for a ticket. Notifies Admins.
   _i3.Future<_i12.Ticket?> proposeDeadline(
     int ticketId,

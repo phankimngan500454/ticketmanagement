@@ -30,6 +30,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     this.adminNote,
     this.proposedByUserId,
     this.ticketType,
+    this.costDifference,
   });
 
   factory Ticket({
@@ -49,6 +50,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     String? adminNote,
     int? proposedByUserId,
     String? ticketType,
+    double? costDifference,
   }) = _TicketImpl;
 
   factory Ticket.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -79,6 +81,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       adminNote: jsonSerialization['adminNote'] as String?,
       proposedByUserId: jsonSerialization['proposedByUserId'] as int?,
       ticketType: jsonSerialization['ticketType'] as String?,
+      costDifference: (jsonSerialization['costDifference'] as num?)?.toDouble(),
     );
   }
 
@@ -119,6 +122,8 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
 
   String? ticketType;
 
+  double? costDifference;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -142,6 +147,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     String? adminNote,
     int? proposedByUserId,
     String? ticketType,
+    double? costDifference,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -164,6 +170,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       if (adminNote != null) 'adminNote': adminNote,
       if (proposedByUserId != null) 'proposedByUserId': proposedByUserId,
       if (ticketType != null) 'ticketType': ticketType,
+      if (costDifference != null) 'costDifference': costDifference,
     };
   }
 
@@ -188,6 +195,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       if (adminNote != null) 'adminNote': adminNote,
       if (proposedByUserId != null) 'proposedByUserId': proposedByUserId,
       if (ticketType != null) 'ticketType': ticketType,
+      if (costDifference != null) 'costDifference': costDifference,
     };
   }
 
@@ -241,6 +249,7 @@ class _TicketImpl extends Ticket {
     String? adminNote,
     int? proposedByUserId,
     String? ticketType,
+    double? costDifference,
   }) : super._(
          id: id,
          subject: subject,
@@ -258,6 +267,7 @@ class _TicketImpl extends Ticket {
          adminNote: adminNote,
          proposedByUserId: proposedByUserId,
          ticketType: ticketType,
+         costDifference: costDifference,
        );
 
   /// Returns a shallow copy of this [Ticket]
@@ -281,6 +291,7 @@ class _TicketImpl extends Ticket {
     Object? adminNote = _Undefined,
     Object? proposedByUserId = _Undefined,
     Object? ticketType = _Undefined,
+    Object? costDifference = _Undefined,
   }) {
     return Ticket(
       id: id is int? ? id : this.id,
@@ -307,6 +318,9 @@ class _TicketImpl extends Ticket {
           ? proposedByUserId
           : this.proposedByUserId,
       ticketType: ticketType is String? ? ticketType : this.ticketType,
+      costDifference: costDifference is double?
+          ? costDifference
+          : this.costDifference,
     );
   }
 }
@@ -392,6 +406,12 @@ class TicketUpdateTable extends _i1.UpdateTable<TicketTable> {
     table.ticketType,
     value,
   );
+
+  _i1.ColumnValue<double, double> costDifference(double? value) =>
+      _i1.ColumnValue(
+        table.costDifference,
+        value,
+      );
 }
 
 class TicketTable extends _i1.Table<int?> {
@@ -457,6 +477,10 @@ class TicketTable extends _i1.Table<int?> {
       'ticketType',
       this,
     );
+    costDifference = _i1.ColumnDouble(
+      'costDifference',
+      this,
+    );
   }
 
   late final TicketUpdateTable updateTable;
@@ -491,6 +515,8 @@ class TicketTable extends _i1.Table<int?> {
 
   late final _i1.ColumnString ticketType;
 
+  late final _i1.ColumnDouble costDifference;
+
   @override
   List<_i1.Column> get columns => [
     id,
@@ -509,6 +535,7 @@ class TicketTable extends _i1.Table<int?> {
     adminNote,
     proposedByUserId,
     ticketType,
+    costDifference,
   ];
 }
 
