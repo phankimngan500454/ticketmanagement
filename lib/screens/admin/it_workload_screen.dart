@@ -48,8 +48,10 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
     Iterable<User> base = _itStaff;
     if (_filterTab == 'busy') base = base.where((s) => !_isFree(s));
     if (_filterTab == 'free') base = base.where((s) => _isFree(s));
-    if (q.isNotEmpty) base = base.where((s) =>
+    if (q.isNotEmpty) {
+      base = base.where((s) =>
         s.fullName.toLowerCase().contains(q) || s.username.toLowerCase().contains(q));
+    }
     // Sort: busy first, then by ticket count desc
     final result = base.toList();
     result.sort((a, b) {
@@ -64,7 +66,7 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
     switch (s) {
       case 'Open': return const Color(0xFF3B82F6);
       case 'Pending': return _amber;
-      case 'WaitingConfirmation': return const Color(0xFF8B5CF6);
+      case 'WaitingConfirmation': return const Color(0xFFE67E22);
       default: return Colors.grey;
     }
   }

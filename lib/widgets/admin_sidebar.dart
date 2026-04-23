@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/user.dart';
+import '../data/ticket_repository.dart';
 import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_assets_screen.dart';
 import '../screens/admin/admin_departments_screen.dart';
+// import '../screens/admin/admin_categories_screen.dart'; // NOTE: Uncomment nếu bật lại Danh mục
 
 /// Sidebar navigation giống Jira Service Management.
 /// Dùng như Drawer trong AdminDashboard.
@@ -113,8 +115,9 @@ class AdminSidebar extends StatelessWidget {
                   screen: AdminAssetsScreen(currentUser: currentUser)),
               _directNavItem(context, icon: Icons.business_rounded, label: 'Phòng ban',
                   screen: AdminDepartmentsScreen(currentUser: currentUser)),
-              // Đã ẩn quản lý Danh mục theo yêu cầu
-
+              // --- NOTE: Quản lý danh mục (Bỏ comment dòng dưới để hiển thị lại) ---
+              // _directNavItem(context, icon: Icons.category_rounded, label: 'Danh mục',
+              //     screen: AdminCategoriesScreen(currentUser: currentUser)),
               const SizedBox(height: 8),
             ]),
           )),
@@ -165,9 +168,10 @@ class AdminSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
             child: GestureDetector(
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context); // close drawer
-                context.go('/login');
+                await TicketRepository.instance.logout();
+                if (context.mounted) context.go('/login');
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

@@ -92,7 +92,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       switch (t.status) {
         case 'Open': return const Color(0xFF78909C);
         case 'Pending': return const Color(0xFFFB8C00);
-        case 'WaitingConfirmation': return const Color(0xFF0097A7);
+        case 'WaitingConfirmation': return const Color(0xFFE67E22);
         case 'Resolved': return const Color(0xFF43A047);
         case 'Cancelled': return const Color(0xFF78909C);
         default: return Colors.grey;

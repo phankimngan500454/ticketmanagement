@@ -208,7 +208,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
     String label;
     switch (status) {
       case 'Resolved': c = const Color(0xFF10B981); label = 'Đã xong'; break;
-      case 'WaitingConfirmation': c = const Color(0xFF8B5CF6); label = 'Chờ xác nhận'; break;
+      case 'WaitingConfirmation': c = const Color(0xFFE67E22); label = 'Chờ xác nhận'; break;
       case 'Pending': c = const Color(0xFFF59E0B); label = 'Đang xử lý'; break;
       case 'Cancelled': c = const Color(0xFF64748B); label = 'Đã hủy'; break;
       default: c = const Color(0xFF3B82F6); label = 'Đang mở'; break;

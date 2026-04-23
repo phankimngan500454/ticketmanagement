@@ -86,18 +86,19 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       }
       final ext = (f.extension ?? 'bin').toLowerCase();
       String mime = 'application/octet-stream';
-      if (['jpg', 'jpeg'].contains(ext))
+      if (['jpg', 'jpeg'].contains(ext)) {
         mime = 'image/jpeg';
-      else if (ext == 'png')
+      } else if (ext == 'png') {
         mime = 'image/png';
-      else if (ext == 'gif')
+      } else if (ext == 'gif') {
         mime = 'image/gif';
-      else if (ext == 'webp')
+      } else if (ext == 'webp') {
         mime = 'image/webp';
-      else if (ext == 'pdf')
+      } else if (ext == 'pdf') {
         mime = 'application/pdf';
-      else if (['doc', 'docx'].contains(ext))
+      } else if (['doc', 'docx'].contains(ext)) {
         mime = 'application/msword';
+      }
       setState(
         () => _pendingFiles.add((name: f.name, mime: mime, bytes: f.bytes!)),
       );
@@ -295,30 +296,39 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
 
           // ── Body ───────────────────────────────────────────────
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Selector (TẠM ẨN ĐỂ TEST MỞ BỆNH ÁN) ──
-                    // RequestTypeSelector(
-                    //   currentType: 'reopen_medical',
-                    //   onTypeChanged: widget.onTypeChanged,
-                    // ),
-                    const SizedBox(height: 14),
-
-                    // ── Form chính ──
-                    _buildFormCard(),
-                    const SizedBox(height: 14),
-                    _buildAttachmentCard(),
-                    const SizedBox(height: 14),
-                    _buildSubmitButton(),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 700;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    isWide ? 32 : 16, 16, isWide ? 32 : 16, 32,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: isWide ? 800 : double.infinity),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RequestTypeSelector(
+                              currentType: 'reopen_medical',
+                              onTypeChanged: widget.onTypeChanged,
+                            ),
+                            const SizedBox(height: 14),
+                            _buildFormCard(),
+                            const SizedBox(height: 14),
+                            _buildAttachmentCard(),
+                            const SizedBox(height: 14),
+                            _buildSubmitButton(),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -500,7 +510,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
             child: Switch(
               value: _affectsFinance,
               onChanged: (v) => setState(() => _affectsFinance = v),
-              activeColor: _themeColor,
+              activeThumbColor: _themeColor,
               activeTrackColor: _themeColor.withValues(alpha: 0.3),
               inactiveThumbColor: Colors.grey[400],
               inactiveTrackColor: Colors.grey[300],

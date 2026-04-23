@@ -31,7 +31,7 @@ mixin TicketCrudRepository on RepositoryBase {
         return tickets.where((t) {
           if (t.ticketType == 'reopen_medical' && t.requesterId != requesterId) {
             // Chỉ hiện bệnh án người khác nếu có ảnh hưởng tài chính
-            return (t.description ?? '').toLowerCase().contains('ảnh hưởng tài chính: có');
+            return t.description.toLowerCase().contains('ảnh hưởng tài chính: có');
           }
           return true;
         }).toList();

@@ -63,7 +63,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     switch (s) {
       case 'Open': return const Color(0xFF78909C);
       case 'Pending': return const Color(0xFFFB8C00);
-      case 'WaitingConfirmation': return const Color(0xFF0097A7); // Cyan
+      case 'WaitingConfirmation': return const Color(0xFFE67E22); // Cam — khớp chuẩn
       case 'Resolved': return const Color(0xFF10B981);
       case 'Cancelled': return const Color(0xFFE53935);
       case 'Closed': return const Color(0xFF64748B);
@@ -461,7 +461,8 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               onSelected: (v) async {
                                 if (v == 'logout') {
-                                  context.go('/login');
+                                  await _repo.logout();
+                                  if (context.mounted) context.go('/login');
                                 } else if (v == 'profile') {
                                   await context.push('/profile');
                                 }

@@ -121,6 +121,7 @@ class FcmService {
       'message': {
         'token': token,
         'notification': {'title': title, 'body': body},
+        // ignore: use_null_aware_elements
         if (data != null) 'data': data,
         'android': {
           'priority': 'HIGH',

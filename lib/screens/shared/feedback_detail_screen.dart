@@ -5,7 +5,7 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
@@ -66,7 +66,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     switch (s) {
       case 'Open': return const Color(0xFF3B82F6);
       case 'Pending': return const Color(0xFFF59E0B);
-      case 'WaitingConfirmation': return const Color(0xFF8B5CF6);
+      case 'WaitingConfirmation': return const Color(0xFFE67E22);
       case 'Resolved': return const Color(0xFF10B981);
       case 'Cancelled': return const Color(0xFF64748B);
       default: return Colors.grey;
@@ -319,7 +319,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(_isReopenMedical ? Icons.folder_open_rounded : Icons.feedback_rounded, size: 13, color: themeDark),
                       const SizedBox(width: 4),
-                      Text('${_typePrefix}-${_ticket.ticketId.toString().padLeft(4, '0')}',
+                      Text('$_typePrefix-${_ticket.ticketId.toString().padLeft(4, '0')}',
                         style: TextStyle(color: themeDark, fontSize: 13, fontWeight: FontWeight.bold)),
                     ]),
                   ),
@@ -837,14 +837,13 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
          final value = line.substring(colonIdx + 1).trim();
          final label = rawLabel.replaceAll(RegExp(r'[^\w\sÀ-ỹ]'), '').trim();
          
-         // Detect icon + color
          IconData icon = Icons.info_outline;
          Color iconColor = Colors.blueGrey;
-         bool isMVP = false;
+         bool isCopyable = false;
          
          if (label.toLowerCase().contains('viện phí') || label.toLowerCase().contains('myp') || label.toLowerCase().contains('số bệnh án')) {
            icon = Icons.receipt_long_outlined; iconColor = const Color(0xFF2563EB);
-           isMVP = true;
+           isCopyable = true;
          } else if (label.toLowerCase().contains('người yêu cầu')) {
            icon = Icons.person_outline_rounded; iconColor = const Color(0xFF7C3AED);
          } else if (label.toLowerCase().contains('sđt') || label.toLowerCase().contains('điện thoại')) {
@@ -860,13 +859,16 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                children: [
                  Icon(icon, size: 16, color: iconColor),
                  const SizedBox(width: 10),
-                 SizedBox(width: 130, child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500))),
-                 Expanded(
+                 SizedBox(
+                   width: 160,
+                   child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                 ),
+                 Flexible(
                    child: Row(
-                     mainAxisAlignment: MainAxisAlignment.end,
+                     mainAxisSize: MainAxisSize.min,
                      children: [
-                       Flexible(child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)), textAlign: TextAlign.right)),
-                       if (isMVP) ...[
+                       Flexible(child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)))),
+                       if (isCopyable) ...[
                          const SizedBox(width: 6),
                          Material(
                            color: const Color(0xFFE0E7FF),
@@ -877,7 +879,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                                Clipboard.setData(ClipboardData(text: value));
                                ScaffoldMessenger.of(context).showSnackBar(
                                  const SnackBar(
-                                   content: Text('Đã sao chép mã thành công!', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                   content: Text('Đã sao chép!', style: TextStyle(color: Colors.white, fontSize: 13)),
                                    backgroundColor: Colors.green,
                                    duration: Duration(seconds: 2),
                                  ),
@@ -893,9 +895,9 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                      ],
                    ),
                  ),
-               ]
-             )
-           )
+               ],
+             ),
+           ),
          );
          widgets.add(Divider(color: Colors.grey.shade100, height: 1));
       }
@@ -914,11 +916,10 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
              borderRadius: BorderRadius.circular(12),
            ),
            child: Text(reasonText.trim(), style: const TextStyle(fontSize: 14, color: Color(0xFF424250), height: 1.6)),
-         )
+         ),
        );
     }
     
-    // Remove last divider if widgets length contains it right before the reason
     if (widgets.length >= 2 && widgets[widgets.length - 1] is Divider && reasonText.trim().isEmpty) {
        widgets.removeLast();
     }

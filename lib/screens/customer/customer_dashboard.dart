@@ -79,10 +79,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           _tickets = nextTickets;
           // Sync selectedTicket với dữ liệu mới nhất
           if (_selectedTicket != null) {
-            try {
-              _selectedTicket = nextTickets.firstWhere(
-                (t) => t.ticketId == _selectedTicket!.ticketId);
-            } catch (_) { _selectedTicket = null; }
+            final match = nextTickets.cast<Ticket?>().firstWhere(
+              (t) => t!.ticketId == _selectedTicket!.ticketId,
+              orElse: () => null,
+            );
+            _selectedTicket = match;
           }
           _loading = false;
         });
@@ -104,7 +105,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     switch (s) {
       case 'Open':               return const Color(0xFF3B82F6);  // xanh — khớp web
       case 'Pending':            return const Color(0xFFF59E0B);  // vàng — khớp web
-      case 'WaitingConfirmation':return const Color(0xFF8B5CF6);  // tím — khớp web
+      case 'WaitingConfirmation':return const Color(0xFFE67E22);  // cam — khớp web
       case 'Resolved':           return const Color(0xFF10B981);  // xanh lá — khớp web
       case 'Cancelled':          return const Color(0xFF64748B);  // xám — khớp web
       default:                   return Colors.grey;
@@ -267,7 +268,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   onSelected: (v) async {
                     if (v == 'logout') {
-                      context.go('/login');
+                      await _repo.logout();
+                      if (mounted) context.go('/login');
                     } else if (v == 'profile') {
                       await context.push('/profile');
                     }
@@ -483,7 +485,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   _medNavItem(0, Icons.list_alt_rounded,          Icons.list_alt_outlined,          'Tất cả',       medBase.length),
                   _medNavItem(1, Icons.hourglass_empty_rounded,   Icons.hourglass_empty_rounded,    'Yêu cầu mở', baOpen,       const Color(0xFF3B82F6)),
                   _medNavItem(2, Icons.folder_open_rounded,       Icons.folder_open_outlined,       'Khoa xử lý', baProcessing, const Color(0xFFF59E0B)),
-                  _medNavItem(3, Icons.edit_note_rounded,         Icons.edit_note_rounded,          'Đã sửa xong', baDone,       const Color(0xFF8B5CF6)),
+                  _medNavItem(3, Icons.edit_note_rounded,         Icons.edit_note_rounded,          'Đã sửa xong', baDone,       const Color(0xFFE67E22)),
                   _medNavItem(4, Icons.lock_rounded,              Icons.lock_outline_rounded,       'Đóng BA',      baClosed,     const Color(0xFF64748B)),
                   // Nút tạo yêu cầu
                   Expanded(
@@ -646,7 +648,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     _wideFilterChip('Tất cả', null, 'Tất cả', medBase.length, icon: Icons.list_rounded),
                     _wideFilterChip('BA_Open', const Color(0xFF3B82F6), 'Yêu cầu mở', baOpen, icon: Icons.hourglass_empty_rounded),
                     _wideFilterChip('BA_Processing', const Color(0xFFF59E0B), 'Khoa xử lý', baProcessing, icon: Icons.folder_open_rounded),
-                    _wideFilterChip('BA_Done', const Color(0xFF8B5CF6), 'Đã sửa xong', baDone, icon: Icons.edit_note_rounded),
+                    _wideFilterChip('BA_Done', const Color(0xFFE67E22), 'Đã sửa xong', baDone, icon: Icons.edit_note_rounded),
                     _wideFilterChip('BA_Closed', const Color(0xFF64748B), 'Đóng BA', baClosed, icon: Icons.lock_rounded),
                   ] else ...[
                     _wideFilterChip('Tất cả', null, 'Tất cả', _tickets.length),
@@ -1092,9 +1094,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             const Divider(height: 1),
             // Đăng xuất
             InkWell(
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                context.go('/login');
+                await _repo.logout();
+                if (mounted) context.go('/login');
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

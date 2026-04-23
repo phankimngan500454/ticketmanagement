@@ -14,6 +14,13 @@ import '../models/category.dart';
 import '../models/asset.dart';
 import '../models/department.dart';
 import '../services/sp_client.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier;
+
+/// Notifier để GoRouter biết khi auth state thay đổi (login/logout)
+/// và auto-redirect người dùng.
+class AuthNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
 
 abstract class RepositoryBase {
   // ── In-memory cache (dùng để join tên hiển thị) ────────────
@@ -22,8 +29,16 @@ abstract class RepositoryBase {
   List<Asset> assetCache = [];
   List<Department> deptCache = [];
 
+  // ── Auth state notifier (GoRouter lắng nghe cái này) ────────
+  final AuthNotifier authNotifier = AuthNotifier();
+
   // ── Session ──────────────────────────────────────────────────
-  User? currentUser;
+  User? _currentUser;
+  User? get currentUser => _currentUser;
+  set currentUser(User? value) {
+    _currentUser = value;
+    authNotifier.notify(); // Trigger GoRouter redirect
+  }
 
   // ── Helpers ─────────────────────────────────────────────────
   String roleFromId(int id) {

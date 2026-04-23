@@ -1,4 +1,6 @@
+// ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:async';
+// ignore: deprecated_member_use
 import 'dart:html' as html;
 
 Future<void> init() async {

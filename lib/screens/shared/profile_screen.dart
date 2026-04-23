@@ -52,25 +52,28 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ── Màu / label theo role ──────────────────────────────────────
   Color get _roleColor {
     switch (widget.currentUser.role) {
-      case 'Admin': return const Color(0xFF283593); // Indigo đậm, rất chuyên nghiệp
-      case 'IT':    return const Color(0xFF0288D1); // Xanh dương nhạt
-      default:      return const Color(0xFF00897B); // Xanh ngọc
+      case 'Admin':   return const Color(0xFF283593); // Indigo đậm
+      case 'IT':      return const Color(0xFF0288D1); // Xanh dương nhạt
+      case 'Manager': return const Color(0xFF7B1FA2); // Tím
+      default:        return const Color(0xFF00897B); // Xanh ngọc
     }
   }
 
   String get _roleLabel {
     switch (widget.currentUser.role) {
-      case 'Admin': return 'Quản trị viên';
-      case 'IT':    return 'Kỹ thuật viên IT';
-      default:      return 'Nhân viên';
+      case 'Admin':   return 'Quản trị viên';
+      case 'IT':      return 'Kỹ thuật viên IT';
+      case 'Manager': return 'Quản lý';
+      default:        return 'Nhân viên';
     }
   }
 
   IconData get _roleIcon {
     switch (widget.currentUser.role) {
-      case 'Admin': return Icons.shield_rounded;
-      case 'IT':    return Icons.build_rounded;
-      default:      return Icons.person_rounded;
+      case 'Admin':   return Icons.shield_rounded;
+      case 'IT':      return Icons.build_rounded;
+      case 'Manager': return Icons.supervisor_account_rounded;
+      default:        return Icons.person_rounded;
     }
   }
 
@@ -84,9 +87,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
     setState(() => _savingInfo = true);
     try {
-      // roleId: Admin=1, IT=2, Customer=3
+      // roleId: Admin=1, IT=2, Customer=3, Manager=4
       final roleId = widget.currentUser.role == 'Admin'
-          ? 1 : widget.currentUser.role == 'IT' ? 2 : 3;
+          ? 1 : widget.currentUser.role == 'IT' ? 2 : widget.currentUser.role == 'Manager' ? 4 : 3;
       await _repo.updateUser(
         userId: widget.currentUser.userId,
         fullName: widget.currentUser.fullName,

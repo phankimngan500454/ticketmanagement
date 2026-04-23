@@ -6,6 +6,7 @@ import '../../models/ticket.dart';
 import '../../models/user.dart';
 import 'web_sidebar.dart';
 import '../../app_router.dart' show TicketDetailWrapper;
+import '../customer/create_ticket_dialog.dart';
 
 class WebAdminDashboard extends StatefulWidget {
   final User currentUser;
@@ -77,6 +78,7 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
     switch (s) {
       case 'Open': return const Color(0xFF3B82F6);
       case 'Pending': return const Color(0xFFF59E0B);
+      case 'WaitingConfirmation': return const Color(0xFFE67E22);
       case 'Resolved': return const Color(0xFF10B981);
       case 'Cancelled': return const Color(0xFFE53935);
       case 'Closed': return const Color(0xFF64748B);
@@ -709,7 +711,10 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
       ),
       icon: const Icon(Icons.add_rounded, size: 18),
       label: const Text('Tạo mới', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-      onPressed: () => context.push('/create-ticket'),
+      onPressed: () async {
+        final result = await CreateTicketDialog.show(context, widget.currentUser);
+        if (result == true) _loadData();
+      },
     );
   }
 

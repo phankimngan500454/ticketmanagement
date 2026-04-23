@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/user.dart';
+import '../../data/ticket_repository.dart';
 
 class WebCustomerSidebar extends StatefulWidget {
   final User currentUser;
@@ -136,7 +137,10 @@ class _WebCustomerSidebarState extends State<WebCustomerSidebar> {
                 size: 20,
                 color: Colors.redAccent,
               ),
-              onPressed: () => context.go('/login'),
+              onPressed: () async {
+                await TicketRepository.instance.logout();
+                if (context.mounted) context.go('/login');
+              },
               tooltip: 'Đăng xuất',
             ),
           ),

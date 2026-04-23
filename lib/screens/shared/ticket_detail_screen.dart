@@ -440,7 +440,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       case 'Pending':
         return const Color(0xFFF59E0B);
       case 'WaitingConfirmation':
-        return const Color(0xFF8B5CF6);
+        return const Color(0xFFE67E22);
       case 'Resolved':
         return const Color(0xFF10B981);
       case 'Cancelled':
@@ -1497,8 +1497,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         break;
                       }
                     }
-                    if (dept == null && locationLine == null)
+                    if (dept == null && locationLine == null) {
                       return const SizedBox.shrink();
+                    }
                     return Container(
                       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -1637,8 +1638,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             final afterColon = line
                                 .substring(line.indexOf(':') + 1)
                                 .trim();
-                            if (afterColon.isNotEmpty)
+                            if (afterColon.isNotEmpty) {
                               reasonLines.add(afterColon);
+                            }
                             inReason = true;
                           } else {
                             reasonLines.add(line);
@@ -1672,28 +1674,36 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       IconData iconFor(String k) {
                         if (k.contains('viện phí') ||
                             k.contains('MVP') ||
-                            k.contains('MVP'))
+                            k.contains('MVP')) {
                           return Icons.receipt_long_outlined;
-                        if (k.contains('yêu cầu') || k.contains('Người'))
+                        }
+                        if (k.contains('yêu cầu') || k.contains('Người')) {
                           return Icons.person_outline_rounded;
-                        if (k.contains('SĐT') || k.contains('điện thoại'))
+                        }
+                        if (k.contains('SĐT') || k.contains('điện thoại')) {
                           return Icons.phone_outlined;
-                        if (k.contains('tài chính'))
+                        }
+                        if (k.contains('tài chính')) {
                           return Icons.monetization_on_outlined;
+                        }
                         return Icons.info_outline_rounded;
                       }
 
                       Color colorFor(String k) {
                         if (k.contains('viện phí') ||
                             k.contains('MVP') ||
-                            k.contains('MVP'))
+                            k.contains('MVP')) {
                           return const Color(0xFF2563EB);
-                        if (k.contains('yêu cầu') || k.contains('Người'))
+                        }
+                        if (k.contains('yêu cầu') || k.contains('Người')) {
                           return const Color(0xFF7C3AED);
-                        if (k.contains('SĐT') || k.contains('điện thoại'))
+                        }
+                        if (k.contains('SĐT') || k.contains('điện thoại')) {
                           return const Color(0xFF059669);
-                        if (k.contains('tài chính'))
+                        }
+                        if (k.contains('tài chính')) {
                           return const Color(0xFFD97706);
+                        }
                         return Colors.blueGrey;
                       }
 
@@ -3571,20 +3581,39 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _approveDeadline,
-                      icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text('Duyệt'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                        side: const BorderSide(color: Colors.green),
-                        padding: const EdgeInsets.symmetric(vertical: 9),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF43A047),
+                            Color(0xFF2E7D32),
+                          ],
                         ),
-                        textStyle: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF43A047).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: _approveDeadline,
+                        icon: const Icon(Icons.check_rounded, size: 17),
+                        label: const Text('Duyệt'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -3593,18 +3622,19 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _showAdjustDeadlineSheet,
-                      icon: const Icon(Icons.tune_rounded, size: 16),
+                      icon: const Icon(Icons.tune_rounded, size: 17),
                       label: const Text('Điều chỉnh'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF1976D2),
                         side: const BorderSide(color: Color(0xFF1976D2)),
-                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        backgroundColor: const Color(0xFF1976D2).withValues(alpha: 0.05),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         textStyle: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),

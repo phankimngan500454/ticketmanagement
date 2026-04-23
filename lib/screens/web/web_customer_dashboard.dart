@@ -7,6 +7,7 @@ import '../../models/user.dart';
 import '../../services/browser_notification_service.dart';
 import 'web_customer_sidebar.dart';
 import '../../app_router.dart' show TicketDetailWrapper;
+import '../customer/create_ticket_dialog.dart';
 
 class WebCustomerDashboard extends StatefulWidget {
   final User currentUser;
@@ -127,7 +128,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
       case 'Pending':
         return const Color(0xFFF59E0B);
       case 'WaitingConfirmation':
-        return const Color(0xFF8B5CF6);
+        return const Color(0xFFE67E22);
       case 'Resolved':
         return const Color(0xFF10B981);
       case 'Cancelled':
@@ -440,7 +441,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                             ),
                             _statusChip(
                               'BA_Done',
-                              const Color(0xFF8B5CF6),
+                              const Color(0xFFE67E22),
                               'Đã sửa xong',
                               icon: Icons.edit_note_rounded,
                             ),
@@ -941,7 +942,10 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
         'Tạo mới',
         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
-      onPressed: () => context.push('/create-ticket'),
+      onPressed: () async {
+        final result = await CreateTicketDialog.show(context, widget.currentUser);
+        if (result == true) _loadData();
+      },
     );
   }
 

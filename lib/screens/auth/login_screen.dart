@@ -190,23 +190,25 @@ class _LoginScreenState extends State<LoginScreen>
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 11,
-            child: _buildHeroPanel(
-              padding: const EdgeInsets.fromLTRB(44, 44, 32, 44),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 11,
+              child: _buildHeroPanel(
+                padding: const EdgeInsets.fromLTRB(44, 44, 32, 44),
+              ),
             ),
-          ),
-          Expanded(
-            flex: 10,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: _buildFormCard(compact: false),
+            Expanded(
+              flex: 10,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: _buildFormCard(compact: false),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/user.dart';
+import '../../data/ticket_repository.dart';
 
 class WebSidebar extends StatefulWidget {
   final User currentUser;
@@ -19,7 +20,6 @@ class WebSidebar extends StatefulWidget {
 }
 
 class _WebSidebarState extends State<WebSidebar> {
-  final bool _isCollapsed = true;
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +89,8 @@ class _WebSidebarState extends State<WebSidebar> {
                   _directNavItem(context, Icons.people_rounded, 'Người dùng', '/admin/users'),
                   _directNavItem(context, Icons.devices_rounded, 'Thiết bị', '/admin/assets'),
                   _directNavItem(context, Icons.business_rounded, 'Phòng ban', '/admin/departments'),
+                  // --- NOTE: Quản lý danh mục (Bỏ comment dòng dưới để hiển thị lại) ---
+                  // _directNavItem(context, Icons.category_rounded, 'Danh mục', '/admin/categories'),
 
 
                 ],
@@ -121,7 +123,10 @@ class _WebSidebarState extends State<WebSidebar> {
             alignment: Alignment.center,
             child: IconButton(
               icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.redAccent),
-              onPressed: () => context.go('/login'),
+              onPressed: () async {
+                await TicketRepository.instance.logout();
+                if (context.mounted) context.go('/login');
+              },
               tooltip: 'Đăng xuất',
             ),
           ),

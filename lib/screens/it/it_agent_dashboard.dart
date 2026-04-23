@@ -246,7 +246,8 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   onSelected: (v) async {
                     if (v == 'logout') {
-                      context.go('/login');
+                      await _repo.logout();
+                      if (context.mounted) context.go('/login');
                     } else if (v == 'profile') {
                       await context.push('/profile');
                     }
@@ -677,7 +678,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     String label;
     switch (status) {
       case 'Resolved': c = const Color(0xFF43A047); label = 'Đã xong'; break;
-      case 'WaitingConfirmation': c = const Color(0xFFF59E0B); label = 'Chờ xác nhận'; break;
+      case 'WaitingConfirmation': c = const Color(0xFFE67E22); label = 'Chờ xác nhận'; break;
       case 'Pending': c = const Color(0xFF1976D2); label = 'Đang xử lý'; break;
       default: c = Colors.grey; label = 'Đang mở';
     }

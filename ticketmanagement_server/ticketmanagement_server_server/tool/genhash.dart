@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:bcrypt/bcrypt.dart';
 
 void main() {

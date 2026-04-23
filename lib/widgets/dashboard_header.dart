@@ -151,7 +151,7 @@ class _LogoutAvatar extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       onSelected: (value) async {
         if (value == 'logout') {
-          TicketRepository.instance.logout();
+          await TicketRepository.instance.logout();
           await setLoginWindowSize();
           if (context.mounted) context.go('/login');
         } else if (value == 'profile') {

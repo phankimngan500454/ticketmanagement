@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const Color brand = Color(0xFF2563EB);
@@ -29,7 +30,7 @@ class AppTheme {
       colorScheme: scheme,
       primaryColor: brand,
       scaffoldBackgroundColor: surfaceSoft,
-      fontFamily: 'Inter',
+      fontFamily: GoogleFonts.inter().fontFamily,
       appBarTheme: const AppBarTheme(
         backgroundColor: brandDark,
         foregroundColor: Colors.white,
@@ -145,7 +146,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(24),
         ),
       ),
-      textTheme: const TextTheme(
+      textTheme: GoogleFonts.interTextTheme(const TextTheme(
         headlineSmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w800,
@@ -171,7 +172,7 @@ class AppTheme {
           fontSize: 13,
           color: textMuted,
         ),
-      ),
+      )),
     );
   }
 }

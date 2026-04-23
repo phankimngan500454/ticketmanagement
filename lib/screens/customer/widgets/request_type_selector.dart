@@ -25,11 +25,11 @@ class RequestTypeSelector extends StatelessWidget {
         label: 'Mở lại bệnh án',
         subtitle: 'Yêu cầu mở lại hồ sơ bệnh án',
         icon: Icons.folder_open_rounded,
-        color: const Color.fromARGB(255, 148, 182, 234),
+        color: const Color(0xFF0891B2),
       ),
       (
         key: 'feedback',
-        label: 'Góp ý M3',
+        label: 'Góp ý',
         subtitle: 'Gửi góp ý, đề xuất cải tiến hệ thống',
         icon: Icons.feedback_rounded,
         color: const Color(0xFF00897B),

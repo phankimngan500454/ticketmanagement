@@ -24,14 +24,10 @@ class CreateTicketScreen extends StatefulWidget {
 }
 
 class _CreateTicketScreenState extends State<CreateTicketScreen> {
-  // String _requestType = 'repair'; // <- Gốc
-  String _requestType =
-      'reopen_medical'; // Dùng tạm tĩnh cho reopen_medical để test
+  String _requestType = 'repair';
 
   @override
   Widget build(BuildContext context) {
-    /* 
-    // --- CODE GỐC (TẠM ẨN ĐỂ TEST LUỒNG MỞ BỆNH ÁN) ---
     int currentIndex = _requestType == 'reopen_medical' ? 1 : _requestType == 'feedback' ? 2 : 0;
     
     return IndexedStack(
@@ -51,13 +47,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
           onTypeChanged: (t) => setState(() => _requestType = t),
         ),
       ],
-    );
-    */
-
-    // Chỉ render màn hình Mở lại bệnh án để test luồng
-    return CreateReopenMedicalScreen(
-      currentUser: widget.currentUser,
-      onTypeChanged: (t) => setState(() => _requestType = t),
     );
   }
 }
@@ -449,11 +438,16 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
                           isWide ? 32 : 16,
                           32,
                         ),
-                        child: Form(
-                          key: _formKey,
-                          child: isWide
-                              ? _buildDesktopLayout()
-                              : _buildMobileLayout(),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
+                            child: Form(
+                              key: _formKey,
+                              child: isWide
+                                  ? _buildDesktopLayout()
+                                  : _buildMobileLayout(),
+                            ),
+                          ),
                         ),
                       );
                     },
@@ -1591,27 +1585,33 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
     // Icon theo loại thiết bị
     IconData typeIcon(String t) {
       final lower = t.toLowerCase();
-      if (lower.contains('laptop') || lower.contains('máy tính'))
+      if (lower.contains('laptop') || lower.contains('máy tính')) {
         return Icons.laptop_rounded;
+      }
       if (lower.contains('máy in')) return Icons.print_rounded;
       if (lower.contains('màn hình')) return Icons.monitor_rounded;
       if (lower.contains('switch') ||
           lower.contains('router') ||
           lower.contains('wifi') ||
-          lower.contains('mạng'))
+          lower.contains('mạng')) {
         return Icons.router_rounded;
-      if (lower.contains('máy chủ') || lower.contains('server'))
+      }
+      if (lower.contains('máy chủ') || lower.contains('server')) {
         return Icons.dns_rounded;
-      if (lower.contains('tablet') || lower.contains('điện thoại'))
+      }
+      if (lower.contains('tablet') || lower.contains('điện thoại')) {
         return Icons.tablet_android_rounded;
+      }
       if (lower.contains('camera')) return Icons.videocam_rounded;
-      if (lower.contains('ups') || lower.contains('điện'))
+      if (lower.contains('ups') || lower.contains('điện')) {
         return Icons.electrical_services_rounded;
+      }
       if (lower.contains('y tế') ||
           lower.contains('siêu âm') ||
           lower.contains('ecg') ||
-          lower.contains('x-quang'))
+          lower.contains('x-quang')) {
         return Icons.medical_services_rounded;
+      }
       return Icons.devices_other_rounded;
     }
 

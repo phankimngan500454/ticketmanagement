@@ -108,6 +108,8 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   errorBuilder: (context, state) => NotFoundScreen(location: state.uri.path),
+  // ── Lắng nghe auth state thay đổi → tự động redirect khi logout ──
+  refreshListenable: TicketRepository.instance.authNotifier,
   // ── REDIRECT LOGIC: xử lý tập trung, không để trong builder ────
   redirect: (context, state) {
     final path = state.matchedLocation;
@@ -168,7 +170,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/admin',
       builder: (context, state) {
-        final user = TicketRepository.instance.currentUser!;
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink(); // redirect sẽ xử lý
         if (kIsWeb) {
           return WebAdminDashboard(currentUser: user);
         }
@@ -178,7 +181,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/it',
       builder: (context, state) {
-        final user = TicketRepository.instance.currentUser!;
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
         if (kIsWeb) {
           return WebITDashboard(currentUser: user);
         }
@@ -188,7 +192,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/customer',
       builder: (context, state) {
-        final user = TicketRepository.instance.currentUser!;
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
         if (kIsWeb) {
           return WebCustomerDashboard(currentUser: user);
         }
@@ -198,7 +203,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/manager',
       builder: (context, state) {
-        final user = TicketRepository.instance.currentUser!;
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
         if (kIsWeb) {
           return WebManagerDashboard(currentUser: user);
         }
@@ -210,9 +216,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/ticket/:id',
       builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
         final ticketId = int.tryParse(state.pathParameters['id'] ?? '');
         final ticket = state.extra is Ticket ? state.extra as Ticket : null;
-        final user = TicketRepository.instance.currentUser!;
         if (ticketId == null) return const Scaffold(body: Center(child: Text('Ticket không hợp lệ')));
         return TicketDetailWrapper(
           ticket: ticket,
@@ -224,37 +231,69 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/create-ticket',
-      builder: (context, state) => CreateTicketScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return CreateTicketScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/emergency',
-      builder: (context, state) => EmergencyCallScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return EmergencyCallScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => NotificationsScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return NotificationsScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/profile',
-      builder: (context, state) => ProfileScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return ProfileScreen(currentUser: user);
+      },
     ),
 
     // ── Admin only routes ─────────────────────────────────────────
     GoRoute(
       path: '/admin/users',
-      builder: (context, state) => AdminUsersScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return AdminUsersScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/admin/categories',
-      builder: (context, state) => AdminCategoriesScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return AdminCategoriesScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/admin/departments',
-      builder: (context, state) => AdminDepartmentsScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return AdminDepartmentsScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/admin/assets',
-      builder: (context, state) => AdminAssetsScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return AdminAssetsScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/admin/emergency-contacts',
@@ -262,11 +301,19 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/admin/it-workload',
-      builder: (context, state) => ITWorkloadScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return ITWorkloadScreen(currentUser: user);
+      },
     ),
     GoRoute(
       path: '/admin/reports',
-      builder: (context, state) => ReportScreen(currentUser: TicketRepository.instance.currentUser!),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return ReportScreen(currentUser: user);
+      },
     ),
   ],
 );
