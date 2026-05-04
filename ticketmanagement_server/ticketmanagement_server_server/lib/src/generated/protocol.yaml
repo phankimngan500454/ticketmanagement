@@ -49,5 +49,6 @@ ticket:
   - proposeDeadline:
   - approveDeadline:
   - confirmDeadline:
+  - deleteTicket:
 greeting:
   - hello:

@@ -29,6 +29,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
   int _currentPage = 1;
   final int _itemsPerPage = 10;
   final Map<int, String> _knownTicketStates = {};
+  int _newNotifCount = 0;
 
   static const _purple = Color(0xFF00897B);
 
@@ -64,6 +65,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
                 ? changedTickets.first
                 : (newTickets.isNotEmpty ? newTickets.first : null);
             if (latest != null) {
+              _newNotifCount += newTickets.length + changedTickets.length;
               final body = changedTickets.contains(latest)
                   ? '${latest.subject} đã chuyển sang "${_statusLabel(latest)}"'
                   : 'Có yêu cầu mới cần duyệt: ${latest.subject}';
@@ -142,14 +144,14 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
         case 'Open': return 'Chờ duyệt';
         case 'Resolved': return 'Đã duyệt';
         case 'Pending': return 'Đang mở BA';
-        case 'WaitingConfirmation': return 'Chờ đóng BA';
+        case 'WaitingConfirmation': return 'Đã sửa xong';
         case 'Cancelled': return 'Từ chối';
         case 'Closed': return 'Đã đóng BA';
         default: return t.status;
       }
     } else {
       switch (t.status) {
-        case 'Open': return 'Chưa xử lý';
+        case 'Open': return 'Chờ tiếp nhận';
         case 'Pending': return 'Đang xem xét';
         case 'Resolved': return 'Đã tiếp nhận';
         case 'Cancelled': return 'Từ chối';
@@ -175,6 +177,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
           WebManagerSidebar(
             currentUser: widget.currentUser,
             selectedType: _typeFilter,
+            notificationCount: _newNotifCount,
             onTypeSelected: (type) {
               setState(() {
                 _typeFilter = type;

@@ -100,6 +100,12 @@ mixin TicketCrudRepository on RepositoryBase {
     return mapTicket(t);
   }
 
+  // ── Xóa ticket (chỉ khi chưa duyệt = Open) ───────────────
+  Future<bool> deleteTicket(int ticketId) async {
+    await warmCache();
+    return client.ticket.deleteTicket(ticketId);
+  }
+
   // ── Lấy danh sách góp ý/mở BA (Dành cho Dashboard Xét duyệt) ────────────
   Future<List<Ticket>> getFeedbackTickets() async {
     await warmCache();
@@ -147,5 +153,33 @@ mixin TicketCrudRepository on RepositoryBase {
     final t = await client.ticket.updateCostDifference(ticketId, costDifference);
     if (t == null) throw Exception('Ticket not found');
     return mapTicket(t);
+  }
+
+  // ── Migration: Cancelled → Closed cho bệnh án cũ ─────────────
+  // Chạy 1 lần duy nhất để chuyển reopen_medical từ Cancelled → Closed
+  static bool _migrated = false;
+  Future<int> migrateReopenMedicalClosed() async {
+    if (_migrated) return 0;
+    _migrated = true;
+
+    await warmCache();
+    final user = currentUser;
+    if (user == null) return 0;
+
+    final raw = await client.ticket.getTickets(0, 1);
+    final targets = raw.where((t) =>
+      t.ticketType == 'reopen_medical' && t.status == 'Cancelled'
+    ).toList();
+
+    if (targets.isEmpty) return 0;
+
+    int count = 0;
+    for (final t in targets) {
+      try {
+        await client.ticket.updateStatus(t.id!, 'Closed');
+        count++;
+      } catch (_) {}
+    }
+    return count;
   }
 }

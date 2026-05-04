@@ -39,7 +39,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.currentUser.fullName);
+    _nameController = TextEditingController();
     _phoneController = TextEditingController(text: widget.currentUser.phone);
   }
 

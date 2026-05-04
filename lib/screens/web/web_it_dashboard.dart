@@ -27,6 +27,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
   Timer? _refreshTimer;
   int? _processingId;
   final Map<int, String> _knownVisibleTicketStates = {};
+  int _newNotifCount = 0;
   
   static const _green = Color(0xFF00897B);
 
@@ -71,6 +72,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
                 ? changedTickets.first
                 : (newTickets.isNotEmpty ? newTickets.first : null);
             if (latest != null) {
+              _newNotifCount += newTickets.length + changedTickets.length;
               final body = changedTickets.contains(latest)
                   ? '${latest.subject} đã chuyển sang "${latest.status}"'
                   : 'Có ticket mới cần xử lý: ${latest.subject}';
@@ -229,6 +231,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
           WebITSidebar(
             currentUser: widget.currentUser,
             selectedIndex: _navIndex,
+            notificationCount: _newNotifCount,
             onIndexSelected: (idx) {
               setState(() {
                 _navIndex = idx;

@@ -13,13 +13,8 @@ class RequestTypeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = [
-      (
-        key: 'repair',
-        label: 'Sửa chữa',
-        subtitle: 'Yêu cầu IT hỗ trợ sửa chữa thiết bị',
-        icon: Icons.build_rounded,
-        color: const Color(0xFF1976D2),
-      ),
+      // ── TẠM ẨN: chỉ giữ Bệnh án ──
+      // (key: 'repair', label: 'Sửa chữa', subtitle: 'Yêu cầu IT hỗ trợ sửa chữa thiết bị', icon: Icons.build_rounded, color: const Color(0xFF1976D2)),
       (
         key: 'reopen_medical',
         label: 'Mở lại bệnh án',
@@ -27,13 +22,7 @@ class RequestTypeSelector extends StatelessWidget {
         icon: Icons.folder_open_rounded,
         color: const Color(0xFF0891B2),
       ),
-      (
-        key: 'feedback',
-        label: 'Góp ý',
-        subtitle: 'Gửi góp ý, đề xuất cải tiến hệ thống',
-        icon: Icons.feedback_rounded,
-        color: const Color(0xFF00897B),
-      ),
+      // (key: 'feedback', label: 'Góp ý', subtitle: 'Gửi góp ý, đề xuất cải tiến hệ thống', icon: Icons.feedback_rounded, color: const Color(0xFF00897B)),
     ];
 
     return Container(

@@ -65,10 +65,11 @@ class AuthEndpoint extends Endpoint {
     return AppUser.db.insertRow(session, user);
   }
 
-  /// Admin: update user profile (fullName, phone, roleId, deptId).
+  /// Admin: update user profile (username, fullName, phone, roleId, deptId).
   Future<AppUser?> updateUser(
     Session session,
     int userId,
+    String? username,
     String fullName,
     String? phone,
     int roleId,
@@ -77,9 +78,29 @@ class AuthEndpoint extends Endpoint {
   ) async {
     final user = await AppUser.db.findById(session, userId);
     if (user == null) return null;
+
+    // Nếu đổi username, kiểm tra trùng lặp
+    var updatedUser = user.copyWith(fullName: fullName, phone: phone, roleId: roleId, deptId: deptId, permissions: permissions);
+    if (username != null && username.isNotEmpty && username != user.username) {
+      final existing = await AppUser.db.findFirstRow(
+        session,
+        where: (t) => t.username.ilike(username),
+      );
+      if (existing != null) return null; // Username đã tồn tại
+      updatedUser = updatedUser.copyWith(username: username);
+    }
+
     return AppUser.db.updateRow(
       session,
-      user.copyWith(fullName: fullName, phone: phone, roleId: roleId, deptId: deptId, permissions: permissions),
+      updatedUser,
+      columns: (t) => [
+        t.fullName,
+        t.phone,
+        t.roleId,
+        t.deptId,
+        t.permissions,
+        t.username,
+      ],
     );
   }
 
@@ -88,7 +109,11 @@ class AuthEndpoint extends Endpoint {
     final user = await AppUser.db.findById(session, userId);
     if (user == null) return false;
     final hash = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-    await AppUser.db.updateRow(session, user.copyWith(passwordHash: hash));
+    await AppUser.db.updateRow(
+      session,
+      user.copyWith(passwordHash: hash),
+      columns: (t) => [t.passwordHash],
+    );
     return true;
   }
 
@@ -105,6 +130,10 @@ class AuthEndpoint extends Endpoint {
   Future<void> updateFcmToken(Session session, int userId, String token) async {
     final user = await AppUser.db.findById(session, userId);
     if (user == null) return;
-    await AppUser.db.updateRow(session, user.copyWith(fcmToken: token));
+    await AppUser.db.updateRow(
+      session,
+      user.copyWith(fcmToken: token),
+      columns: (t) => [t.fcmToken],
+    );
   }
 }

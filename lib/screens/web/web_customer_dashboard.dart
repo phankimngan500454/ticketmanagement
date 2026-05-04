@@ -18,8 +18,9 @@ class WebCustomerDashboard extends StatefulWidget {
 }
 
 class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
+  // ── TẠM ẨN: mặc định chỉ hiện Bệnh án ──
   String?
-  _selectedType; // null = Tất cả, 'ticket', 'reopen_medical', 'feedback'
+  _selectedType = 'reopen_medical'; // TẠM: force bệnh án, gốc = null
   final _repo = TicketRepository.instance;
   List<Ticket> _tickets = [];
   bool _loading = true;
@@ -28,16 +29,26 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
   Ticket? _selectedTicket;
   Timer? _refreshTimer;
   final Map<int, String> _knownTicketStates = {};
+  int _newNotifCount = 0;
 
   @override
   void initState() {
     super.initState();
     BrowserNotificationService.init();
-    _loadData();
+    _runMigrationThenLoad();
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 15),
       (_) => _loadData(),
     );
+  }
+
+  /// Chạy 1 lần: chuyển bệnh án cũ Cancelled → Closed, rồi load data
+  Future<void> _runMigrationThenLoad() async {
+    try {
+      final count = await _repo.migrateReopenMedicalClosed();
+      if (count > 0) debugPrint('✅ Migrated $count tickets: Cancelled → Closed');
+    } catch (_) {}
+    _loadData();
   }
 
   @override
@@ -67,6 +78,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                 ? changedTickets.first
                 : (newTickets.isNotEmpty ? newTickets.first : null);
             if (latest != null) {
+              _newNotifCount += newTickets.length + changedTickets.length;
               final body = changedTickets.contains(latest)
                   ? '${latest.subject} đã chuyển sang "${_statusLabel(latest.status, latest.ticketType)}"'
                   : 'Yêu cầu của bạn có cập nhật mới: ${latest.subject}';
@@ -131,8 +143,10 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
         return const Color(0xFFE67E22);
       case 'Resolved':
         return const Color(0xFF10B981);
-      case 'Cancelled':
+      case 'Closed':
         return const Color(0xFF64748B);
+      case 'Cancelled':
+        return const Color(0xFFEF4444);
       default:
         return Colors.grey;
     }
@@ -149,8 +163,10 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
           return 'Đang mở BA';
         case 'WaitingConfirmation':
           return 'Chờ đóng BA';
-        case 'Cancelled':
+        case 'Closed':
           return 'Đã đóng BA';
+        case 'Cancelled':
+          return 'Từ chối';
         default:
           return s;
       }
@@ -206,7 +222,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
           case 'BA_Open':   return t.status == 'Open';
           case 'BA_Processing': return t.status == 'Resolved' || t.status == 'Pending';
           case 'BA_Done':   return t.status == 'WaitingConfirmation';
-          case 'BA_Closed': return t.status == 'Cancelled';
+          case 'BA_Closed': return t.status == 'Cancelled' || t.status == 'Closed';
           default: return true;
         }
       }).toList();
@@ -263,7 +279,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
         case 'BA_Open':      return list.where((t) => t.status == 'Open').length;
         case 'BA_Processing': return list.where((t) => t.status == 'Resolved' || t.status == 'Pending').length;
         case 'BA_Done':      return list.where((t) => t.status == 'WaitingConfirmation').length;
-        case 'BA_Closed':    return list.where((t) => t.status == 'Cancelled').length;
+        case 'BA_Closed':    return list.where((t) => t.status == 'Cancelled' || t.status == 'Closed').length;
         default: return list.length;
       }
     }
@@ -299,42 +315,138 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Row(
-        children: [
-          WebCustomerSidebar(
-            currentUser: widget.currentUser,
-            selectedType: _selectedType,
-            onTypeSelected: (type) {
-              setState(() {
-                _selectedType = type;
-                _selectedTicket = null;
-                _filterStatus = 'Tất cả'; // reset filter khi đổi loại
-              });
-            },
-          ),
-          Expanded(
-            child: _selectedTicket != null
-                ? Row(
-                    children: [
-                      Expanded(flex: 4, child: _buildMainContent()),
-                      Container(width: 1, color: Colors.grey.shade200),
-                      Expanded(flex: 5, child: _buildDetailPane()),
-                    ],
-                  )
-                : _buildMainContent(),
-          ),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 768;
+
+          if (isNarrow) {
+            // ── Mobile-friendly: không sidebar, detail overlay ──
+            return Stack(
+              children: [
+                _buildMainContent(),
+                if (_selectedTicket != null)
+                  Positioned.fill(
+                    child: Container(
+                      color: const Color(0xFFF8FAFC),
+                      child: _buildDetailPane(),
+                    ),
+                  ),
+              ],
+            );
+          }
+
+          // ── Desktop: sidebar + split view ──
+          return Row(
+            children: [
+              WebCustomerSidebar(
+                currentUser: widget.currentUser,
+                selectedType: _selectedType,
+                notificationCount: _newNotifCount,
+                onTypeSelected: (type) {
+                  setState(() {
+                    _selectedType = type;
+                    _selectedTicket = null;
+                    _filterStatus = 'Tất cả';
+                  });
+                },
+              ),
+              Expanded(
+                child: _selectedTicket != null
+                    ? Row(
+                        children: [
+                          Expanded(flex: 4, child: _buildMainContent()),
+                          Container(width: 1, color: Colors.grey.shade200),
+                          Expanded(flex: 5, child: _buildDetailPane()),
+                        ],
+                      )
+                    : _buildMainContent(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildMainContent() {
     final filtered = _filtered;
+    final isNarrow = MediaQuery.of(context).size.width < 768;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Thanh header trên cùng cho narrow (thay sidebar) ──
+        if (isNarrow)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  Row(children: [
+                    const Icon(Icons.local_hospital_rounded, color: Colors.white, size: 22),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Xin chào, ${widget.currentUser.fullName}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Stack(children: [
+                        const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+                        if (_newNotifCount > 0)
+                          Positioned(right: 0, top: 0, child: Container(
+                            width: 14, height: 14,
+                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                            child: Center(child: Text(_newNotifCount > 9 ? '9+' : '$_newNotifCount',
+                              style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold))),
+                          )),
+                      ]),
+                      onPressed: () {
+                        setState(() => _newNotifCount = 0);
+                        context.push('/notifications');
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.person_outline, color: Colors.white, size: 22),
+                      onPressed: () => context.push('/profile'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                      tooltip: 'Đăng xuất',
+                      onPressed: () async {
+                        await TicketRepository.instance.logout();
+                        if (context.mounted) context.go('/login');
+                      },
+                    ),
+                  ]),
+                  const SizedBox(height: 6),
+                  // Type filter chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: [
+                      // ── TẠM ẨN: chỉ giữ Bệnh án ──
+                      // _narrowTypeChip(null, 'Tất cả', Icons.dashboard_rounded),
+                      // const SizedBox(width: 6),
+                      // _narrowTypeChip('ticket', 'Yêu cầu IT', Icons.computer_rounded),
+                      // const SizedBox(width: 6),
+                      _narrowTypeChip('reopen_medical', 'Bệnh án', Icons.folder_open_rounded),
+                      // const SizedBox(width: 6),
+                      // _narrowTypeChip('feedback', 'Góp ý', Icons.feedback_rounded),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         Container(
-          padding: const EdgeInsets.fromLTRB(28, 22, 28, 18),
+          padding: EdgeInsets.fromLTRB(isNarrow ? 16 : 28, isNarrow ? 12 : 22, isNarrow ? 16 : 28, isNarrow ? 10 : 18),
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
@@ -357,11 +469,11 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                       _selectedType == null
                           ? 'Khám phá Dịch vụ'
                           : _typeLabels[_selectedType]!,
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: TextStyle(
+                        fontSize: isNarrow ? 18 : 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
-                        color: Color(0xFF1E293B),
+                        color: const Color(0xFF1E293B),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -377,9 +489,36 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
+              const SizedBox(height: 12),
+              if (isNarrow)
+                // Narrow: search full width, chips below
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  SizedBox(
+                    height: 36,
+                    child: TextField(
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Tìm kiếm yêu cầu...',
+                        hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                        prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: _buildStatusChips()),
+                  ),
+                ])
+              else
+                // Wide: search + chips in same row
+                Row(children: [
                   SizedBox(
                     width: 220,
                     height: 36,
@@ -388,32 +527,13 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                       style: const TextStyle(fontSize: 13),
                       decoration: InputDecoration(
                         hintText: 'Tìm kiếm yêu cầu...',
-                        hintStyle: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade400,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          size: 18,
-                          color: Colors.grey.shade400,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 0,
-                          horizontal: 12,
-                        ),
+                        hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                        prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                         filled: true,
                         fillColor: const Color(0xFFF1F5F9),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF2563EB),
-                            width: 1.5,
-                          ),
-                        ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5)),
                       ),
                     ),
                   ),
@@ -421,61 +541,10 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          if (_selectedType == 'reopen_medical') ...[
-                            // ── 4 tab trạng thái riêng cho bệnh án ──
-                            _statusChip('Tất cả', null, 'Tất cả',
-                                icon: Icons.list_rounded),
-                            _statusChip(
-                              'BA_Open',
-                              const Color(0xFF3B82F6),
-                              'Yêu cầu mở',
-                              icon: Icons.hourglass_empty_rounded,
-                            ),
-                            _statusChip(
-                              'BA_Processing',
-                              const Color(0xFFF59E0B),
-                              'Khoa xử lý',
-                              icon: Icons.folder_open_rounded,
-                            ),
-                            _statusChip(
-                              'BA_Done',
-                              const Color(0xFFE67E22),
-                              'Đã sửa xong',
-                              icon: Icons.edit_note_rounded,
-                            ),
-                            _statusChip(
-                              'BA_Closed',
-                              const Color(0xFF64748B),
-                              'Đóng bệnh án',
-                              icon: Icons.lock_rounded,
-                            ),
-                          ] else ...[
-                            // ── Chip trạng thái thông thường ──
-                            _statusChip('Tất cả', null, 'Tất cả'),
-                            _statusChip(
-                              'Open',
-                              const Color(0xFF3B82F6),
-                              'Đang xử lý',
-                            ),
-                            _statusChip(
-                              'Resolved',
-                              const Color(0xFF10B981),
-                              'Đã xong',
-                            ),
-                            _statusChip(
-                              'Cancelled',
-                              const Color(0xFF64748B),
-                              'Đã hủy',
-                            ),
-                          ],
-                        ],
-                      ),
+                      child: Row(children: _buildStatusChips()),
                     ),
                   ),
-                ],
-              ),
+                ]),
             ],
           ),
         ),
@@ -580,6 +649,54 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ── Extracted status chips list ──
+  List<Widget> _buildStatusChips() {
+    if (_selectedType == 'reopen_medical') {
+      return [
+        _statusChip('Tất cả', null, 'Tất cả', icon: Icons.list_rounded),
+        _statusChip('BA_Open', const Color(0xFF3B82F6), 'Yêu cầu mở', icon: Icons.hourglass_empty_rounded),
+        _statusChip('BA_Processing', const Color(0xFFF59E0B), 'Khoa xử lý', icon: Icons.folder_open_rounded),
+        _statusChip('BA_Done', const Color(0xFFE67E22), 'Đã sửa xong', icon: Icons.edit_note_rounded),
+        _statusChip('BA_Closed', const Color(0xFF64748B), 'Đóng bệnh án', icon: Icons.lock_rounded),
+      ];
+    }
+    return [
+      _statusChip('Tất cả', null, 'Tất cả'),
+      _statusChip('Open', const Color(0xFF3B82F6), 'Đang xử lý'),
+      _statusChip('Resolved', const Color(0xFF10B981), 'Đã xong'),
+      _statusChip('Cancelled', const Color(0xFF64748B), 'Đã hủy'),
+    ];
+  }
+
+  // ── Type filter chip for narrow header (replaces sidebar) ──
+  Widget _narrowTypeChip(String? type, String label, IconData icon) {
+    final isSelected = _selectedType == type;
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedType = type;
+        _selectedTicket = null;
+        _filterStatus = 'Tất cả';
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 14, color: isSelected ? const Color(0xFF1565C0) : Colors.white),
+          const SizedBox(width: 5),
+          Text(label, style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? const Color(0xFF1565C0) : Colors.white,
+          )),
+        ]),
       ),
     );
   }

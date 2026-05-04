@@ -40,9 +40,9 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
   final _repo = TicketRepository.instance;
   final _formKey = GlobalKey<FormState>();
 
-  // ── Tab state ──
+  // ── TẠM ẨN: mặc định mở tab bệnh án ──
   late TabController _tabCtrl;
-  int _currentTab = 0;
+  int _currentTab = 1; // TẠM: force bệnh án tab, gốc = 0
 
   // ── Shared controllers ──
   late final TextEditingController _nameCtrl;
@@ -85,7 +85,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 3, vsync: this, initialIndex: 1); // TẠM: bệnh án tab
     _tabCtrl.addListener(() {
       if (_tabCtrl.indexIsChanging) return;
       setState(() => _currentTab = _tabCtrl.index);
@@ -423,7 +423,8 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
-          children: List.generate(3, (i) {
+          // ── TẠM ẨN: chỉ hiện tab Bệnh án ──
+          children: [1].map((i) {
             final cfg = _tabConfigs[i];
             final selected = _currentTab == i;
             return Expanded(
@@ -476,7 +477,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
                 ),
               ),
             );
-          }),
+          }).toList(),
         ),
       ),
     );
@@ -591,32 +592,37 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         _sectionHeader('Thông tin người gửi', Icons.person_outline_rounded),
         const SizedBox(height: 10),
         _formCard(
-          child: Column(children: [
-            Row(children: [
-              Expanded(flex: 3, child: _field('Họ và tên', required: true, child: TextFormField(
-                controller: _nameCtrl,
-                decoration: _deco('Nhập họ tên...', Icons.badge_outlined),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
-              ))),
+          child: Builder(builder: (ctx) {
+            final narrow = MediaQuery.of(ctx).size.width < 500;
+            final nameField = _field('Họ và tên', required: true, child: TextFormField(
+              controller: _nameCtrl,
+              decoration: _deco('Nhập họ tên...', Icons.badge_outlined),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
+            ));
+            final phoneField = _field('Số điện thoại', required: true, child: TextFormField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: _deco('SĐT...', Icons.phone_outlined),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
+            ));
+            final deptField = _field('Khoa / Phòng ban', child: TextFormField(
+              initialValue: widget.currentUser.deptName ?? 'Không rõ',
+              readOnly: true,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+              decoration: _deco('', Icons.apartment_rounded).copyWith(fillColor: const Color(0xFFF1F5F9)),
+            ));
+            if (narrow) {
+              return Column(children: [nameField, const SizedBox(height: 10), phoneField, const SizedBox(height: 10), deptField]);
+            }
+            return Row(children: [
+              Expanded(flex: 3, child: nameField),
               const SizedBox(width: 12),
-              Expanded(flex: 2, child: _field('Số điện thoại', required: true, child: TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: _deco('SĐT...', Icons.phone_outlined),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
-              ))),
+              Expanded(flex: 2, child: phoneField),
               const SizedBox(width: 12),
-              Expanded(flex: 3, child: _field('Khoa / Phòng ban', child: TextFormField(
-                initialValue: widget.currentUser.deptName ?? 'Không rõ',
-                readOnly: true,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                decoration: _deco('', Icons.apartment_rounded).copyWith(
-                  fillColor: const Color(0xFFF1F5F9),
-                ),
-              ))),
-            ]),
-          ]),
+              Expanded(flex: 3, child: deptField),
+            ]);
+          }),
         ),
 
         const SizedBox(height: 18),
@@ -632,37 +638,41 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
               validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
             )),
             const SizedBox(height: 14),
-            Row(children: [
-              Expanded(child: _field('Danh mục lỗi', required: true, child: _loadingOptions
+            Builder(builder: (ctx) {
+              final narrow = MediaQuery.of(ctx).size.width < 500;
+              final catField = _field('Danh mục lỗi', required: true, child: _loadingOptions
                 ? const LinearProgressIndicator()
                 : DropdownButtonFormField<Category>(
                     initialValue: _selectedCategory,
                     isExpanded: true,
-                    decoration: _deco('Chọn danh mục...', Icons.category_outlined),
+                    decoration: _deco('Chọn', Icons.category_outlined),
                     items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c.categoryName, style: const TextStyle(fontSize: 13)))).toList(),
                     onChanged: (v) => setState(() => _selectedCategory = v),
                   ),
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _field('Thiết bị liên quan', child: _loadingOptions
+              );
+              final assetField = _field('Thiết bị liên quan', child: _loadingOptions
                 ? const LinearProgressIndicator()
                 : DropdownButtonFormField<Asset>(
                     initialValue: _selectedAsset,
                     isExpanded: true,
-                    decoration: _deco('Chọn thiết bị...', Icons.devices_rounded),
+                    decoration: _deco('Chọn', Icons.devices_rounded),
                     items: _assets.map((a) => DropdownMenuItem(value: a, child: Text(a.assetName, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
                     onChanged: (v) => setState(() => _selectedAsset = v),
                   ),
-              )),
-            ]),
+              );
+              if (narrow) {
+                return Column(children: [catField, const SizedBox(height: 10), assetField]);
+              }
+              return Row(children: [Expanded(child: catField), const SizedBox(width: 12), Expanded(child: assetField)]);
+            }),
             const SizedBox(height: 14),
-            Row(children: [
-              Expanded(child: _field('Vị trí', child: TextFormField(
+            Builder(builder: (ctx) {
+              final narrow = MediaQuery.of(ctx).size.width < 500;
+              final locField = _field('Vị trí', child: TextFormField(
                 controller: _locationCtrl,
                 decoration: _deco('VD: P.203 - Tầng 2...', Icons.location_on_outlined),
-              ))),
-              const SizedBox(width: 12),
-              Expanded(child: _field('Deadline mong muốn', child: GestureDetector(
+              ));
+              final deadlineField = _field('Deadline mong muốn', child: GestureDetector(
                 onTap: _pickDeadline,
                 child: AbsorbPointer(
                   child: TextFormField(
@@ -674,8 +684,12 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
                     ),
                   ),
                 ),
-              ))),
-            ]),
+              ));
+              if (narrow) {
+                return Column(children: [locField, const SizedBox(height: 10), deadlineField]);
+              }
+              return Row(children: [Expanded(child: locField), const SizedBox(width: 12), Expanded(child: deadlineField)]);
+            }),
           ]),
         ),
 
@@ -720,28 +734,37 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         _sectionHeader('Thông tin người yêu cầu', Icons.person_outline_rounded),
         const SizedBox(height: 10),
         _formCard(
-          child: Row(children: [
-            Expanded(flex: 3, child: _field('Họ tên', required: true, child: TextFormField(
+          child: Builder(builder: (ctx) {
+            final narrow = MediaQuery.of(ctx).size.width < 500;
+            final nameField = _field('Họ tên', required: true, child: TextFormField(
               controller: _nameCtrl,
               decoration: _deco('Nhập họ tên...', Icons.badge_outlined),
               validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
-            ))),
-            const SizedBox(width: 12),
-            Expanded(flex: 2, child: _field('Số điện thoại', required: true, child: TextFormField(
+            ));
+            final phoneField = _field('Số điện thoại', required: true, child: TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: _deco('SĐT...', Icons.phone_outlined),
               validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
-            ))),
-            const SizedBox(width: 12),
-            Expanded(flex: 3, child: _field('Khoa / Phòng ban', child: TextFormField(
+            ));
+            final deptField = _field('Khoa / Phòng ban', child: TextFormField(
               initialValue: widget.currentUser.deptName ?? 'Không rõ',
               readOnly: true,
               style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
               decoration: _deco('', Icons.apartment_rounded).copyWith(fillColor: const Color(0xFFF1F5F9)),
-            ))),
-          ]),
+            ));
+            if (narrow) {
+              return Column(children: [nameField, const SizedBox(height: 10), phoneField, const SizedBox(height: 10), deptField]);
+            }
+            return Row(children: [
+              Expanded(flex: 3, child: nameField),
+              const SizedBox(width: 12),
+              Expanded(flex: 2, child: phoneField),
+              const SizedBox(width: 12),
+              Expanded(flex: 3, child: deptField),
+            ]);
+          }),
         ),
 
         const SizedBox(height: 18),
@@ -1066,7 +1089,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
               strokeAlign: BorderSide.strokeAlignInside,
             ),
           ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
@@ -1075,12 +1098,12 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
               ),
               child: Icon(Icons.cloud_upload_outlined, size: 18, color: _activeColor),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(height: 6),
             Text(
               'Chọn ảnh hoặc file đính kèm',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _activeColor),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(width: 6),
             Text(
               '(tối đa 5MB)',
               style: TextStyle(fontSize: 11, color: Colors.grey[400]),
@@ -1096,7 +1119,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+          Flexible(child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)), overflow: TextOverflow.ellipsis)),
           if (required)
             const Text(' *', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 13)),
         ],

@@ -20,11 +20,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   final _repo = TicketRepository.instance;
   List<Ticket> _tickets = [];
   bool _loading = true;
-  int _navIndex = 1;        // 0=Tất cả, 1=Đang xử lý, 2=Đã xong, 3=Đã hủy
+  int _navIndex = 0;        // 0=Tất cả, 1=Đang xử lý, 2=Đã xong, 3=Từ chối
   int _medicalNavIndex = 0; // 0=Tất cả, 1=Yêu cầu mở, 2=Khoa xử lý, 3=Đã sửa xong, 4=Đóng BA
   int _ownershipFilter = 0; // 0=Tất cả, 1=Của tôi, 2=Khác
   String _searchQuery = '';
-  String? _typeFilter;      // null=Tất cả, 'ticket'=Yêu cầu IT, 'reopen_medical', 'feedback'
+  // ── TẠM ẨN: mặc định chỉ hiện Bệnh án ──
+  String? _typeFilter = 'reopen_medical';      // TẠM: force bệnh án, gốc = null
   Ticket? _selectedTicket;  // split-view: ticket đang xem ở panel phải (Windows)
   String _filterStatus = 'Tất cả';  // chip filter web-style
   final TextEditingController _searchCtrl = TextEditingController();
@@ -90,10 +91,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       }
     } catch (e) {
       if (mounted) {
+        final wasFirstLoad = _loading;
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Không tải được danh sách!'),
-          backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+        // Chỉ hiện lỗi khi lần đầu tải, auto-refresh thì bỏ qua
+        if (wasFirstLoad) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Không tải được danh sách!'),
+            backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+        }
       }
     }
   }
@@ -103,31 +108,47 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
   Color _statusColor(String s) {
     switch (s) {
-      case 'Open':               return const Color(0xFF3B82F6);  // xanh — khớp web
-      case 'Pending':            return const Color(0xFFF59E0B);  // vàng — khớp web
-      case 'WaitingConfirmation':return const Color(0xFFE67E22);  // cam — khớp web
-      case 'Resolved':           return const Color(0xFF10B981);  // xanh lá — khớp web
-      case 'Cancelled':          return const Color(0xFF64748B);  // xám — khớp web
+      case 'Open':               return const Color(0xFF3B82F6);  // xanh
+      case 'Pending':            return const Color(0xFFF59E0B);  // vàng
+      case 'WaitingConfirmation':return const Color(0xFFE67E22);  // cam
+      case 'Resolved':           return const Color(0xFF10B981);  // xanh lá
+      case 'Closed':             return const Color(0xFF64748B);  // xám (đóng BA)
+      case 'Cancelled':          return const Color(0xFFEF4444);  // đỏ (từ chối)
       default:                   return Colors.grey;
     }
   }
 
   String _statusLabel(Ticket t) {
+    // ── Bệnh án ──
     if (t.ticketType == 'reopen_medical') {
       switch (t.status) {
         case 'Open': return 'Chờ duyệt';
         case 'Resolved': return 'Đã duyệt';
         case 'Pending': return 'Đang mở BA';
-        case 'WaitingConfirmation': return 'Chờ đóng BA';
-        case 'Cancelled': return 'Đã đóng BA';
+        case 'WaitingConfirmation': return 'Đã sửa xong';
+        case 'Closed': return 'Đã đóng BA';
+        case 'Cancelled': return 'Từ chối';
         default: return t.status;
       }
     }
+    // ── Góp ý ──
+    if (t.ticketType == 'feedback') {
+      switch (t.status) {
+        case 'Open': return 'Chờ tiếp nhận';
+        case 'Pending': return 'Đang xem xét';
+        case 'Resolved': return 'Đã tiếp nhận';
+        case 'Cancelled': return 'Từ chối';
+        default: return t.status;
+      }
+    }
+    // ── IT Ticket ──
     switch (t.status) {
-      case 'Open': return 'Đang xử lý';
-      case 'Pending': return 'Đang xem xét';
-      case 'Resolved': return 'Đã tiếp nhận';
-      case 'Cancelled': return 'Đã huỷ';
+      case 'Open': return 'Mở';
+      case 'Pending': return 'Đang xử lý';
+      case 'WaitingConfirmation': return 'Chờ xác nhận';
+      case 'Resolved': return 'Hoàn thành';
+      case 'Cancelled': return 'Từ chối';
+      case 'Closed': return 'Đã đóng';
       default: return t.status;
     }
   }
@@ -146,7 +167,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         case 1: base = base.where((t) => t.status == 'Open'); break;
         case 2: base = base.where((t) => t.status == 'Resolved' || t.status == 'Pending'); break;
         case 3: base = base.where((t) => t.status == 'WaitingConfirmation'); break;
-        case 4: base = base.where((t) => t.status == 'Cancelled'); break;
+        case 4: base = base.where((t) => t.status == 'Cancelled' || t.status == 'Closed'); break;
       }
     } else {
       // Lọc Chủa tôi / Khác
@@ -181,12 +202,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     final baOpen       = medBase.where((t) => t.status == 'Open').length;
     final baProcessing = medBase.where((t) => t.status == 'Resolved' || t.status == 'Pending').length;
     final baDone       = medBase.where((t) => t.status == 'WaitingConfirmation').length;
-    final baClosed     = medBase.where((t) => t.status == 'Cancelled').length;
+    final baClosed     = medBase.where((t) => t.status == 'Cancelled' || t.status == 'Closed').length;
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),  // khớp web
-      drawer: _buildDrawer(),
+      backgroundColor: const Color(0xFFF8FAFC),
+      drawer: _buildMobileDrawer(),
       body: LayoutBuilder(builder: (ctx, constraints) {
         // ── Wide screen (Windows ≥ 800px) → split-view ──
         if (constraints.maxWidth >= 800) {
@@ -197,6 +218,117 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         return _buildNarrowLayout(filtered, openCount, cancelledCount,
             baOpen, baProcessing, baDone, baClosed, medBase);
       }),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // MOBILE DRAWER — menu trượt từ trái
+  // ════════════════════════════════════════════════════════════
+  Widget _buildMobileDrawer() {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(children: [
+          // ── Header ──
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [_blueDark, _blue]),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                child: Text(widget.currentUser.fullName[0],
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+              const SizedBox(height: 12),
+              Text(widget.currentUser.fullName,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 2),
+              Text(widget.currentUser.deptName ?? '',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            ]),
+          ),
+          const SizedBox(height: 8),
+
+          // ── Loại ticket ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text('Loại yêu cầu', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade500, letterSpacing: 0.5)),
+          ),
+          // ── TẠM ẨN: chỉ giữ Bệnh án ──
+          // _drawerTypeItem(null, Icons.dashboard_rounded, 'Tất cả yêu cầu'),
+          // _drawerTypeItem('ticket', Icons.computer_rounded, 'Yêu cầu IT'),
+          _drawerTypeItem('reopen_medical', Icons.folder_open_rounded, 'Mở lại Bệnh án'),
+          // _drawerTypeItem('feedback', Icons.feedback_rounded, 'Góp ý'),
+
+          const Divider(height: 24, indent: 16, endIndent: 16),
+
+          // ── Menu items ──
+          _drawerMenuItem(Icons.notifications_outlined, 'Thông báo', () {
+            Navigator.pop(context);
+            setState(() => _newNotifCount = 0);
+            context.push('/notifications');
+          }),
+          _drawerMenuItem(Icons.manage_accounts_rounded, 'Hồ sơ & Đổi mật khẩu', () {
+            Navigator.pop(context);
+            context.push('/profile');
+          }),
+          _drawerMenuItem(Icons.phone_in_talk_rounded, 'Gọi Khẩn Cấp IT', () {
+            Navigator.pop(context);
+            context.push('/emergency');
+          }),
+
+          const Spacer(),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          _drawerMenuItem(Icons.logout_rounded, 'Đăng xuất', () async {
+            Navigator.pop(context);
+            await _repo.logout();
+            if (mounted) context.go('/login');
+          }, color: Colors.redAccent),
+          const SizedBox(height: 12),
+        ]),
+      ),
+    );
+  }
+
+  Widget _drawerTypeItem(String? type, IconData icon, String label) {
+    final isSelected = _typeFilter == type;
+    return ListTile(
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -2),
+      leading: Icon(icon, size: 20, color: isSelected ? _blue : Colors.grey.shade600),
+      title: Text(label, style: TextStyle(
+        fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        color: isSelected ? _blue : Colors.grey.shade800,
+      )),
+      tileColor: isSelected ? _blue.withValues(alpha: 0.06) : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      onTap: () {
+        Navigator.pop(context);
+        setState(() {
+          _typeFilter = type;
+          _navIndex = 0;
+          _medicalNavIndex = 0;
+          _filterStatus = 'Tất cả';
+          _selectedTicket = null;
+        });
+      },
+    );
+  }
+
+  Widget _drawerMenuItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    final c = color ?? Colors.grey.shade800;
+    return ListTile(
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -2),
+      leading: Icon(icon, size: 20, color: c),
+      title: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: c)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      onTap: onTap,
     );
   }
 
@@ -216,13 +348,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft, end: Alignment.bottomRight,
-              colors: [_blueDark, _blue], // khớp web: #1E3A8A → #2563EB
+              colors: [_blueDark, _blue],
             ),
           ),
           child: SafeArea(bottom: false, child: Column(children: [
-            // Top row: hamburger + avatar + name + notifications
+            // Top row: hamburger + name + notifications + avatar
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              padding: const EdgeInsets.fromLTRB(4, 8, 8, 0),
               child: Row(children: [
                 Builder(
                   builder: (ctx) => IconButton(
@@ -240,6 +372,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 ])),
+                // Notifications
                 Stack(children: [
                   IconButton(
                     icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
@@ -261,71 +394,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                       ),
                     ),
                 ]),
-
-                PopupMenuButton<String>(
-                  tooltip: '',
-                  offset: const Offset(0, 44),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  onSelected: (v) async {
-                    if (v == 'logout') {
-                      await _repo.logout();
-                      if (mounted) context.go('/login');
-                    } else if (v == 'profile') {
-                      await context.push('/profile');
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      enabled: false,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: _blue.withValues(alpha: 0.12),
-                            child: Text(widget.currentUser.fullName[0],
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _blue)),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(widget.currentUser.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1C1C2E)), overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 2),
-                            Text('Quản lý tài khoản', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                          ])),
-                        ]),
-                        const SizedBox(height: 12),
-                        Divider(height: 1, color: Colors.grey.shade200),
-                      ]),
-                    ),
-                    PopupMenuItem(
-                      value: 'profile',
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: Row(children: [
-                        Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(color: _blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.manage_accounts_rounded, color: _blue, size: 17),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Hồ sơ & Đổi mật khẩu', style: TextStyle(color: Color(0xFF1C1C2E), fontSize: 13, fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
-                    PopupMenuItem(
-                      value: 'logout',
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: Row(children: [
-                        Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 17),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Đăng xuất', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
-                  ],
+                // Avatar
+                GestureDetector(
+                  onTap: () => context.push('/profile'),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 12, 8),
+                    padding: const EdgeInsets.only(right: 8),
                     child: CircleAvatar(
                       radius: 15,
                       backgroundColor: Colors.white.withValues(alpha: 0.2),
@@ -336,16 +409,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ]),
             ),
-            // Summary stat taps
+
+
+            // Summary stat cards — thống kê theo loại filter đang chọn
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-              child: Row(children: [
-                _statCard('Tổng', '${_tickets.where((t) => t.status != 'Cancelled').length}', const Color(0xFF90CAF9)),
-                const SizedBox(width: 6),
-                _statCard('Đang xử lý', '$openCount', const Color(0xFFFFCC80)),
-                const SizedBox(width: 6),
-                _statCard('Đã xong', '${_tickets.where((t) => t.status == 'Resolved').length}', const Color(0xFFA5D6A7)),
-              ]),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: _buildStatCards(medBase, openCount),
             ),
           ])),
         ),
@@ -515,7 +584,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   _bottomNavItem(1, Icons.pending_actions_rounded, Icons.pending_actions_outlined, 'Đang xử lý',
                       badge: openCount > 0 ? '$openCount' : null),
                   _bottomNavItem(2, Icons.check_circle_rounded, Icons.check_circle_outline, 'Đã xong'),
-                  _bottomNavItem(3, Icons.cancel_rounded, Icons.cancel_outlined, 'Đã hủy',
+                  _bottomNavItem(3, Icons.cancel_rounded, Icons.cancel_outlined, 'Từ chối',
                       badge: cancelledCount > 0 ? '$cancelledCount' : null),
                   // Nút tạo ticket
                   Expanded(child: GestureDetector(
@@ -554,6 +623,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       ),
     );
   }
+
 
   // ════════════════════════════════════════════════════════════
   // WIDE LAYOUT (Windows ≥ 800px) — split-view giống hệt web
@@ -983,6 +1053,77 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     );
   }
 
+  // ════════════════════════════════════════════════════════════
+  // STAT CARDS — thống kê thông minh theo loại filter
+  // ════════════════════════════════════════════════════════════
+  Widget _buildStatCards(List<Ticket> medBase, int openCount) {
+    if (_typeFilter == 'reopen_medical') {
+      // ── Bệnh án: 4 bước flow ──
+      final total = medBase.length;
+      final waiting = medBase.where((t) => t.status == 'Open').length;
+      final processing = medBase.where((t) => t.status == 'Resolved' || t.status == 'Pending').length;
+      final done = medBase.where((t) => t.status == 'WaitingConfirmation').length;
+      final closed = medBase.where((t) => t.status == 'Cancelled').length;
+      return Column(children: [
+        Row(children: [
+          _statCard('Tổng', '$total', const Color(0xFF90CAF9)),
+          const SizedBox(width: 6),
+          _statCard('Chờ duyệt', '$waiting', const Color(0xFF64B5F6)),
+        ]),
+        const SizedBox(height: 6),
+        Row(children: [
+          _statCard('Xử lý', '$processing', const Color(0xFFFFCC80)),
+          const SizedBox(width: 6),
+          _statCard('Đã sửa', '$done', const Color(0xFFFFAB91)),
+          const SizedBox(width: 6),
+          _statCard('Đã đóng', '$closed', const Color(0xFFB0BEC5)),
+        ]),
+      ]);
+    }
+
+    if (_typeFilter == 'feedback') {
+      // ── Góp ý ──
+      final fb = _tickets.where((t) => t.ticketType == 'feedback').toList();
+      final total = fb.length;
+      final open = fb.where((t) => t.status == 'Open').length;
+      final pending = fb.where((t) => t.status == 'Pending').length;
+      final resolved = fb.where((t) => t.status == 'Resolved').length;
+      return Row(children: [
+        _statCard('Tổng', '$total', const Color(0xFFCE93D8)),
+        const SizedBox(width: 6),
+        _statCard('Chờ xử lý', '${open + pending}', const Color(0xFFFFCC80)),
+        const SizedBox(width: 6),
+        _statCard('Đã tiếp nhận', '$resolved', const Color(0xFFA5D6A7)),
+      ]);
+    }
+
+    if (_typeFilter == 'ticket') {
+      // ── Yêu cầu IT ──
+      final it = _tickets.where((t) => t.ticketType == 'ticket').toList();
+      final total = it.where((t) => t.status != 'Cancelled').length;
+      final processing = it.where((t) => t.status == 'Open' || t.status == 'Pending' || t.status == 'WaitingConfirmation').length;
+      final resolved = it.where((t) => t.status == 'Resolved').length;
+      return Row(children: [
+        _statCard('Tổng', '$total', const Color(0xFF90CAF9)),
+        const SizedBox(width: 6),
+        _statCard('Đang xử lý', '$processing', const Color(0xFFFFCC80)),
+        const SizedBox(width: 6),
+        _statCard('Hoàn thành', '$resolved', const Color(0xFFA5D6A7)),
+      ]);
+    }
+
+    // ── Tất cả (mặc định) ──
+    final total = _tickets.where((t) => t.status != 'Cancelled').length;
+    final resolved = _tickets.where((t) => t.status == 'Resolved').length;
+    return Row(children: [
+      _statCard('Tổng', '$total', const Color(0xFF90CAF9)),
+      const SizedBox(width: 6),
+      _statCard('Đang xử lý', '$openCount', const Color(0xFFFFCC80)),
+      const SizedBox(width: 6),
+      _statCard('Đã xong', '$resolved', const Color(0xFFA5D6A7)),
+    ]);
+  }
+
   Widget _statCard(String label, String value, Color color) {
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -1020,168 +1161,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     );
   }
 
-  Widget _buildDrawer() {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header drawer — gradient xanh khớp web
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
-                ),
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 30, 20, 24),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    child: Text(
-                      widget.currentUser.fullName[0],
-                      style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.currentUser.fullName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white,
-                          ),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          widget.currentUser.deptName ?? widget.currentUser.role,
-                          style: TextStyle(
-                            fontSize: 12, color: Colors.white.withValues(alpha: 0.75),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Menu items
-            const SizedBox(height: 8),
-            _drawerItem(
-              icon: Icons.apps_rounded,
-              label: 'Tất cả',
-              type: null,
-              color: const Color(0xFF2563EB),
-              count: _tickets.length,
-            ),
-            _drawerItem(
-              icon: Icons.folder_open_rounded,
-              label: 'Mở lại bệnh án',
-              type: 'reopen_medical',
-              color: const Color(0xFF7C94B6),
-              count: _tickets.where((t) => t.ticketType == 'reopen_medical').length,
-            ),
-            const Spacer(),
-            const Divider(height: 1),
-            // Đăng xuất
-            InkWell(
-              onTap: () async {
-                Navigator.pop(context);
-                await _repo.logout();
-                if (mounted) context.go('/login');
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 18),
-                  ),
-                  const SizedBox(width: 14),
-                  const Text('Đăng xuất', style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600, color: Colors.redAccent,
-                  )),
-                ]),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  Widget _drawerItem({required IconData icon, required String label, required String? type, required Color color, int count = 0}) {
-    final selected = _typeFilter == type;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _typeFilter = type;
-          _medicalNavIndex = 0; // reset về Tất cả khi đổi loại
-        });
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-        decoration: BoxDecoration(
-          color: selected ? _blue.withValues(alpha: 0.06) : Colors.transparent,
-          border: Border(
-            left: BorderSide(
-              color: selected ? _blue : Colors.transparent,
-              width: 3,
-            ),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 18, color: color),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-                  color: selected ? _blue : const Color(0xFF334155),
-                ),
-              ),
-            ),
-            if (count > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text('$count', style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.bold, color: color,
-                )),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _ticketCard(BuildContext ctx, Ticket ticket) {
     final isFeedback = ticket.ticketType == 'feedback';
@@ -1316,8 +1295,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                             ? (ticket.status == 'Open' ? 'Chờ duyệt'
                               : ticket.status == 'Resolved' ? 'Đã duyệt'
                               : ticket.status == 'Pending' ? 'Đang mở BA'
-                              : ticket.status == 'WaitingConfirmation' ? 'Chờ đóng BA'
-                              : ticket.status == 'Cancelled' ? 'Đã đóng BA'
+                              : ticket.status == 'WaitingConfirmation' ? 'Đã sửa xong'
+                              : ticket.status == 'Cancelled' ? 'Đã đóng'
                               : ticket.status)
                             : (ticket.status == 'Resolved' ? 'Đã tiếp nhận'
                               : ticket.status == 'Pending' ? 'Đang xem xét'

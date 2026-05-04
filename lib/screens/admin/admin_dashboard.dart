@@ -144,7 +144,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         case 'WaitingConfirmation': return 'Chờ đóng BA';
         case 'Resolved': return 'Đã duyệt';
         case 'Cancelled': return 'Từ chối';
-        case 'Closed': return 'Đã đóng';
+        case 'Closed': return 'Đã đóng BA';
       }
     } else if (t.ticketType == 'feedback') {
       switch (t.status) {

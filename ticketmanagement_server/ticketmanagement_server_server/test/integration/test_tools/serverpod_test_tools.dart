@@ -786,6 +786,7 @@ class _AuthEndpoint {
   _i3.Future<_i6.AppUser?> updateUser(
     _i1.TestSessionBuilder sessionBuilder,
     int userId,
+    String? username,
     String fullName,
     String? phone,
     int roleId,
@@ -805,6 +806,7 @@ class _AuthEndpoint {
           methodName: 'updateUser',
           parameters: _i1.testObjectToJson({
             'userId': userId,
+            'username': username,
             'fullName': fullName,
             'phone': phone,
             'roleId': roleId,
@@ -1746,6 +1748,37 @@ class _TicketEndpoint {
                   _localCallContext.arguments,
                 )
                 as _i3.Future<_i12.Ticket?>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<bool> deleteTicket(
+    _i1.TestSessionBuilder sessionBuilder,
+    int ticketId,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'ticket',
+            method: 'deleteTicket',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'ticket',
+          methodName: 'deleteTicket',
+          parameters: _i1.testObjectToJson({'ticketId': ticketId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<bool>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

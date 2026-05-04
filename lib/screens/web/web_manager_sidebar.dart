@@ -7,12 +7,14 @@ class WebManagerSidebar extends StatefulWidget {
   final User currentUser;
   final String? selectedType; // null=Tất cả, 'feedback', 'reopen_medical'
   final ValueChanged<String?> onTypeSelected;
+  final int notificationCount;
 
   const WebManagerSidebar({
     super.key,
     required this.currentUser,
     required this.selectedType,
     required this.onTypeSelected,
+    this.notificationCount = 0,
   });
 
   @override
@@ -66,7 +68,7 @@ class _WebManagerSidebarState extends State<WebManagerSidebar> {
                     _navItem('reopen_medical', Icons.folder_open_rounded, 'Mở lại bệnh án'),
                   
                   const SizedBox(height: 24),
-                  _directNavItem(context, Icons.notifications_rounded, 'Thông báo', '/notifications'),
+                  _notificationNavItem(context, Icons.notifications_rounded, 'Thông báo', '/notifications'),
                   _directNavItem(context, Icons.person_rounded, 'Hồ sơ', '/profile'),
                 ],
               ),
@@ -136,6 +138,45 @@ class _WebManagerSidebarState extends State<WebManagerSidebar> {
         margin: const EdgeInsets.only(bottom: 4),
         alignment: Alignment.center,
         child: Icon(icon, size: 24, color: Colors.grey.shade400),
+      ),
+    );
+    return Tooltip(message: label, child: child);
+  }
+
+  Widget _notificationNavItem(BuildContext context, IconData icon, String label, String route) {
+    final count = widget.notificationCount;
+    final child = InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        margin: const EdgeInsets.only(bottom: 4),
+        alignment: Alignment.center,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(icon, size: 24, color: Colors.grey.shade400),
+            if (count > 0)
+              Positioned(
+                top: -6,
+                right: -8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 4)],
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                  child: Text(
+                    count > 9 ? '9+' : '$count',
+                    style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
     return Tooltip(message: label, child: child);

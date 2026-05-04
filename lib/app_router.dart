@@ -30,6 +30,7 @@ import 'screens/admin/admin_emergency_contacts_screen.dart';
 import 'screens/admin/it_workload_screen.dart';
 import 'screens/admin/report_screen.dart';
 import 'screens/shared/profile_screen.dart';
+import 'screens/web/web_admin_subpage_wrapper.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -250,7 +251,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return NotificationsScreen(currentUser: user);
+        return NotificationsScreen(currentUser: user, isAdmin: user.role == 'Admin');
       },
     ),
     GoRoute(
@@ -268,7 +269,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return AdminUsersScreen(currentUser: user);
+        final screen = AdminUsersScreen(currentUser: user);
+        if (kIsWeb) return WebAdminSubpageWrapper(currentUser: user, child: screen);
+        return screen;
       },
     ),
     GoRoute(
@@ -276,7 +279,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return AdminCategoriesScreen(currentUser: user);
+        final screen = AdminCategoriesScreen(currentUser: user);
+        if (kIsWeb) return WebAdminSubpageWrapper(currentUser: user, child: screen);
+        return screen;
       },
     ),
     GoRoute(
@@ -284,7 +289,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return AdminDepartmentsScreen(currentUser: user);
+        final screen = AdminDepartmentsScreen(currentUser: user);
+        if (kIsWeb) return WebAdminSubpageWrapper(currentUser: user, child: screen);
+        return screen;
       },
     ),
     GoRoute(
@@ -292,19 +299,30 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return AdminAssetsScreen(currentUser: user);
+        final screen = AdminAssetsScreen(currentUser: user);
+        if (kIsWeb) return WebAdminSubpageWrapper(currentUser: user, child: screen);
+        return screen;
       },
     ),
     GoRoute(
       path: '/admin/emergency-contacts',
-      builder: (context, state) => const AdminEmergencyContactsScreen(),
+      builder: (context, state) {
+        final user = TicketRepository.instance.currentUser;
+        const screen = AdminEmergencyContactsScreen();
+        if (kIsWeb && user != null) {
+          return WebAdminSubpageWrapper(currentUser: user, sidebarIndex: 3, child: screen);
+        }
+        return screen;
+      },
     ),
     GoRoute(
       path: '/admin/it-workload',
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return ITWorkloadScreen(currentUser: user);
+        final screen = ITWorkloadScreen(currentUser: user);
+        if (kIsWeb) return WebAdminSubpageWrapper(currentUser: user, sidebarIndex: 2, child: screen);
+        return screen;
       },
     ),
     GoRoute(
@@ -312,7 +330,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = TicketRepository.instance.currentUser;
         if (user == null) return const SizedBox.shrink();
-        return ReportScreen(currentUser: user);
+        final screen = ReportScreen(currentUser: user);
+        if (kIsWeb) return WebAdminSubpageWrapper(currentUser: user, sidebarIndex: 1, child: screen);
+        return screen;
       },
     ),
   ],

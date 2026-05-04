@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:window_manager/window_manager.dart';
 import 'firebase_options.dart';
 import 'app_router.dart';
@@ -45,6 +46,8 @@ void main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      // Bỏ dấu /#/ trong URL trên web → URL sạch: /admin thay vì /#/admin
+      usePathUrlStrategy();
       // Buộc URL trình duyệt cập nhật khi dùng context.push() (không chỉ context.go())
       GoRouter.optionURLReflectsImperativeAPIs = true;
       initServerpodClient();

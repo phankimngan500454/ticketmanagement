@@ -524,6 +524,79 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  // 5a-2. Xóa ticket (chỉ khi Open, chưa duyệt)
+  Future<void> _deleteTicket() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Xóa yêu cầu?'),
+          ],
+        ),
+        content: const Text(
+          'Bạn có chắc muốn xóa yêu cầu này không?\nHành động này không thể hoàn tác.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Không', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final result = await _repo.deleteTicket(_ticket.ticketId);
+      if (result && mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('🗑️ Đã xóa yêu cầu'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        Navigator.pop(context, true); // Quay về danh sách, truyền true để refresh
+      } else if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('❌ Không thể xóa (ticket đã được duyệt)'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   // 5b. IT/Admin: hoàn thành → chờ customer xác nhận
   Future<void> _markResolved() async {
     try {
@@ -719,8 +792,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       }
                     }
 
-                    // Update status
-                    final updated = await _repo.updateStatus(_ticket.ticketId, 'Cancelled');
+                    // Đóng bệnh án → Closed (khác với Cancelled = từ chối)
+                    final updated = await _repo.updateStatus(_ticket.ticketId, 'Closed');
                     if (mounted && context.mounted) {
                       setState(() => _ticket = updated);
                       Navigator.pop(ctx);
@@ -1063,7 +1136,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final isAssigned = _ticket.assigneeId != null;
     // isLocked: ticket đã kết thúc → khóa mọi tương tác
     final isLocked =
-        _ticket.status == 'Resolved' || _ticket.status == 'Cancelled';
+        _ticket.status == 'Resolved' || _ticket.status == 'Cancelled' || _ticket.status == 'Closed';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F8),
@@ -1086,7 +1159,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         if (!widget.isEmbedded)
                           IconButton(
                             icon: Icon(
-                              Icons.arrow_back,
+                              Icons.close,
                               color: Colors.grey.shade700,
                             ),
                             onPressed: () {
@@ -1106,21 +1179,22 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             },
                           )
                         else
-                          const SizedBox(
-                            width: 16,
-                          ), // Padding instead of back button
-                        if (!widget.isEmbedded) ...[
-                          // #TKT-xxxx
-                          Text(
-                            '#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 16),
+                        if (!widget.isEmbedded)
+                          Flexible(
+                            child: Text(
+                              _ticket.ticketType == 'reopen_medical'
+                                  ? '#BA-${_ticket.ticketId.toString().padLeft(4, '0')}'
+                                  : '#TKT-${_ticket.ticketId.toString().padLeft(4, '0')}',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                        ],
+                        const SizedBox(width: 8),
                         // Priority badge
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1142,38 +1216,41 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         ),
                         const SizedBox(width: 6),
                         // Status badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _statusColor(
-                              _ticket.status,
-                            ).withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
                               color: _statusColor(
                                 _ticket.status,
-                              ).withValues(alpha: 0.6),
+                              ).withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _statusColor(
+                                  _ticket.status,
+                                ).withValues(alpha: 0.6),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            _ticket.status == 'Open'
-                                ? 'Đang mở'
-                                : _ticket.status == 'Pending'
-                                ? 'Chờ xử lý'
-                                : _ticket.status == 'Resolved'
-                                ? 'Đã xong'
-                                : _ticket.status == 'WaitingConfirmation'
-                                ? 'Chờ xác nhận'
-                                : _ticket.status == 'Cancelled'
-                                ? 'Đã hủy'
-                                : _ticket.status,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _statusColor(_ticket.status),
-                              fontWeight: FontWeight.bold,
+                            child: Text(
+                              _ticket.status == 'Open'
+                                  ? 'Đang mở'
+                                  : _ticket.status == 'Pending'
+                                  ? 'Chờ xử lý'
+                                  : _ticket.status == 'Resolved'
+                                  ? 'Đã xong'
+                                  : _ticket.status == 'WaitingConfirmation'
+                                  ? 'Chờ xác nhận'
+                                  : _ticket.status == 'Cancelled'
+                                  ? 'Đã hủy'
+                                  : _ticket.status,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _statusColor(_ticket.status),
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
@@ -1539,11 +1616,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                 ),
                               ),
                               SizedBox(width: 6),
-                              Text(
-                                '— IT đến đây để hỗ trợ',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF388E3C),
+                              Flexible(
+                                child: Text(
+                                  '— IT đến đây để hỗ trợ',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF388E3C),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -1755,20 +1835,23 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                       ),
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.folder_open_rounded,
                                         size: 16,
                                         color: Color(0xFF2563EB),
                                       ),
-                                      SizedBox(width: 7),
-                                      Text(
-                                        'Thông tin yêu cầu mở bệnh án',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: Color(0xFF2563EB),
+                                      const SizedBox(width: 7),
+                                      const Flexible(
+                                        child: Text(
+                                          'Thông tin yêu cầu mở bệnh án',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: Color(0xFF2563EB),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
@@ -2349,6 +2432,33 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           ),
                         ),
                         onPressed: _cancelTicket,
+                      ),
+                    ),
+                  ),
+
+                // ── Nút Xóa yêu cầu (chỉ khi Open, cho người tạo hoặc Admin) ──
+                if (_ticket.status == 'Open' &&
+                    (widget.isAdmin || widget.currentUser.userId == _ticket.requesterId))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.delete_forever_rounded, size: 17),
+                        label: const Text('Xóa yêu cầu'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: _deleteTicket,
                       ),
                     ),
                   ),

@@ -214,7 +214,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildMobileShell() {
-    return _buildFormCard(compact: true);
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      child: _buildFormCard(compact: true),
+    );
   }
 
   // ─── Hero panel ────────────────────────────────────────────────────────────
@@ -532,7 +535,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              '© 2026 MedHub – Cổng hỗ trợ nội bộ bệnh viện',
+              '© 2026 MedHub (Phiên bản cập nhật mới nhất)',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

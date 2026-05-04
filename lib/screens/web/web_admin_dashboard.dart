@@ -103,10 +103,10 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
       switch (t.status) {
         case 'Open': return 'Chờ duyệt';
         case 'Pending': return 'Đang mở BA';
-        case 'WaitingConfirmation': return 'Chờ đóng BA';
+        case 'WaitingConfirmation': return 'Đã sửa xong';
         case 'Resolved': return 'Đã duyệt';
         case 'Cancelled': return 'Từ chối';
-        case 'Closed': return 'Đã đóng';
+        case 'Closed': return 'Đã đóng BA';
       }
     } else if (t.ticketType == 'feedback') {
       switch (t.status) {

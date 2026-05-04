@@ -21,13 +21,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final _searchCtrl = TextEditingController();
 
   String? _roleFilter;
+  int? _deptFilter;
 
   static const _accent = Color(0xFF2563EB);
   static const _roles = [
-    {'label': 'Admin', 'id': 1, 'color': Color(0xFF9C27B0), 'icon': Icons.admin_panel_settings_rounded},
-    {'label': 'IT', 'id': 2, 'color': Color(0xFF1976D2), 'icon': Icons.build_circle_rounded},
-    {'label': 'Người dùng', 'id': 3, 'color': Color(0xFF43A047), 'icon': Icons.person_rounded},
-    {'label': 'Manager', 'id': 4, 'color': Color(0xFF7B1FA2), 'icon': Icons.supervisor_account_rounded},
+    {'label': 'Admin', 'value': 'Admin', 'id': 1, 'color': Color(0xFF9C27B0), 'icon': Icons.admin_panel_settings_rounded},
+    {'label': 'IT', 'value': 'IT', 'id': 2, 'color': Color(0xFF1976D2), 'icon': Icons.build_circle_rounded},
+    {'label': 'Người dùng', 'value': 'User', 'id': 3, 'color': Color(0xFF43A047), 'icon': Icons.person_rounded},
+    {'label': 'Manager', 'value': 'Manager', 'id': 4, 'color': Color(0xFF7B1FA2), 'icon': Icons.supervisor_account_rounded},
   ];
 
   @override
@@ -63,6 +64,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   List<User> get _filtered {
     var list = _users;
     if (_roleFilter != null) list = list.where((u) => u.role == _roleFilter).toList();
+    if (_deptFilter != null) list = list.where((u) => u.deptId == _deptFilter).toList();
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list.where((u) =>
@@ -109,7 +111,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   void _showUserDialog({User? existing}) {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: existing?.fullName ?? '');
-    final usernameCtrl = TextEditingController();
+    final usernameCtrl = TextEditingController(text: existing?.username ?? '');
     final passCtrl = TextEditingController();
     int roleId = existing != null
         ? (existing.role == 'Admin' ? 1 : existing.role == 'IT' ? 2 : existing.role == 'Manager' ? 4 : 3)
@@ -191,6 +193,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         _dialogInputField(passCtrl, 'Mật khẩu', Icons.lock_outline,
                           obscureText: true,
                           validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập mật khẩu' : null),
+                        const SizedBox(height: 14),
+                      ] else ...[
+                        _dialogInputField(usernameCtrl, 'Tên đăng nhập', Icons.account_circle_outlined,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Vui lòng nhập tên đăng nhập';
+                            if (v.trim().contains(' ')) return 'Không được chứa khoảng trắng';
+                            return null;
+                          }),
                         const SizedBox(height: 14),
                       ],
 
@@ -428,10 +438,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                 return;
                               }
                             } else {
-                              await _repo.updateUser(
-                                userId: existing.userId, fullName: name,
-                                roleId: roleId, deptId: finalDeptId, permissions: permissionsString,
-                              );
+                              final newUsername = usernameCtrl.text.trim();
+                              try {
+                                await _repo.updateUser(
+                                  userId: existing.userId,
+                                  username: newUsername != existing.username ? newUsername : null,
+                                  fullName: name,
+                                  roleId: roleId, deptId: finalDeptId, permissions: permissionsString,
+                                );
+                              } catch (e) {
+                                if (e.toString().contains('username taken') && mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                    content: Text('❌ Tên đăng nhập này đã tồn tại!'),
+                                    backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+                                  return;
+                                }
+                                rethrow;
+                              }
                             }
                             _load();
                             if (mounted) {
@@ -675,7 +698,41 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(children: [
                   _roleChip('Tất cả', null, null, Icons.dashboard_rounded),
-                  ..._roles.map((r) => _roleChip(r['label'] as String, r['label'] as String, r['color'] as Color, r['icon'] as IconData)),
+                  ..._roles.map((r) => _roleChip(r['label'] as String, r['value'] as String, r['color'] as Color, r['icon'] as IconData)),
+                  const SizedBox(width: 12),
+                  // ── Department filter dropdown ──
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: _deptFilter != null ? _accent.withValues(alpha: 0.08) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _deptFilter != null ? _accent.withValues(alpha: 0.4) : Colors.grey.shade200,
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int?>(
+                        value: _deptFilter,
+                        hint: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.apartment_rounded, size: 14, color: Colors.grey.shade400),
+                          const SizedBox(width: 5),
+                          Text('Khoa / Phòng', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                        ]),
+                        icon: Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: _deptFilter != null ? _accent : Colors.grey.shade400),
+                        isDense: true,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _accent),
+                        items: [
+                          DropdownMenuItem<int?>(value: null, child: Text('Tất cả khoa', style: TextStyle(fontSize: 11, color: Colors.grey.shade600))),
+                          ..._departments.map((d) => DropdownMenuItem<int?>(
+                            value: d.deptId,
+                            child: Text(d.deptName, style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis),
+                          )),
+                        ],
+                        onChanged: (v) => setState(() => _deptFilter = v),
+                      ),
+                    ),
+                  ),
                 ]),
               )),
             ]),

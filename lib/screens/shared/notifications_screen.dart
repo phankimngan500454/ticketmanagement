@@ -62,24 +62,45 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       } else if (_isIT) {
         result = sorted.where((t) => t.assigneeId == widget.currentUser.userId || t.assigneeId == null).toList();
       } else if (_hasSpecialAccess) {
-        // Bảo hiểm / Tài chính: hiện ticket của mình + bệnh án cần xử lý
+        // Bảo hiểm / Tài chính: hiện ticket của mình + bệnh án đã sửa xong
         result = sorted.where((t) {
-          // Ticket do chính mình tạo → luôn hiện
-          if (t.requesterId == widget.currentUser.userId) return true;
+          // Ticket do chính mình tạo → luôn hiện (trừ WaitingConfirmation bệnh án)
+          if (t.requesterId == widget.currentUser.userId) {
+            // Ẩn "đã sửa xong" cho người tạo — đây là bước nội bộ BH/TC
+            if (t.ticketType == 'reopen_medical' && t.status == 'WaitingConfirmation') {
+              return false;
+            }
+            return true;
+          }
 
-          // Chỉ hiện bệnh án mở lại (reopen_medical) đã qua duyệt (không phải Open)
+          // Chỉ hiện bệnh án mở lại (reopen_medical)
           if (t.ticketType != 'reopen_medical') return false;
-          if (t.status == 'Open') return false;
+
+          // Không hiện khi chưa duyệt hoặc đang xử lý (Open, Pending)
+          // Resolved (đã duyệt) vẫn hiện để user biết cần mở bệnh án
+          // WaitingConfirmation (đã sửa xong) hiện để kiểm tra
+          // Cancelled (đã đóng) KHÔNG hiện — chính mình đóng, không cần thông báo lại
+          if (t.status == 'Open' || t.status == 'Pending' || t.status == 'Cancelled' || t.status == 'Closed') {
+            return false;
+          }
 
           // Tài chính (không có Bảo hiểm): chỉ thấy bệnh án có ảnh hưởng tài chính
           if (_hasFinance && !_hasInsurance) {
             return (t.description).toLowerCase().contains('ảnh hưởng tài chính: có');
           }
-          // Bảo hiểm: thấy tất cả bệnh án đã duyệt
+          // Bảo hiểm: thấy tất cả bệnh án cần xử lý
           return true;
         }).toList();
       } else {
-        result = sorted.where((t) => t.requesterId == widget.currentUser.userId).toList();
+        // Customer thường: hiện ticket của mình, ẩn "đã sửa xong" bệnh án
+        result = sorted.where((t) {
+          if (t.requesterId != widget.currentUser.userId) return false;
+          // Ẩn WaitingConfirmation bệnh án — bước nội bộ của BH/TC
+          if (t.ticketType == 'reopen_medical' && t.status == 'WaitingConfirmation') {
+            return false;
+          }
+          return true;
+        }).toList();
       }
       if (mounted) setState(() { _notifications = result; _loading = false; });
     } catch (_) {
@@ -90,39 +111,67 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Color _statusColor(Ticket t) {
     if (t.ticketType == 'reopen_medical') {
       switch (t.status) {
-        case 'Open': return const Color(0xFF78909C);
-        case 'Pending': return const Color(0xFFFB8C00);
-        case 'WaitingConfirmation': return const Color(0xFFE67E22);
-        case 'Resolved': return const Color(0xFF43A047);
-        case 'Cancelled': return const Color(0xFF78909C);
+        case 'Open': return const Color(0xFF3B82F6);           // xanh — chờ duyệt
+        case 'Resolved': return const Color(0xFF43A047);       // xanh lá — đã duyệt
+        case 'Pending': return const Color(0xFFFB8C00);        // cam — đang mở BA
+        case 'WaitingConfirmation': return const Color(0xFFE67E22); // cam đậm — đã sửa xong
+        case 'Closed': return const Color(0xFF64748B);         // xám — đã đóng
+        case 'Cancelled': return const Color(0xFFEF4444);      // đỏ — từ chối
         default: return Colors.grey;
       }
     }
+    if (t.ticketType == 'feedback') {
+      switch (t.status) {
+        case 'Open': return const Color(0xFF3B82F6);
+        case 'Pending': return const Color(0xFFFB8C00);
+        case 'Resolved': return const Color(0xFF43A047);
+        case 'Cancelled': return const Color(0xFFE53935);
+        default: return Colors.grey;
+      }
+    }
+    // IT ticket
     switch (t.status) {
-      case 'Open': return const Color(0xFF78909C);
+      case 'Open': return const Color(0xFF3B82F6);
       case 'Pending': return const Color(0xFFFB8C00);
+      case 'WaitingConfirmation': return const Color(0xFFE67E22);
       case 'Resolved': return const Color(0xFF43A047);
       case 'Cancelled': return const Color(0xFFE53935);
+      case 'Closed': return const Color(0xFF64748B);
       default: return Colors.grey;
     }
   }
 
   String _statusLabel(Ticket t) {
+    // ── Bệnh án ──
     if (t.ticketType == 'reopen_medical') {
       switch (t.status) {
         case 'Open': return 'Chờ duyệt';
         case 'Resolved': return 'Đã duyệt';
         case 'Pending': return 'Đang mở BA';
-        case 'WaitingConfirmation': return 'Chờ đóng BA';
-        case 'Cancelled': return 'Đã đóng BA';
+        case 'WaitingConfirmation': return 'Đã sửa xong';
+        case 'Closed': return 'Đã đóng BA';
+        case 'Cancelled': return 'Từ chối';
         default: return t.status;
       }
     }
+    // ── Góp ý ──
+    if (t.ticketType == 'feedback') {
+      switch (t.status) {
+        case 'Open': return 'Chờ tiếp nhận';
+        case 'Pending': return 'Đang xem xét';
+        case 'Resolved': return 'Đã tiếp nhận';
+        case 'Cancelled': return 'Từ chối';
+        default: return t.status;
+      }
+    }
+    // ── IT Ticket ──
     switch (t.status) {
-      case 'Open': return 'Đang xử lý';
-      case 'Pending': return 'Đang xem xét';
-      case 'Resolved': return 'Đã tiếp nhận';
-      case 'Cancelled': return 'Đã huỷ';
+      case 'Open': return 'Mở';
+      case 'Pending': return 'Đang xử lý';
+      case 'WaitingConfirmation': return 'Chờ xác nhận';
+      case 'Resolved': return 'Hoàn thành';
+      case 'Cancelled': return 'Từ chối';
+      case 'Closed': return 'Đã đóng';
       default: return t.status;
     }
   }
@@ -136,40 +185,148 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   _NotifInfo _getInfo(Ticket t) {
-    final bool isMedical = t.ticketType == 'reopen_medical';
-    
-    if (isMedical) {
-      if (t.status == 'Resolved') {
-        return _NotifInfo(icon: Icons.fact_check_rounded, color: const Color(0xFF43A047), message: 'Yêu cầu mở bệnh án đã được duyệt');
+    // ══════════════════════════════════════════════════════════
+    // Bệnh án (reopen_medical)
+    // ══════════════════════════════════════════════════════════
+    if (t.ticketType == 'reopen_medical') {
+      switch (t.status) {
+        case 'Open':
+          return _NotifInfo(
+            icon: Icons.hourglass_empty_rounded,
+            color: const Color(0xFF3B82F6),
+            message: 'Yêu cầu mở bệnh án đang chờ duyệt',
+          );
+        case 'Resolved':
+          return _NotifInfo(
+            icon: Icons.fact_check_rounded,
+            color: const Color(0xFF43A047),
+            message: 'Đã duyệt yêu cầu mở bệnh án',
+          );
+        case 'Pending':
+          return _NotifInfo(
+            icon: Icons.folder_open_rounded,
+            color: const Color(0xFFFB8C00),
+            message: 'Bệnh án đã được mở',
+          );
+        case 'WaitingConfirmation':
+          return _NotifInfo(
+            icon: Icons.edit_note_rounded,
+            color: const Color(0xFFE67E22),
+            message: 'Khoa đã sửa bệnh án xong, vui lòng kiểm tra và đóng bệnh án',
+          );
+        case 'Cancelled':
+          return _NotifInfo(
+            icon: Icons.cancel_rounded,
+            color: const Color(0xFFEF4444),
+            message: 'Yêu cầu mở bệnh án đã bị từ chối',
+          );
+        case 'Closed':
+          return _NotifInfo(
+            icon: Icons.lock_rounded,
+            color: const Color(0xFF64748B),
+            message: 'Bệnh án đã được đóng',
+          );
+        default:
+          return _NotifInfo(
+            icon: Icons.folder_shared_outlined,
+            color: Colors.grey,
+            message: 'Yêu cầu mở bệnh án đang xử lý',
+          );
       }
-      if (t.status == 'Pending') {
-        return _NotifInfo(icon: Icons.folder_open_rounded, color: const Color(0xFFFB8C00), message: 'Bệnh án đang được mở để Bác sĩ/KH chỉnh sửa');
-      }
-      if (t.status == 'WaitingConfirmation') {
-        return _NotifInfo(icon: Icons.hourglass_top_rounded, color: const Color(0xFF0097A7), message: 'Đã xác nhận sửa xong – Chờ đóng bệnh án');
-      }
-      if (t.status == 'Cancelled') {
-        return _NotifInfo(icon: Icons.lock_rounded, color: const Color(0xFF78909C), message: 'Bệnh án đã được đóng và khóa lại thành công');
-      }
-      return _NotifInfo(icon: Icons.folder_shared_outlined, color: Colors.grey, message: 'Yêu cầu mở bệnh án đang xem xét');
     }
 
-    if (t.status == 'WaitingConfirmation') {
-      return _NotifInfo(icon: Icons.task_alt_rounded, color: const Color(0xFFF59E0B), message: 'IT đã xử lý xong – Cần xác nhận');
+    // ══════════════════════════════════════════════════════════
+    // Góp ý (feedback)
+    // ══════════════════════════════════════════════════════════
+    if (t.ticketType == 'feedback') {
+      switch (t.status) {
+        case 'Open':
+          return _NotifInfo(
+            icon: Icons.feedback_outlined,
+            color: const Color(0xFF3B82F6),
+            message: 'Góp ý đang chờ tiếp nhận',
+          );
+        case 'Pending':
+          return _NotifInfo(
+            icon: Icons.rate_review_rounded,
+            color: const Color(0xFFFB8C00),
+            message: 'Góp ý đang được xem xét',
+          );
+        case 'Resolved':
+          return _NotifInfo(
+            icon: Icons.check_circle_outline_rounded,
+            color: const Color(0xFF43A047),
+            message: 'Góp ý đã được tiếp nhận',
+          );
+        case 'Cancelled':
+          return _NotifInfo(
+            icon: Icons.cancel_rounded,
+            color: const Color(0xFFE53935),
+            message: 'Góp ý đã bị từ chối',
+          );
+        default:
+          return _NotifInfo(
+            icon: Icons.feedback_outlined,
+            color: Colors.grey,
+            message: 'Góp ý đang được theo dõi',
+          );
+      }
     }
-    if (t.assigneeId == null && !_isCustomer) {
-      return _NotifInfo(icon: Icons.notification_important_rounded, color: const Color(0xFFE53935), message: 'Chưa phân công – Cần xử lý ngay');
+
+    // ══════════════════════════════════════════════════════════
+    // IT Ticket
+    // ══════════════════════════════════════════════════════════
+    switch (t.status) {
+      case 'Open':
+        if (t.assigneeId == null && !_isCustomer) {
+          return _NotifInfo(
+            icon: Icons.notification_important_rounded,
+            color: const Color(0xFFE53935),
+            message: 'Chưa phân công – Cần xử lý ngay',
+          );
+        }
+        return _NotifInfo(
+          icon: Icons.confirmation_number_outlined,
+          color: const Color(0xFF3B82F6),
+          message: _isCustomer ? 'Yêu cầu đã được gửi, đang chờ xử lý' : 'Ticket mới cần xử lý',
+        );
+      case 'Pending':
+        return _NotifInfo(
+          icon: Icons.build_circle_outlined,
+          color: const Color(0xFFFB8C00),
+          message: '${t.assigneeName ?? "IT"} đang xử lý yêu cầu',
+        );
+      case 'WaitingConfirmation':
+        return _NotifInfo(
+          icon: Icons.task_alt_rounded,
+          color: const Color(0xFFE67E22),
+          message: 'IT đã xử lý xong – Cần xác nhận',
+        );
+      case 'Resolved':
+        return _NotifInfo(
+          icon: Icons.check_circle_outline_rounded,
+          color: const Color(0xFF43A047),
+          message: 'Yêu cầu đã được giải quyết',
+        );
+      case 'Cancelled':
+        return _NotifInfo(
+          icon: Icons.cancel_rounded,
+          color: const Color(0xFFE53935),
+          message: 'Yêu cầu đã bị từ chối',
+        );
+      case 'Closed':
+        return _NotifInfo(
+          icon: Icons.lock_outline_rounded,
+          color: const Color(0xFF64748B),
+          message: 'Yêu cầu đã được đóng',
+        );
+      default:
+        return _NotifInfo(
+          icon: Icons.confirmation_number_outlined,
+          color: Colors.grey,
+          message: 'Yêu cầu đang được theo dõi',
+        );
     }
-    if (t.status == 'Resolved') {
-      return _NotifInfo(icon: Icons.check_circle_outline_rounded, color: const Color(0xFF43A047), message: 'Yêu cầu đã được giải quyết');
-    }
-    if (t.status == 'Cancelled') {
-      return _NotifInfo(icon: Icons.cancel_rounded, color: const Color(0xFFE53935), message: 'Yêu cầu đã bị từ chối/hủy');
-    }
-    if (t.assigneeId != null && _isCustomer) {
-      return _NotifInfo(icon: Icons.build_circle_outlined, color: _indigo, message: '${t.assigneeName ?? "IT"} đang xử lý yêu cầu');
-    }
-    return _NotifInfo(icon: Icons.confirmation_number_outlined, color: Colors.grey, message: 'Yêu cầu đang được theo dõi');
   }
 
   @override

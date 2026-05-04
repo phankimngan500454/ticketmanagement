@@ -47,23 +47,37 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
   }
 
   Future<void> _loadData() async {
-    final results = await Future.wait([
-      _repo.getUnassignedTickets(),
-      _repo.getTicketsByAssignee(widget.currentUser.userId),
-    ]);
-    if (mounted) {
-      setState(() {
-        final newUnassigned = List<Ticket>.from(results[0]);
-        // Detect new unassigned tickets not seen before
-        if (_knownUnassignedIds.isNotEmpty) {
-          final newOnes = newUnassigned.where((t) => !_knownUnassignedIds.contains(t.ticketId)).length;
-          if (newOnes > 0) _newNotifCount += newOnes;
+    try {
+      final results = await Future.wait([
+        _repo.getUnassignedTickets(),
+        _repo.getTicketsByAssignee(widget.currentUser.userId),
+      ]);
+      if (mounted) {
+        setState(() {
+          final newUnassigned = List<Ticket>.from(results[0]);
+          // Detect new unassigned tickets not seen before
+          if (_knownUnassignedIds.isNotEmpty) {
+            final newOnes = newUnassigned.where((t) => !_knownUnassignedIds.contains(t.ticketId)).length;
+            if (newOnes > 0) _newNotifCount += newOnes;
+          }
+          _knownUnassignedIds.addAll(newUnassigned.map((t) => t.ticketId));
+          _unassigned = newUnassigned;
+          _myTickets = List.from(results[1]);
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        final wasFirstLoad = _loading;
+        setState(() => _loading = false);
+        if (wasFirstLoad) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('Không tải được danh sách!'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ));
         }
-        _knownUnassignedIds.addAll(newUnassigned.map((t) => t.ticketId));
-        _unassigned = newUnassigned;
-        _myTickets = List.from(results[1]);
-        _loading = false;
-      });
+      }
     }
   }
 
@@ -374,8 +388,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
               badge: _unassigned.isNotEmpty ? '${_unassigned.length}' : null),
           _bottomNavItem(1, Icons.assignment_rounded, Icons.assignment_outlined, 'Việc của tôi',
               badge: myPending > 0 ? '$myPending' : null),
-          _bottomNavItem(2, Icons.list_alt_rounded, Icons.list_alt_outlined, 'Tất cả',
-              badge: allTix.isNotEmpty ? '${allTix.length}' : null),
+          _bottomNavItem(2, Icons.list_alt_rounded, Icons.list_alt_outlined, 'Tất cả'),
         ])),
       ),
     );

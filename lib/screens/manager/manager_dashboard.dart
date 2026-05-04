@@ -35,7 +35,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
 
   // Status maps based on ticket type
   static const _feedbackStatusMap = {
-    'Open': 'Đang xử lý',
+    'Open': 'Chưa xử lý',
     'Pending': 'Đang xem xét',
     'Resolved': 'Đã tiếp nhận',
     'Cancelled': 'Từ chối',
@@ -123,12 +123,16 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       }
     } catch (e) {
       if (mounted && context.mounted) {
+        final wasFirstLoad = _loading;
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('Không tải được danh sách góp ý!'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ));
+        // Chỉ hiện lỗi khi lần đầu tải, auto-refresh thì bỏ qua
+        if (wasFirstLoad) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('Không tải được danh sách góp ý!'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
       }
     }
   }

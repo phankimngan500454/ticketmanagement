@@ -110,14 +110,15 @@ mixin AuthRepository on RepositoryBase {
   // ── Cập nhật thông tin người dùng (Admin only) ───────────────
   Future<User> updateUser({
     required int userId,
+    String? username,
     required String fullName,
     String? phone,
     required int roleId,
     int? deptId,
     String? permissions,
   }) async {
-    final u = await client.auth.updateUser(userId, fullName, phone, roleId, deptId, permissions);
-    if (u == null) throw Exception('User not found');
+    final u = await client.auth.updateUser(userId, username, fullName, phone, roleId, deptId, permissions);
+    if (u == null) throw Exception('User not found or username taken');
     userCache = [];
     return mapUser(u);
   }

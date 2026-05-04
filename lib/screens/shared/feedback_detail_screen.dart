@@ -54,7 +54,8 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     'Resolved': 'Đã duyệt',
     'Pending': 'Đang mở BA',
     'WaitingConfirmation': 'Chờ đóng BA',
-    'Cancelled': 'Đã đóng BA',
+    'Closed': 'Đã đóng BA',
+    'Cancelled': 'Từ chối',
   } : {
     'Open': 'Đang xử lý',
     'Pending': 'Đang xem xét',
@@ -68,7 +69,8 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
       case 'Pending': return const Color(0xFFF59E0B);
       case 'WaitingConfirmation': return const Color(0xFFE67E22);
       case 'Resolved': return const Color(0xFF10B981);
-      case 'Cancelled': return const Color(0xFF64748B);
+      case 'Closed': return const Color(0xFF64748B);
+      case 'Cancelled': return const Color(0xFFEF4444);
       default: return Colors.grey;
     }
   }
@@ -179,6 +181,132 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     }
   }
 
+  // ── Dialog đóng bệnh án (có nhập chi phí chênh lệch) ──────────
+  Future<void> _showCloseMedicalDialog() async {
+    final TextEditingController costController = TextEditingController();
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline_rounded, color: Color(0xFF78909C)),
+              SizedBox(width: 8),
+              Text('Đóng bệnh án', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_affectsFinance) ...[
+                const Text('Nhập chi phí chênh lệch để thông báo cho người dùng (nếu có, có thể bỏ trống).', style: TextStyle(fontSize: 13, height: 1.4)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: costController,
+                  decoration: InputDecoration(
+                    labelText: 'Chi phí chênh lệch (VNĐ)',
+                    hintText: 'VD: 50.000',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.monetization_on_outlined, color: Colors.orange),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ] else ...[
+                const Text('Bác sĩ đã hoàn tất việc cập nhật hồ sơ. Bạn có chắc chắn muốn đóng và khóa lại bệnh án này không?', style: TextStyle(fontSize: 14, height: 1.4)),
+              ]
+            ],
+          ),
+          actions: [
+            if (isSubmitting)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else ...[
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Huỷ', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF78909C),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  setS(() => isSubmitting = true);
+                  final cost = _affectsFinance ? costController.text.trim() : '';
+
+                  // Gửi comment thông báo chi phí chênh lệch (nếu có)
+                  if (cost.isNotEmpty) {
+                    try {
+                      final senderRole = 'Tài chính';
+                      final comment = await _repo.addComment(
+                        ticketId: _ticket.ticketId,
+                        userId: widget.currentUser.userId,
+                        commentText: '💰 Thông báo từ $senderRole:\nPhát sinh chi phí chênh lệch: $cost VNĐ',
+                      );
+                      if (mounted) {
+                        setState(() => _comments.add(comment));
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (_scrollCtrl.hasClients) {
+                            _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+                          }
+                        });
+                      }
+                    } catch (_) {} // Ignore comment error
+                  }
+
+                  // Lưu costDifference vào DB (trường riêng cho thống kê)
+                  try {
+                    if (cost.isNotEmpty) {
+                      final double? parsedCost = double.tryParse(cost.replaceAll(RegExp(r'[^0-9.]'), ''));
+                      if (parsedCost != null) {
+                        await _repo.updateCostDifference(_ticket.ticketId, parsedCost);
+                      }
+                    }
+
+                    // Đóng bệnh án → Closed (khác với Cancelled = từ chối)
+                    final updated = await _repo.updateStatus(_ticket.ticketId, 'Closed');
+                    if (mounted && context.mounted) {
+                      setState(() => _ticket = updated);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('🔒 Đã đóng bệnh án thành công!'),
+                          backgroundColor: const Color(0xFF43A047),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    setS(() => isSubmitting = false);
+                    if (mounted && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+                          backgroundColor: Colors.red.shade700,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Đóng bệnh án'),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showRejectDialog() {
     final ctrl = TextEditingController();
     showDialog(
@@ -261,9 +389,8 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
   bool get _canOpenCloseBA => _affectsFinance ? _isFinance : _isInsurance;
   bool get _isLocked {
     if (_isReopenMedical) {
-      // Bệnh án: chỉ khóa khi đã đóng BA (Cancelled)
-      // Resolved/Pending/WaitingConfirmation vẫn cần tương tác
-      return _ticket.status == 'Cancelled';
+      // Bệnh án: khóa khi đã đóng BA (Closed) hoặc từ chối (Cancelled)
+      return _ticket.status == 'Closed' || _ticket.status == 'Cancelled';
     }
     return _ticket.status == 'Resolved' || _ticket.status == 'Cancelled';
   }
@@ -535,7 +662,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                         subtitle: '${_ticket.requesterName ?? 'Người yêu cầu'} đã hoàn tất chỉnh sửa. Nhấn để đóng/khóa lại bệnh án.',
                         buttonLabel: 'Đóng bệnh án',
                         buttonColor: const Color(0xFF78909C),
-                        onPressed: () => _updateStatus('Closed'),
+                        onPressed: _showCloseMedicalDialog,
                       ),
 
                     // ── Banner khi đã đóng ─────────────────────────
@@ -550,18 +677,20 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                         ),
                         child: Row(children: [
                           Icon(
-                            _ticket.status == 'Cancelled' || _ticket.status == 'Closed'
-                                ? (_isReopenMedical ? Icons.lock_rounded : Icons.cancel_rounded)
-                                : Icons.check_circle_rounded,
+                            _ticket.status == 'Closed'
+                                ? Icons.lock_rounded
+                                : _ticket.status == 'Cancelled'
+                                    ? Icons.cancel_rounded
+                                    : Icons.check_circle_rounded,
                             size: 20, color: statusColor,
                           ),
                           const SizedBox(width: 10),
                           Expanded(child: Text(
                             _isReopenMedical && _ticket.status == 'Closed'
                                 ? 'Bệnh án đã được đóng/khóa lại thành công.'
-                                : _ticket.status == 'Resolved'
-                                    ? '$_typeLabel này đã được xem xét và hoàn thành.'
-                                    : '$_typeLabel này đã bị từ chối.',
+                                : _ticket.status == 'Cancelled'
+                                    ? '$_typeLabel này đã bị từ chối.'
+                                    : '$_typeLabel này đã được xem xét và hoàn thành.',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: statusColor),
                           )),
                         ]),
@@ -661,14 +790,18 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(
-                _ticket.status == 'Resolved' ? Icons.lock_rounded : (_isReopenMedical && _ticket.status == 'Closed' ? Icons.lock_outline_rounded : Icons.block_rounded),
+                _ticket.status == 'Resolved' ? Icons.lock_rounded
+                    : _ticket.status == 'Closed' ? Icons.lock_outline_rounded
+                    : Icons.block_rounded,
                 size: 15, color: statusColor,
               ),
               const SizedBox(width: 6),
               Text(
-                _ticket.status == 'Resolved' 
-                    ? '$_typeLabel đã hoàn thành' 
-                    : (_isReopenMedical && _ticket.status == 'Closed' ? '$_typeLabel đã được đóng và khóa hệ thống' : '$_typeLabel đã bị từ chối'),
+                _ticket.status == 'Resolved'
+                    ? '$_typeLabel đã hoàn thành'
+                    : _ticket.status == 'Closed'
+                        ? '$_typeLabel đã được đóng và khóa thành công'
+                        : '$_typeLabel đã bị từ chối',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: statusColor),
               ),
             ]),

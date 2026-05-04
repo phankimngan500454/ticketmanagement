@@ -19,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // ── Tab 1: Thông tin cá nhân ──
   final _infoKey   = GlobalKey<FormState>();
+  late TextEditingController _nameCtrl;
   late TextEditingController _phoneCtrl;
   bool _savingInfo = false;
 
@@ -36,12 +37,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     _tabCtrl  = TabController(length: 2, vsync: this);
+    _nameCtrl  = TextEditingController(text: widget.currentUser.fullName);
     _phoneCtrl = TextEditingController(text: widget.currentUser.phone);
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _oldPwCtrl.dispose();
     _newPwCtrl.dispose();
@@ -77,12 +80,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  // ── Lưu số điện thoại ─────────────────────────────────────────
-  Future<void> _savePhone() async {
+  // ── Lưu thông tin cá nhân (họ tên + SĐT) ─────────────────────
+  Future<void> _saveInfo() async {
     if (!_infoKey.currentState!.validate()) return;
+    final newName  = _nameCtrl.text.trim();
     final newPhone = _phoneCtrl.text.trim();
-    if (newPhone == widget.currentUser.phone) {
-      _showSnack('Số điện thoại chưa thay đổi.', Colors.orange);
+    if (newName == widget.currentUser.fullName && newPhone == widget.currentUser.phone) {
+      _showSnack('Thông tin chưa thay đổi.', Colors.orange);
       return;
     }
     setState(() => _savingInfo = true);
@@ -90,15 +94,17 @@ class _ProfileScreenState extends State<ProfileScreen>
       // roleId: Admin=1, IT=2, Customer=3, Manager=4
       final roleId = widget.currentUser.role == 'Admin'
           ? 1 : widget.currentUser.role == 'IT' ? 2 : widget.currentUser.role == 'Manager' ? 4 : 3;
-      await _repo.updateUser(
+      final updated = await _repo.updateUser(
         userId: widget.currentUser.userId,
-        fullName: widget.currentUser.fullName,
+        fullName: newName,
         phone: newPhone,
         roleId: roleId,
         deptId: widget.currentUser.deptId == 0 ? null : widget.currentUser.deptId,
       );
+      // Cập nhật currentUser trong repo để header hiển thị tên mới ngay
+      _repo.currentUser = updated;
       if (!mounted) return;
-      _showSnack('✅ Cập nhật số điện thoại thành công!', const Color(0xFF43A047));
+      _showSnack('✅ Cập nhật thông tin thành công!', const Color(0xFF43A047));
     } catch (e) {
       if (mounted) _showSnack('Đã xảy ra lỗi, vui lòng thử lại!', Colors.redAccent);
     } finally {
@@ -153,8 +159,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final color = _roleColor;
-    final initials = widget.currentUser.fullName
-        .trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase();
+    final displayName = _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : widget.currentUser.fullName;
+    final initials = displayName
+        .split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F8),
@@ -205,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 const SizedBox(width: 16),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(widget.currentUser.fullName,
+                  Text(displayName,
                     style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 6),
@@ -288,10 +295,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         key: _infoKey,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
-          // Thông tin chỉ đọc
+          // Thông tin chỉ đọc (vai trò, phòng ban)
           _card(children: [
-            _readOnlyRow(Icons.badge_outlined, 'Họ và tên', widget.currentUser.fullName, color),
-            _divider(),
             _readOnlyRow(_roleIcon, 'Vai trò', _roleLabel, color),
             if (widget.currentUser.deptName != null) ...[
               _divider(),
@@ -300,8 +305,52 @@ class _ProfileScreenState extends State<ProfileScreen>
           ]),
           const SizedBox(height: 16),
 
-          // Số điện thoại (có thể chỉnh sửa)
+          // Họ tên + Số điện thoại (có thể chỉnh sửa)
           _card(children: [
+            // ── Họ và tên ──
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.badge_outlined, size: 16, color: color),
+                ),
+                const SizedBox(width: 10),
+                Text('Họ và tên',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF43A047).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('Có thể chỉnh sửa',
+                    style: TextStyle(fontSize: 10, color: Color(0xFF43A047), fontWeight: FontWeight.bold)),
+                ),
+              ]),
+            ),
+            TextFormField(
+              controller: _nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Vui lòng nhập họ và tên';
+                if (v.trim().length < 2) return 'Họ tên quá ngắn';
+                return null;
+              },
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1C1C2E)),
+              decoration: _inputDeco('VD: Nguyễn Văn A', color,
+                prefix: const Icon(Icons.person_rounded, size: 18)),
+            ),
+            const SizedBox(height: 18),
+
+            // ── Số điện thoại ──
+            Divider(height: 1, color: Colors.grey.shade100),
+            const SizedBox(height: 18),
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(children: [
@@ -316,16 +365,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                 const SizedBox(width: 10),
                 Text('Số điện thoại',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF43A047).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text('Có thể chỉnh sửa',
-                    style: TextStyle(fontSize: 10, color: Color(0xFF43A047), fontWeight: FontWeight.bold)),
-                ),
               ]),
             ),
             TextFormField(
@@ -352,7 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
-                onPressed: _savingInfo ? null : _savePhone,
+                onPressed: _savingInfo ? null : _saveInfo,
                 icon: _savingInfo
                     ? const SizedBox(width: 18, height: 18,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -376,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const Icon(Icons.info_outline_rounded, size: 15, color: Colors.orange),
               const SizedBox(width: 8),
               const Expanded(child: Text(
-                'Họ tên, phòng ban và vai trò do quản trị viên quản lý. Liên hệ Admin nếu cần thay đổi.',
+                'Phòng ban và vai trò do quản trị viên quản lý. Liên hệ Admin nếu cần thay đổi.',
                 style: TextStyle(fontSize: 11, color: Colors.orange, height: 1.5),
               )),
             ]),

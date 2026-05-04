@@ -7,12 +7,14 @@ class WebITSidebar extends StatefulWidget {
   final User currentUser;
   final int selectedIndex; // 0 = Chờ nhận, 1 = Việc của tôi, 2 = Tất cả
   final ValueChanged<int> onIndexSelected;
+  final int notificationCount;
 
   const WebITSidebar({
     super.key,
     required this.currentUser,
     required this.selectedIndex,
     required this.onIndexSelected,
+    this.notificationCount = 0,
   });
 
   @override
@@ -60,7 +62,7 @@ class _WebITSidebarState extends State<WebITSidebar> {
                   _navItem(2, Icons.list_alt_rounded, 'Tất cả'),
                   
                   const SizedBox(height: 24),
-                  _directNavItem(context, Icons.notifications_rounded, 'Thông báo', '/notifications'),
+                  _notificationNavItem(context, Icons.notifications_rounded, 'Thông báo', '/notifications'),
                   _directNavItem(context, Icons.person_rounded, 'Hồ sơ', '/profile'),
                 ],
               ),
@@ -130,6 +132,45 @@ class _WebITSidebarState extends State<WebITSidebar> {
         margin: const EdgeInsets.only(bottom: 4),
         alignment: Alignment.center,
         child: Icon(icon, size: 24, color: Colors.grey.shade400),
+      ),
+    );
+    return Tooltip(message: label, child: child);
+  }
+
+  Widget _notificationNavItem(BuildContext context, IconData icon, String label, String route) {
+    final count = widget.notificationCount;
+    final child = InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        margin: const EdgeInsets.only(bottom: 4),
+        alignment: Alignment.center,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(icon, size: 24, color: Colors.grey.shade400),
+            if (count > 0)
+              Positioned(
+                top: -6,
+                right: -8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 4)],
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                  child: Text(
+                    count > 9 ? '9+' : '$count',
+                    style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
     return Tooltip(message: label, child: child);

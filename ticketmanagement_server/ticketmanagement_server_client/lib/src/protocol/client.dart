@@ -364,9 +364,10 @@ class EndpointAuth extends _i2.EndpointRef {
     },
   );
 
-  /// Admin: update user profile (fullName, phone, roleId, deptId).
+  /// Admin: update user profile (username, fullName, phone, roleId, deptId).
   _i3.Future<_i6.AppUser?> updateUser(
     int userId,
+    String? username,
     String fullName,
     String? phone,
     int roleId,
@@ -377,6 +378,7 @@ class EndpointAuth extends _i2.EndpointRef {
     'updateUser',
     {
       'userId': userId,
+      'username': username,
       'fullName': fullName,
       'phone': phone,
       'roleId': roleId,
@@ -699,6 +701,14 @@ class EndpointTicket extends _i2.EndpointRef {
       'ticketId': ticketId,
       'confirmed': confirmed,
     },
+  );
+
+  /// Delete a ticket (only when status = 'Open').
+  _i3.Future<bool> deleteTicket(int ticketId) =>
+      caller.callServerEndpoint<bool>(
+    'ticket',
+    'deleteTicket',
+    {'ticketId': ticketId},
   );
 }
 

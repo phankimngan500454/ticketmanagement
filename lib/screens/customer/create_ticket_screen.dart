@@ -24,7 +24,8 @@ class CreateTicketScreen extends StatefulWidget {
 }
 
 class _CreateTicketScreenState extends State<CreateTicketScreen> {
-  String _requestType = 'repair';
+  // ── TẠM ẨN: mặc định bệnh án ──
+  String _requestType = 'reopen_medical'; // TẠM: force bệnh án, gốc = 'repair'
 
   @override
   Widget build(BuildContext context) {
@@ -586,7 +587,6 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
             enabled: _editingInfo,
             keyboard: TextInputType.phone,
           ),
-          const SizedBox(height: 10),
           const SizedBox(height: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

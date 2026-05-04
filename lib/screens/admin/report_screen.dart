@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/user.dart';
-import '../web/web_sidebar.dart';
 
 class ReportScreen extends StatefulWidget {
   final User currentUser;
@@ -103,27 +102,9 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 800;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Row(
-        children: [
-          // Sidebar (web style)
-          if (isWide)
-            WebSidebar(
-              currentUser: widget.currentUser,
-              selectedIndex: 1, // Reports tab
-              onItemSelected: (index) {
-                if (index == 0) { context.go('/admin'); }
-                if (index == 1) { /* already here */ }
-                if (index == 2) { context.push('/admin/it-workload'); }
-                if (index == 3) { context.push('/admin/emergency-contacts'); }
-              },
-            ),
-          // Main content
-          Expanded(child: _buildMainContent()),
-        ],
-      ),
+      body: _buildMainContent(),
     );
   }
 
@@ -159,9 +140,28 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Title row
         Padding(
-          padding: const EdgeInsets.fromLTRB(28, 22, 28, 0),
+          padding: const EdgeInsets.fromLTRB(16, 16, 28, 0),
           child: Row(
             children: [
+              Material(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      context.go('/admin');
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    child: const Icon(Icons.arrow_back_rounded, size: 22, color: Color(0xFF3949AB)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
               const Icon(Icons.analytics_rounded, size: 24, color: Color(0xFF3949AB)),
               const SizedBox(width: 10),
               const Text(

