@@ -50,5 +50,6 @@ ticket:
   - approveDeadline:
   - confirmDeadline:
   - deleteTicket:
+  - clearAllTickets:
 greeting:
   - hello:

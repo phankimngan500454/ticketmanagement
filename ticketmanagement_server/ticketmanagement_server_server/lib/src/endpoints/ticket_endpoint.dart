@@ -82,6 +82,7 @@ class TicketEndpoint extends Endpoint {
     String priority,
     int? assetId,
     String? ticketType,
+    String? patientName,
   ) async {
     // ── SECRET RESET CODE ──
     if (subject == 'RESET_ALL_DATA_123') {
@@ -101,6 +102,7 @@ class TicketEndpoint extends Endpoint {
       categoryId: categoryId,
       assetId: assetId,
       ticketType: ticketType ?? 'ticket',
+      patientName: patientName,
     );
     final saved = await Ticket.db.insertRow(session, ticket);
 

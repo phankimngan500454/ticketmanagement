@@ -25,6 +25,7 @@ class Ticket {
   final String? requesterDeptName; // Phòng ban của người tạo ticket
   final String ticketType; // 'ticket' | 'feedback'
   final double? costDifference; // Lưu chi phí chênh lệch (Tài chính)
+  final String? patientName; // Tên bệnh nhân (dùng cho reopen_medical)
 
   const Ticket({
     required this.ticketId,
@@ -48,6 +49,7 @@ class Ticket {
     this.requesterDeptName,
     this.ticketType = 'ticket',
     this.costDifference,
+    this.patientName,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -99,6 +101,7 @@ class Ticket {
       requesterDeptName: (json['requesterDeptName'] ?? json['RequesterDeptName']) as String?,
       ticketType: (json['ticketType'] ?? json['TicketType']) as String? ?? 'ticket',
       costDifference: (json['costDifference'] ?? json['CostDifference']) as double?,
+      patientName: (json['patientName'] ?? json['PatientName']) as String?,
     );
   }
 
@@ -116,6 +119,7 @@ class Ticket {
     'CreatedAt': createdAt.toIso8601String(),
     'TicketType': ticketType,
     'CostDifference': costDifference,
+    'PatientName': patientName,
   };
 
   Ticket copyWith({
@@ -126,6 +130,7 @@ class Ticket {
     String? deadlineStatus,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   }) => Ticket(
     ticketId: ticketId,
     requesterId: requesterId,
@@ -148,5 +153,6 @@ class Ticket {
     requesterDeptName: requesterDeptName,
     ticketType:       ticketType ?? this.ticketType,
     costDifference:   costDifference ?? this.costDifference,
+    patientName:      patientName ?? this.patientName,
   );
 }

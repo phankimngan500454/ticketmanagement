@@ -31,6 +31,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     this.proposedByUserId,
     this.ticketType,
     this.costDifference,
+    this.patientName,
   });
 
   factory Ticket({
@@ -51,6 +52,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     int? proposedByUserId,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   }) = _TicketImpl;
 
   factory Ticket.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -82,6 +84,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       proposedByUserId: jsonSerialization['proposedByUserId'] as int?,
       ticketType: jsonSerialization['ticketType'] as String?,
       costDifference: (jsonSerialization['costDifference'] as num?)?.toDouble(),
+      patientName: jsonSerialization['patientName'] as String?,
     );
   }
 
@@ -124,6 +127,8 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
 
   double? costDifference;
 
+  String? patientName;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -148,6 +153,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     int? proposedByUserId,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -171,6 +177,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       if (proposedByUserId != null) 'proposedByUserId': proposedByUserId,
       if (ticketType != null) 'ticketType': ticketType,
       if (costDifference != null) 'costDifference': costDifference,
+      if (patientName != null) 'patientName': patientName,
     };
   }
 
@@ -196,6 +203,7 @@ abstract class Ticket implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       if (proposedByUserId != null) 'proposedByUserId': proposedByUserId,
       if (ticketType != null) 'ticketType': ticketType,
       if (costDifference != null) 'costDifference': costDifference,
+      if (patientName != null) 'patientName': patientName,
     };
   }
 
@@ -250,6 +258,7 @@ class _TicketImpl extends Ticket {
     int? proposedByUserId,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   }) : super._(
          id: id,
          subject: subject,
@@ -268,6 +277,7 @@ class _TicketImpl extends Ticket {
          proposedByUserId: proposedByUserId,
          ticketType: ticketType,
          costDifference: costDifference,
+         patientName: patientName,
        );
 
   /// Returns a shallow copy of this [Ticket]
@@ -292,6 +302,7 @@ class _TicketImpl extends Ticket {
     Object? proposedByUserId = _Undefined,
     Object? ticketType = _Undefined,
     Object? costDifference = _Undefined,
+    Object? patientName = _Undefined,
   }) {
     return Ticket(
       id: id is int? ? id : this.id,
@@ -321,6 +332,7 @@ class _TicketImpl extends Ticket {
       costDifference: costDifference is double?
           ? costDifference
           : this.costDifference,
+      patientName: patientName is String? ? patientName : this.patientName,
     );
   }
 }
@@ -412,6 +424,11 @@ class TicketUpdateTable extends _i1.UpdateTable<TicketTable> {
         table.costDifference,
         value,
       );
+
+  _i1.ColumnValue<String, String> patientName(String? value) => _i1.ColumnValue(
+    table.patientName,
+    value,
+  );
 }
 
 class TicketTable extends _i1.Table<int?> {
@@ -481,6 +498,10 @@ class TicketTable extends _i1.Table<int?> {
       'costDifference',
       this,
     );
+    patientName = _i1.ColumnString(
+      'patientName',
+      this,
+    );
   }
 
   late final TicketUpdateTable updateTable;
@@ -517,6 +538,8 @@ class TicketTable extends _i1.Table<int?> {
 
   late final _i1.ColumnDouble costDifference;
 
+  late final _i1.ColumnString patientName;
+
   @override
   List<_i1.Column> get columns => [
     id,
@@ -536,6 +559,7 @@ class TicketTable extends _i1.Table<int?> {
     proposedByUserId,
     ticketType,
     costDifference,
+    patientName,
   ];
 }
 

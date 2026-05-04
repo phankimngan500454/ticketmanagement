@@ -1503,6 +1503,7 @@ class _TicketEndpoint {
     String priority,
     int? assetId,
     String? ticketType,
+    String? patientName,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1523,6 +1524,7 @@ class _TicketEndpoint {
             'priority': priority,
             'assetId': assetId,
             'ticketType': ticketType,
+            'patientName': patientName,
           }),
           serializationManager: _serializationManager,
         );
@@ -1779,6 +1781,36 @@ class _TicketEndpoint {
                   _localCallContext.arguments,
                 )
                 as _i3.Future<bool>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<String> clearAllTickets(
+    _i1.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'ticket',
+            method: 'clearAllTickets',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'ticket',
+          methodName: 'clearAllTickets',
+          parameters: _i1.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<String>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

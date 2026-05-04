@@ -17,3 +17,4 @@ fields:
   proposedByUserId: int?
   ticketType: String?
   costDifference: double?
+  patientName: String?

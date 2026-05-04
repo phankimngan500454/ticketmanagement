@@ -508,6 +508,17 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
+              if (t.ticketType == 'reopen_medical' && t.patientName != null && t.patientName!.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(children: [
+                    Icon(Icons.personal_injury_outlined, size: 13, color: Colors.indigo.shade300),
+                    const SizedBox(width: 4),
+                    Text('Bệnh nhân: ${t.patientName}',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigo.shade600)),
+                  ]),
+                ),
+              ],
               if (t.ticketType == 'reopen_medical' && t.description.isNotEmpty) ...[
                 Builder(builder: (context) {
                   final desc = t.description;

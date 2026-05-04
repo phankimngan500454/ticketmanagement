@@ -28,6 +28,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
   late final TextEditingController _phoneController;
   final _medicalRecordController = TextEditingController();
   final _reopenReasonController = TextEditingController();
+  final _patientNameController = TextEditingController();
   bool _affectsFinance = false;
   bool _submitting = false;
 
@@ -49,6 +50,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
     _phoneController.dispose();
     _medicalRecordController.dispose();
     _reopenReasonController.dispose();
+    _patientNameController.dispose();
     super.dispose();
   }
 
@@ -131,6 +133,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
         priority: 'Low',
         assetId: null,
         ticketType: 'reopen_medical',
+        patientName: _patientNameController.text.trim(),
       );
 
       // Upload attachments
@@ -389,6 +392,20 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
             validator: (v) => (v == null || v.trim().isEmpty)
                 ? 'Vui lòng nhập mã viện phí'
                 : null,
+          ),
+          const SizedBox(height: 16),
+
+          // Tên bệnh nhân
+          _fieldLabel('Tên bệnh nhân', required: true),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _patientNameController,
+            decoration: _inputDeco(
+              hint: 'Nhập tên bệnh nhân...',
+              icon: Icons.personal_injury_outlined,
+            ),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Vui lòng nhập tên bệnh nhân' : null,
           ),
           const SizedBox(height: 16),
 

@@ -1864,7 +1864,55 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                     vertical: 10,
                                   ),
                                   child: Column(
-                                    children: fields.entries.map((e) {
+                                    children: [
+                                      // Tên bệnh nhân (from dedicated field)
+                                      if (_ticket.patientName != null && _ticket.patientName!.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 10),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF5C6BC0).withValues(alpha: 0.10),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.personal_injury_outlined,
+                                                  size: 14,
+                                                  color: Color(0xFF5C6BC0),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Tên bệnh nhân',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.grey[500],
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      _ticket.patientName!,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Color(0xFF1E293B),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ...fields.entries.map((e) {
                                       final ic = iconFor(e.key);
                                       final col = colorFor(e.key);
                                       return Padding(
@@ -1922,6 +1970,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                         ),
                                       );
                                     }).toList(),
+                                    ],
                                   ),
                                 ),
                               ],

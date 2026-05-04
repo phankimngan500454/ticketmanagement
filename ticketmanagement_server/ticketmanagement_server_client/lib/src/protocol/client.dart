@@ -604,6 +604,7 @@ class EndpointTicket extends _i2.EndpointRef {
     String priority,
     int? assetId,
     String? ticketType,
+    String? patientName,
   ) => caller.callServerEndpoint<_i12.Ticket>(
     'ticket',
     'createTicket',
@@ -615,6 +616,7 @@ class EndpointTicket extends _i2.EndpointRef {
       'priority': priority,
       'assetId': assetId,
       'ticketType': ticketType,
+      'patientName': patientName,
     },
   );
 
@@ -703,12 +705,18 @@ class EndpointTicket extends _i2.EndpointRef {
     },
   );
 
-  /// Delete a ticket (only when status = 'Open').
+  /// Delete a ticket and its related data. Only allowed when status = 'Open'.
   _i3.Future<bool> deleteTicket(int ticketId) =>
       caller.callServerEndpoint<bool>(
+        'ticket',
+        'deleteTicket',
+        {'ticketId': ticketId},
+      );
+
+  _i3.Future<String> clearAllTickets() => caller.callServerEndpoint<String>(
     'ticket',
-    'deleteTicket',
-    {'ticketId': ticketId},
+    'clearAllTickets',
+    {},
   );
 }
 

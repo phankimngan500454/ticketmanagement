@@ -955,6 +955,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String?>(),
               nullable: true,
             ),
+            'patientName': _i1.ParameterDescription(
+              name: 'patientName',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -970,6 +975,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     params['priority'],
                     params['assetId'],
                     params['ticketType'],
+                    params['patientName'],
                   ),
         ),
         'assignTicket': _i1.MethodConnector(
@@ -1158,6 +1164,16 @@ class Endpoints extends _i1.EndpointDispatch {
                     session,
                     params['ticketId'],
                   ),
+        ),
+        'clearAllTickets': _i1.MethodConnector(
+          name: 'clearAllTickets',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['ticket'] as _i8.TicketEndpoint)
+                  .clearAllTickets(session),
         ),
       },
     );

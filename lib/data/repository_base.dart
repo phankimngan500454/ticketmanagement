@@ -95,6 +95,7 @@ abstract class RepositoryBase {
       proposedDeadline: t.proposedDeadline,
       finalDeadline: t.finalDeadline,
       deadlineStatus: t.deadlineStatus,
+      patientName: t.patientName,
     );
   }
 

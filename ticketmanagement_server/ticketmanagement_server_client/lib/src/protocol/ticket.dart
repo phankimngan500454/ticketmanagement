@@ -31,6 +31,7 @@ abstract class Ticket implements _i1.SerializableModel {
     this.proposedByUserId,
     this.ticketType,
     this.costDifference,
+    this.patientName,
   });
 
   factory Ticket({
@@ -51,6 +52,7 @@ abstract class Ticket implements _i1.SerializableModel {
     int? proposedByUserId,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   }) = _TicketImpl;
 
   factory Ticket.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -82,6 +84,7 @@ abstract class Ticket implements _i1.SerializableModel {
       proposedByUserId: jsonSerialization['proposedByUserId'] as int?,
       ticketType: jsonSerialization['ticketType'] as String?,
       costDifference: (jsonSerialization['costDifference'] as num?)?.toDouble(),
+      patientName: jsonSerialization['patientName'] as String?,
     );
   }
 
@@ -122,6 +125,8 @@ abstract class Ticket implements _i1.SerializableModel {
 
   double? costDifference;
 
+  String? patientName;
+
   /// Returns a shallow copy of this [Ticket]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -143,6 +148,7 @@ abstract class Ticket implements _i1.SerializableModel {
     int? proposedByUserId,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -166,6 +172,7 @@ abstract class Ticket implements _i1.SerializableModel {
       if (proposedByUserId != null) 'proposedByUserId': proposedByUserId,
       if (ticketType != null) 'ticketType': ticketType,
       if (costDifference != null) 'costDifference': costDifference,
+      if (patientName != null) 'patientName': patientName,
     };
   }
 
@@ -196,6 +203,7 @@ class _TicketImpl extends Ticket {
     int? proposedByUserId,
     String? ticketType,
     double? costDifference,
+    String? patientName,
   }) : super._(
          id: id,
          subject: subject,
@@ -214,6 +222,7 @@ class _TicketImpl extends Ticket {
          proposedByUserId: proposedByUserId,
          ticketType: ticketType,
          costDifference: costDifference,
+         patientName: patientName,
        );
 
   /// Returns a shallow copy of this [Ticket]
@@ -238,6 +247,7 @@ class _TicketImpl extends Ticket {
     Object? proposedByUserId = _Undefined,
     Object? ticketType = _Undefined,
     Object? costDifference = _Undefined,
+    Object? patientName = _Undefined,
   }) {
     return Ticket(
       id: id is int? ? id : this.id,
@@ -267,6 +277,7 @@ class _TicketImpl extends Ticket {
       costDifference: costDifference is double?
           ? costDifference
           : this.costDifference,
+      patientName: patientName is String? ? patientName : this.patientName,
     );
   }
 }

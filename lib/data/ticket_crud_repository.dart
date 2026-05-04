@@ -74,10 +74,11 @@ mixin TicketCrudRepository on RepositoryBase {
     String? assetName,
     DateTime? deadline,
     String? ticketType,
+    String? patientName,
   }) async {
     await warmCache();
     final t = await client.ticket.createTicket(
-      requesterId, categoryId, subject, description, priority, assetId, ticketType,
+      requesterId, categoryId, subject, description, priority, assetId, ticketType, patientName,
     );
     return mapTicket(t);
   }

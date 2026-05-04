@@ -412,6 +412,18 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
                 Text(t.subject, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 8),
 
+                if (isReopen && t.patientName != null && t.patientName!.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(children: [
+                      Icon(Icons.personal_injury_outlined, size: 13, color: Colors.indigo.shade300),
+                      const SizedBox(width: 4),
+                      Text('Bệnh nhân: ${t.patientName}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigo.shade600)),
+                    ]),
+                  ),
+                ],
+
                 if (isReopen && t.description.isNotEmpty) ...[
                   Builder(builder: (context) {
                     final desc = t.description;
