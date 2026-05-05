@@ -115,8 +115,8 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       final subject =
           'Mở lại bệnh án - MVP: ${_medicalRecordController.text.trim()}';
       final description = [
-        '🏥 Mã viện phí: ${_medicalRecordController.text.trim()}',
-        '👤 Người yêu cầu: ${_nameController.text.trim()}',
+        '🏥 Mã viện phí của bệnh nhân: ${_medicalRecordController.text.trim()}',
+        '👤 Tên người yêu cầu: ${_nameController.text.trim()}',
         '📞 SĐT: ${_phoneController.text.trim()}',
         '💰 Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
         '',
@@ -133,7 +133,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
         priority: 'Low',
         assetId: null,
         ticketType: 'reopen_medical',
-        patientName: _patientNameController.text.trim(),
+        patientName: _patientNameController.text.trim().isEmpty ? null : _patientNameController.text.trim(),
       );
 
       // Upload attachments
@@ -349,7 +349,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Họ tên
-          _fieldLabel('Họ tên người yêu cầu', required: true),
+          _fieldLabel('Tên người yêu cầu', required: true),
           const SizedBox(height: 6),
           TextFormField(
             controller: _nameController,
@@ -379,24 +379,24 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
           const SizedBox(height: 16),
 
           // Mã viện phí
-          _fieldLabel('Mã viện phí', required: true),
+          _fieldLabel('Mã viện phí của bệnh nhân', required: true),
           const SizedBox(height: 6),
           TextFormField(
             controller: _medicalRecordController,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: _inputDeco(
-              hint: 'Nhập mã viện phí...',
+              hint: 'Nhập mã viện phí của bệnh nhân...',
               icon: Icons.receipt_long_outlined,
             ),
             validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Vui lòng nhập mã viện phí'
+                ? 'Vui lòng nhập mã viện phí của bệnh nhân'
                 : null,
           ),
           const SizedBox(height: 16),
 
           // Tên bệnh nhân
-          _fieldLabel('Tên bệnh nhân', required: true),
+          _fieldLabel('Tên bệnh nhân', required: false),
           const SizedBox(height: 6),
           TextFormField(
             controller: _patientNameController,
@@ -404,8 +404,8 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
               hint: 'Nhập tên bệnh nhân...',
               icon: Icons.personal_injury_outlined,
             ),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Vui lòng nhập tên bệnh nhân' : null,
+            // Không bắt buộc nhập tên bệnh nhân
+            validator: (v) => null,
           ),
           const SizedBox(height: 16),
 

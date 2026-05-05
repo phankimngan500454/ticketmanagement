@@ -3,6 +3,12 @@ import 'package:ticketmanagement_server_client/ticketmanagement_server_client.da
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 // ── Cấu hình server ────────────────────────────────────────────
+// 🔧 ĐỔI DÒNG NÀY ĐỂ CHUYỂN SERVER:
+//   true  = kết nối localhost (dev local)
+//   false = kết nối Cloud/LAN (production)
+const bool _useLocal = false;
+
+const String _localHost = 'http://127.0.0.1:8080/';
 const String _lanHost = 'http://172.16.3.27:8080/';
 const String _cloudHost = 'https://api-hotrocntt.bvkhanhhoa.cloud/';
 
@@ -10,13 +16,15 @@ const String _cloudHost = 'https://api-hotrocntt.bvkhanhhoa.cloud/';
 late Client client;
 
 /// Tự động chọn server phù hợp:
-///  - Luôn dùng Cloudflare (hoạt động từ mọi nơi: nhà, viện, 4G...)
-///  - Ngoại lệ: nếu web truy cập trực tiếp IP nội bộ → dùng LAN
-///  - KHÔNG cần đổi code khi di chuyển giữa nhà và bệnh viện!
+///  - _useLocal = true  → luôn dùng localhost
+///  - _useLocal = false → Cloud (mặc định), hoặc LAN nếu web truy cập IP nội bộ
 void initServerpodClient() {
   String host;
 
-  if (kIsWeb && Uri.base.host == '172.16.3.27') {
+  if (_useLocal) {
+    // Dev local → localhost
+    host = _localHost;
+  } else if (kIsWeb && Uri.base.host == '172.16.3.27') {
     // Web truy cập trực tiếp IP nội bộ → dùng LAN (nhanh hơn)
     host = _lanHost;
   } else {
@@ -25,6 +33,5 @@ void initServerpodClient() {
   }
 
   debugPrint('[SP_Client] Connecting to: $host');
-  client = Client(host)
-    ..connectivityMonitor = FlutterConnectivityMonitor();
+  client = Client(host)..connectivityMonitor = FlutterConnectivityMonitor();
 }

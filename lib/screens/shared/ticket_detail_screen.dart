@@ -1744,7 +1744,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               .trim();
                           final value = line.substring(colonIdx + 1).trim();
                           if (key.isNotEmpty && value.isNotEmpty) {
-                            fields[key] = value;
+                            String finalKey = key;
+                            if (finalKey.toLowerCase() == 'mã viện phí') {
+                              finalKey = 'Mã viện phí của bệnh nhân';
+                            } else if (finalKey.toLowerCase() == 'người yêu cầu') {
+                              finalKey = 'Tên người yêu cầu';
+                            }
+                            fields[finalKey] = value;
                           }
                         }
                       }
@@ -1865,111 +1871,74 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                   ),
                                   child: Column(
                                     children: [
-                                      // Tên bệnh nhân (from dedicated field)
-                                      if (_ticket.patientName != null && _ticket.patientName!.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 10),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFF5C6BC0).withValues(alpha: 0.10),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.personal_injury_outlined,
-                                                  size: 14,
-                                                  color: Color(0xFF5C6BC0),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Tên bệnh nhân',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Colors.grey[500],
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      _ticket.patientName!,
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Color(0xFF1E293B),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ...fields.entries.map((e) {
-                                      final ic = iconFor(e.key);
-                                      final col = colorFor(e.key);
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 10,
-                                        ),
+                                      // Tên bệnh nhân (inline)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 8),
                                         child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
                                           children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: col.withValues(
-                                                  alpha: 0.10,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Icon(
-                                                ic,
-                                                size: 14,
-                                                color: col,
+                                            Icon(
+                                              Icons.personal_injury_outlined,
+                                              size: 16,
+                                              color: const Color(0xFF5C6BC0),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Tên bệnh nhân:  ',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey[600],
                                               ),
                                             ),
-                                            const SizedBox(width: 10),
                                             Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    e.key,
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: Colors.grey[500],
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    e.value,
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Color(0xFF1E293B),
-                                                    ),
-                                                  ),
-                                                ],
+                                              child: Text(
+                                                _ticket.patientName?.isNotEmpty == true
+                                                    ? _ticket.patientName!
+                                                    : 'Không có',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _ticket.patientName?.isNotEmpty == true
+                                                      ? const Color(0xFF1E293B)
+                                                      : Colors.grey[400],
+                                                  fontStyle: _ticket.patientName?.isNotEmpty == true
+                                                      ? FontStyle.normal
+                                                      : FontStyle.italic,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      );
-                                    }).toList(),
+                                      ),
+                                      ...fields.entries.map((e) {
+                                        final ic = iconFor(e.key);
+                                        final col = colorFor(e.key);
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 8),
+                                          child: Row(
+                                            children: [
+                                              Icon(ic, size: 16, color: col),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '${e.key}:  ',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  e.value,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF1E293B),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
                                     ],
                                   ),
                                 ),

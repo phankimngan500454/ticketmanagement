@@ -186,7 +186,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
             },
           ),
           Expanded(
-            child: _selectedTicket != null
+            child: _selectedTicket != null && MediaQuery.of(context).size.width >= 900
                 ? Row(
                     children: [
                       Expanded(flex: 4, child: _buildMainContent()),
@@ -379,7 +379,13 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => setState(() => _selectedTicket = t),
+          onTap: () {
+            if (MediaQuery.of(context).size.width >= 900) {
+              setState(() => _selectedTicket = t);
+            } else {
+              context.push('/ticket/${t.ticketId}', extra: t);
+            }
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(14),

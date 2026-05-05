@@ -219,8 +219,8 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
     if (_selectedType == 'reopen_medical' && _filterStatus != 'Tất cả') {
       list = list.where((t) {
         switch (_filterStatus) {
-          case 'BA_Open':   return t.status == 'Open';
-          case 'BA_Processing': return t.status == 'Resolved' || t.status == 'Pending';
+          case 'BA_Open':   return t.status == 'Open' || t.status == 'Resolved';
+          case 'BA_Processing': return t.status == 'Pending';
           case 'BA_Done':   return t.status == 'WaitingConfirmation';
           case 'BA_Closed': return t.status == 'Cancelled' || t.status == 'Closed';
           default: return true;
@@ -276,8 +276,8 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
     if (_selectedType == 'reopen_medical') {
       switch (category) {
         case 'Tất cả':       return list.length;
-        case 'BA_Open':      return list.where((t) => t.status == 'Open').length;
-        case 'BA_Processing': return list.where((t) => t.status == 'Resolved' || t.status == 'Pending').length;
+        case 'BA_Open':      return list.where((t) => t.status == 'Open' || t.status == 'Resolved').length;
+        case 'BA_Processing': return list.where((t) => t.status == 'Pending').length;
         case 'BA_Done':      return list.where((t) => t.status == 'WaitingConfirmation').length;
         case 'BA_Closed':    return list.where((t) => t.status == 'Cancelled' || t.status == 'Closed').length;
         default: return list.length;
@@ -351,7 +351,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                 },
               ),
               Expanded(
-                child: _selectedTicket != null
+                child: _selectedTicket != null && MediaQuery.of(context).size.width >= 900
                     ? Row(
                         children: [
                           Expanded(flex: 4, child: _buildMainContent()),
@@ -717,7 +717,13 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => setState(() => _selectedTicket = t),
+          onTap: () {
+            if (MediaQuery.of(context).size.width >= 900) {
+              setState(() => _selectedTicket = t);
+            } else {
+              context.push('/ticket/${t.ticketId}', extra: t);
+            }
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(14),

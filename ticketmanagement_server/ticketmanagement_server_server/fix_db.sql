@@ -1,0 +1,1 @@
+ALTER TABLE tickets DROP COLUMN IF EXISTS "patientname"; ALTER TABLE tickets DROP COLUMN IF EXISTS "patientName"; ALTER TABLE tickets ADD COLUMN "patientName" text;

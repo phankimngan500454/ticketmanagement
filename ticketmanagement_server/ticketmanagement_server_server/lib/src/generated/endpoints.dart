@@ -1146,6 +1146,43 @@ class Endpoints extends _i1.EndpointDispatch {
                     params['confirmed'],
                   ),
         ),
+        'updateTicketInfo': _i1.MethodConnector(
+          name: 'updateTicketInfo',
+          params: {
+            'ticketId': _i1.ParameterDescription(
+              name: 'ticketId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'subject': _i1.ParameterDescription(
+              name: 'subject',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'description': _i1.ParameterDescription(
+              name: 'description',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'patientName': _i1.ParameterDescription(
+              name: 'patientName',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['ticket'] as _i8.TicketEndpoint).updateTicketInfo(
+                    session,
+                    params['ticketId'],
+                    params['subject'],
+                    params['description'],
+                    params['patientName'],
+                  ),
+        ),
         'deleteTicket': _i1.MethodConnector(
           name: 'deleteTicket',
           params: {

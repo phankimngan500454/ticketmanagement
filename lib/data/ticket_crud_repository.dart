@@ -101,6 +101,19 @@ mixin TicketCrudRepository on RepositoryBase {
     return mapTicket(t);
   }
 
+  // ── Cập nhật thông tin ticket (chỉ khi Open) ───────────────
+  Future<Ticket> updateTicket(
+    int ticketId, {
+    required String subject,
+    required String description,
+    String? patientName,
+  }) async {
+    await warmCache();
+    final t = await client.ticket.updateTicketInfo(ticketId, subject, description, patientName);
+    if (t == null) throw Exception('Không thể cập nhật (ticket đã duyệt hoặc không tồn tại)');
+    return mapTicket(t);
+  }
+
   // ── Xóa ticket (chỉ khi chưa duyệt = Open) ───────────────
   Future<bool> deleteTicket(int ticketId) async {
     await warmCache();

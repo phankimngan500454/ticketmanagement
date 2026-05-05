@@ -424,6 +424,30 @@ class TicketEndpoint extends Endpoint {
     );
   }
 
+  // ── UPDATE TICKET (chỉ cho phép khi Open) ─────────────────────
+  /// Update ticket subject, description, patientName. Only allowed when status = 'Open'.
+  Future<Ticket?> updateTicketInfo(
+    Session session,
+    int ticketId,
+    String subject,
+    String description,
+    String? patientName,
+  ) async {
+    final ticket = await Ticket.db.findById(session, ticketId);
+    if (ticket == null) return null;
+    if (ticket.status != 'Open') return null; // Chỉ sửa khi chưa duyệt
+
+    return await Ticket.db.updateRow(
+      session,
+      ticket.copyWith(
+        subject: subject,
+        description: description,
+        patientName: patientName,
+      ),
+      columns: (t) => [t.subject, t.description, t.patientName],
+    );
+  }
+
   // ── DELETE TICKET (chỉ khi chưa duyệt = Open) ──────────────
   /// Delete a ticket and its related data. Only allowed when status = 'Open'.
   Future<bool> deleteTicket(Session session, int ticketId) async {

@@ -63,6 +63,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
   // ── Reopen Medical fields ──
   final _medicalRecordCtrl = TextEditingController();
   final _reopenReasonCtrl = TextEditingController();
+  final _patientNameCtrl = TextEditingController();
   bool _affectsFinance = false;
 
   // ── Feedback fields ──
@@ -105,6 +106,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
     _locationCtrl.dispose();
     _medicalRecordCtrl.dispose();
     _reopenReasonCtrl.dispose();
+    _patientNameCtrl.dispose();
     _feedbackSubjectCtrl.dispose();
     _feedbackDescCtrl.dispose();
     super.dispose();
@@ -177,8 +179,8 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         // Reopen Medical
         subject = 'Mở lại bệnh án - MVP: ${_medicalRecordCtrl.text.trim()}';
         description = [
-          '🏥 Mã viện phí: ${_medicalRecordCtrl.text.trim()}',
-          '👤 Người yêu cầu: ${_nameCtrl.text.trim()}',
+          '🏥 Mã viện phí của bệnh nhân: ${_medicalRecordCtrl.text.trim()}',
+          '👤 Tên người yêu cầu: ${_nameCtrl.text.trim()}',
           '📞 SĐT: ${_phoneCtrl.text.trim()}',
           '💰 Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
           '',
@@ -207,6 +209,9 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         priority: priority,
         assetId: assetId,
         ticketType: ticketType,
+        patientName: _currentTab == 1 && _patientNameCtrl.text.trim().isNotEmpty
+            ? _patientNameCtrl.text.trim()
+            : null,
       );
 
       // Upload attachments
@@ -773,12 +778,17 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         const SizedBox(height: 10),
         _formCard(
           child: Column(children: [
-            _field('Mã viện phí', required: true, child: TextFormField(
+            _field('Mã viện phí của bệnh nhân', required: true, child: TextFormField(
               controller: _medicalRecordCtrl,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: _deco('Nhập mã viện phí...', Icons.numbers_rounded),
+              decoration: _deco('Nhập mã viện phí của bệnh nhân...', Icons.numbers_rounded),
               validator: (v) => v == null || v.trim().isEmpty ? 'Bắt buộc' : null,
+            )),
+            const SizedBox(height: 14),
+            _field('Tên bệnh nhân', required: false, child: TextFormField(
+              controller: _patientNameCtrl,
+              decoration: _deco('Nhập tên bệnh nhân...', Icons.personal_injury_outlined),
             )),
             const SizedBox(height: 14),
             _field('Lý do mở lại', required: true, child: TextFormField(

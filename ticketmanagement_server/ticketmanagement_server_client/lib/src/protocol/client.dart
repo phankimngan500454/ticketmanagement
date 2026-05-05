@@ -705,6 +705,23 @@ class EndpointTicket extends _i2.EndpointRef {
     },
   );
 
+  /// Update ticket subject, description, patientName. Only allowed when status = 'Open'.
+  _i3.Future<_i12.Ticket?> updateTicketInfo(
+    int ticketId,
+    String subject,
+    String description,
+    String? patientName,
+  ) => caller.callServerEndpoint<_i12.Ticket?>(
+    'ticket',
+    'updateTicketInfo',
+    {
+      'ticketId': ticketId,
+      'subject': subject,
+      'description': description,
+      'patientName': patientName,
+    },
+  );
+
   /// Delete a ticket and its related data. Only allowed when status = 'Open'.
   _i3.Future<bool> deleteTicket(int ticketId) =>
       caller.callServerEndpoint<bool>(
