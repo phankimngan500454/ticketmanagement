@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/ticket_comment.dart';
@@ -40,9 +41,26 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
   List<TicketComment> _comments = [];
   List<TicketAttachmentModel> _attachments = [];
   bool _loading = true;
+  bool _uploadingFile = false;
   Timer? _refreshTimer;
 
   bool get _isReopenMedical => _ticket.ticketType == 'reopen_medical';
+
+  List<TicketAttachmentModel> get _initialAttachments =>
+      _attachments.where((a) => a.uploadedAt.difference(_ticket.createdAt).inMinutes <= 2).toList();
+
+  List<TicketAttachmentModel> get _chatAttachments =>
+      _attachments.where((a) => a.uploadedAt.difference(_ticket.createdAt).inMinutes > 2).toList();
+
+  List<dynamic> get _chatItems {
+    final list = <dynamic>[..._comments, ..._chatAttachments];
+    list.sort((a, b) {
+      final dtA = a is TicketComment ? a.createdAt : (a as TicketAttachmentModel).uploadedAt;
+      final dtB = b is TicketComment ? b.createdAt : (b as TicketAttachmentModel).uploadedAt;
+      return dtA.compareTo(dtB);
+    });
+    return list;
+  }
 
   Color get _themeColor => _isReopenMedical ? const Color(0xFF2563EB) : const Color(0xFF00897B);
   Color get _themeDark => _isReopenMedical ? const Color(0xFF1D4ED8) : const Color(0xFF00695C);
@@ -111,6 +129,202 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     }
   }
 
+  // ── XỬ LÝ FILE ĐÍNH KÈM ──────────────────────────────────────
+  Future<void> _pickAndUploadFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null) return;
+    if (file.size > 5 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Row(children: [Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('File không được vượt quá 5MB'))]),
+          backgroundColor: Colors.red,
+        ));
+      }
+      return;
+    }
+    setState(() => _uploadingFile = true);
+    try {
+      final base64Data = base64Encode(file.bytes!);
+      final mimeType = _getMimeType(file.extension ?? 'bin');
+      final attachment = await _repo.uploadAttachment(
+        ticketId: _ticket.ticketId,
+        uploaderId: widget.currentUser.userId,
+        fileName: file.name,
+        mimeType: mimeType,
+        fileData: base64Data,
+        fileSize: file.size,
+      );
+      if (mounted) {
+        setState(() {
+          _attachments.add(attachment);
+          _uploadingFile = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Row(children: [const Icon(Icons.attach_file_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã đính kèm: ${file.name}'))]),
+          backgroundColor: _themeColor,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploadingFile = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  Future<void> _deleteAttachment(TicketAttachmentModel a) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá file đính kèm?'),
+        content: Text(a.fileName),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Xoá', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await _repo.deleteAttachment(a.id);
+    if (mounted) setState(() => _attachments.removeWhere((x) => x.id == a.id));
+  }
+
+  String _getMimeType(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'png': return 'image/png';
+      case 'gif': return 'image/gif';
+      case 'pdf': return 'application/pdf';
+      case 'doc': return 'application/msword';
+      case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls': return 'application/vnd.ms-excel';
+      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      default: return 'application/octet-stream';
+    }
+  }
+
+  void _viewAttachment(TicketAttachmentModel a) {
+    if (!a.isImage) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${a.fileName} (${a.fileSizeLabel}) — chỉ xem trực tiếp được ảnh'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    final bytes = base64Decode(a.fileData);
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final maxH = MediaQuery.of(ctx).size.height * 0.85;
+        return Dialog(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBar(
+                  title: Text(a.fileName, style: const TextStyle(fontSize: 14)),
+                  backgroundColor: _themeColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  toolbarHeight: 44,
+                  automaticallyImplyLeading: false,
+                  actions: [
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                Flexible(child: InteractiveViewer(child: Image.memory(bytes, fit: BoxFit.contain))),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _attachmentBubble(TicketAttachmentModel a) {
+    final isMe = a.uploaderId == widget.currentUser.userId;
+    final isOwner = isMe || _isManager;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isMe) ...[
+            CircleAvatar(radius: 14, backgroundColor: _themeColor.withValues(alpha: 0.1),
+              child: const Icon(Icons.person, size: 14)),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isMe ? _themeColor.withValues(alpha: 0.08) : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isMe ? 16 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 16),
+                ),
+                border: isMe ? null : Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () => _viewAttachment(a),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: a.isImage
+                          ? Image.memory(base64Decode(a.fileData), width: 200, fit: BoxFit.cover)
+                          : Container(
+                              width: 200, padding: const EdgeInsets.all(12),
+                              color: Colors.grey.shade100,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.insert_drive_file, color: Colors.grey),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(a.fileName, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (isOwner)
+                    InkWell(
+                      onTap: () => _deleteAttachment(a),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (isMe) ...[
+            const SizedBox(width: 8),
+            CircleAvatar(radius: 14, backgroundColor: _themeColor.withValues(alpha: 0.1),
+              child: Text(widget.currentUser.fullName[0].toUpperCase(),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _themeColor))),
+          ],
+        ],
+      ),
+    );
+  }
+
   Future<void> _sendNote() async {
     final text = _noteCtrl.text.trim();
     if (text.isEmpty) return;
@@ -135,7 +349,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('❌ Lỗi gửi ghi chú!'), backgroundColor: Colors.red));
+          content: Text('Lỗi gửi ghi chú!'), backgroundColor: Colors.red));
       }
     }
   }
@@ -173,7 +387,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('❌ Lỗi cập nhật trạng thái! Vui lòng thử lại.'),
+          content: Text('Lỗi cập nhật trạng thái! Vui lòng thử lại.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ));
@@ -290,7 +504,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                     if (mounted && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+                          content: const Text('Đã xảy ra lỗi, vui lòng thử lại!'),
                           backgroundColor: Colors.red.shade700,
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -422,7 +636,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
       } else if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Không thể xóa (yêu cầu đã được duyệt)'),
+            content: Text('Không thể xóa (yêu cầu đã được duyệt)'),
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
           ),
@@ -432,7 +646,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: const Text('Đã xảy ra lỗi, vui lòng thử lại!'),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -597,7 +811,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                       if (mounted && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+                            content: const Text('Đã xảy ra lỗi, vui lòng thử lại!'),
                             backgroundColor: Colors.red.shade700,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -819,15 +1033,15 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                     ),
 
                     // ── Hình ảnh đính kèm ────────────────────────────
-                    if (_attachments.isNotEmpty)
+                    if (_initialAttachments.isNotEmpty)
                       _sectionCard(
                         icon: Icons.photo_library_outlined,
-                        title: 'Đính kèm (${_attachments.length})',
+                        title: 'Đính kèm (${_initialAttachments.length})',
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           // Image thumbnails grid
-                          if (_attachments.any((a) => a.isImage))
+                          if (_initialAttachments.any((a) => a.isImage))
                             Wrap(spacing: 8, runSpacing: 8, children: [
-                              ..._attachments.where((a) => a.isImage).map((a) {
+                              ..._initialAttachments.where((a) => a.isImage).map((a) {
                                 final bytes = base64Decode(a.fileData);
                                 return GestureDetector(
                                   onTap: () => _viewImage(a.fileName, bytes),
@@ -858,7 +1072,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                               }),
                             ]),
                           // Non-image files
-                          ..._attachments.where((a) => !a.isImage).map((a) {
+                          ..._initialAttachments.where((a) => !a.isImage).map((a) {
                             return Container(
                               margin: const EdgeInsets.only(top: 6),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -990,29 +1204,96 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                         ]),
                       ),
 
-                    // ── Ghi chú / Comments ─────────────────────────
+                    // ── Hình ảnh đính kèm ────────────────────────────
+                    if (_initialAttachments.isNotEmpty)
+                      _sectionCard(
+                        icon: Icons.photo_library_outlined,
+                        title: 'Đính kèm (${_initialAttachments.length})',
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          // Image thumbnails grid
+                          if (_initialAttachments.any((a) => a.isImage))
+                            Wrap(spacing: 8, runSpacing: 8, children: [
+                              ..._initialAttachments.where((a) => a.isImage).map((a) {
+                                final bytes = base64Decode(a.fileData);
+                                return GestureDetector(
+                                  onTap: () => _viewImage(a.fileName, bytes),
+                                  child: Container(
+                                    width: 80, height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(9),
+                                      child: Stack(children: [
+                                        Positioned.fill(child: Image.memory(bytes, fit: BoxFit.cover)),
+                                        Positioned(right: 4, bottom: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.5),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(Icons.zoom_in, size: 14, color: Colors.white),
+                                          ),
+                                        ),
+                                      ]),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ]),
+                          // Non-image files
+                          ..._initialAttachments.where((a) => !a.isImage).map((a) {
+                            return Container(
+                              margin: const EdgeInsets.only(top: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Row(children: [
+                                Icon(Icons.attach_file_rounded, size: 16, color: _themeColor),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(a.fileName,
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                  overflow: TextOverflow.ellipsis)),
+                                Text(a.fileSizeLabel,
+                                  style: TextStyle(fontSize: 10, color: Colors.grey[400])),
+                              ]),
+                            );
+                          }),
+                        ]),
+                      ),
+
+                    // ── Phản hồi / Comments ─────────────────────────
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(children: [
                         const Icon(Icons.chat_bubble_outline, size: 16),
                         const SizedBox(width: 6),
-                        Text('Ghi chú (${_comments.length})',
+                        Text('Phản hồi khi xảy ra sự cố (${_chatItems.length})',
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: themeDark)),
                       ]),
                     ),
 
-                    if (_comments.isEmpty)
+                    if (_chatItems.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Center(child: Text('Chưa có ghi chú nào',
+                        child: Center(child: Text('Chưa có phản hồi nào',
                           style: TextStyle(fontSize: 13, color: Colors.grey[400]))),
                       )
                     else
-                      ...(_comments.map((c) => _commentBubble(c))),
+                      ...(_chatItems.map((item) {
+                        if (item is TicketComment) return _commentBubble(item);
+                        if (item is TicketAttachmentModel) return _attachmentBubble(item);
+                        return const SizedBox.shrink();
+                      })),
 
                     const SizedBox(height: 80), // space for bottom input
                   ],
@@ -1022,17 +1303,28 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
         // ── BOTTOM INPUT ───────────────────────────────────────
         if (!_isLocked)
           Container(
-            padding: EdgeInsets.fromLTRB(16, 10, 8, MediaQuery.of(context).padding.bottom + 10),
+            padding: EdgeInsets.fromLTRB(8, 10, 8, MediaQuery.of(context).padding.bottom + 10),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, -2))],
             ),
             child: Row(children: [
+              if (_uploadingFile)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else
+                IconButton(
+                  icon: Icon(Icons.image_outlined, color: Colors.grey.shade600),
+                  onPressed: _pickAndUploadFile,
+                  tooltip: 'Gửi hình ảnh',
+                ),
               Expanded(
                 child: TextField(
                   controller: _noteCtrl,
                   decoration: InputDecoration(
-                    hintText: 'Viết ghi chú...',
+                    hintText: 'Viết phản hồi...',
                     hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

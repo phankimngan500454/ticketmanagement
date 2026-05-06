@@ -168,7 +168,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         }
         subject = _subjectCtrl.text.trim();
         description = [
-          if (_locationCtrl.text.trim().isNotEmpty) '📍 Vị trí: ${_locationCtrl.text.trim()}',
+          if (_locationCtrl.text.trim().isNotEmpty) 'Địa điểm: ${_locationCtrl.text.trim()}',
           _descriptionCtrl.text.trim(),
         ].join('\n\n');
         ticketType = 'ticket';
@@ -179,12 +179,12 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
         // Reopen Medical
         subject = 'Mở lại bệnh án - MVP: ${_medicalRecordCtrl.text.trim()}';
         description = [
-          '🏥 Mã viện phí của bệnh nhân: ${_medicalRecordCtrl.text.trim()}',
-          '👤 Tên người yêu cầu: ${_nameCtrl.text.trim()}',
-          '📞 SĐT: ${_phoneCtrl.text.trim()}',
-          '💰 Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
+          'Mã viện phí của bệnh nhân: ${_medicalRecordCtrl.text.trim()}',
+          'Tên người yêu cầu: ${_nameCtrl.text.trim()}',
+          'SĐT: ${_phoneCtrl.text.trim()}',
+          'Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
           '',
-          '📝 Lý do mở lại:',
+          'Lý do mở lại:',
           _reopenReasonCtrl.text.trim(),
         ].join('\n');
         ticketType = 'reopen_medical';
@@ -230,7 +230,7 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Gửi yêu cầu thành công!'), backgroundColor: Color(0xFF43A047), behavior: SnackBarBehavior.floating),
+          const SnackBar(content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Gửi yêu cầu thành công!'))]), backgroundColor: Color(0xFF43A047), behavior: SnackBarBehavior.floating),
         );
         Navigator.pop(context, true);
       }

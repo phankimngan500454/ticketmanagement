@@ -104,7 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       // Cập nhật currentUser trong repo để header hiển thị tên mới ngay
       _repo.currentUser = updated;
       if (!mounted) return;
-      _showSnack('✅ Cập nhật thông tin thành công!', const Color(0xFF43A047));
+      _showSnack('Cập nhật thông tin thành công!', const Color(0xFF43A047));
     } catch (e) {
       if (mounted) _showSnack('Đã xảy ra lỗi, vui lòng thử lại!', Colors.redAccent);
     } finally {
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       // Xác thực mật khẩu cũ
       final verified = await _repo.login(savedUsername, _oldPwCtrl.text.trim());
       if (verified == null) {
-        if (mounted) _showSnack('❌ Mật khẩu hiện tại không đúng!', const Color(0xFFE53935));
+        if (mounted) _showSnack('Mật khẩu hiện tại không đúng!', const Color(0xFFE53935));
         setState(() => _savingPw = false);
         return;
       }
@@ -135,9 +135,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (ok) {
         await prefs.setString('saved_password', _newPwCtrl.text.trim());
         _oldPwCtrl.clear(); _newPwCtrl.clear(); _confCtrl.clear();
-        _showSnack('✅ Đổi mật khẩu thành công!', const Color(0xFF43A047));
+        _showSnack('Đổi mật khẩu thành công!', const Color(0xFF43A047));
       } else {
-        _showSnack('❌ Đổi mật khẩu thất bại, thử lại!', const Color(0xFFE53935));
+        _showSnack('Đổi mật khẩu thất bại, thử lại!', const Color(0xFFE53935));
       }
     } catch (e) {
       if (mounted) _showSnack('Đã xảy ra lỗi, vui lòng thử lại!', Colors.redAccent);
@@ -266,8 +266,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
                 tabs: const [
-                  Tab(text: '👤  Thông tin'),
-                  Tab(text: '🔒  Mật khẩu'),
+                  Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.person_outline, size: 16),
+                    SizedBox(width: 6),
+                    Text('Thông tin'),
+                  ])),
+                  Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.lock_outline, size: 16),
+                    SizedBox(width: 6),
+                    Text('Mật khẩu'),
+                  ])),
                 ],
               ),
             ),

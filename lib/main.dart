@@ -39,8 +39,8 @@ void main() async {
   // Bắt lỗi Flutter framework không bị crash im lặng
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint('🔴 FlutterError: ${details.exception}');
-    debugPrint('🔴 Stack: ${details.stack}');
+    debugPrint('FlutterError: ${details.exception}');
+    debugPrint('Stack: ${details.stack}');
   };
 
   await runZonedGuarded(
@@ -81,9 +81,9 @@ void main() async {
           await Firebase.initializeApp(
             options: DefaultFirebaseOptions.currentPlatform,
           );
-          debugPrint('✅ Firebase initialized');
+          debugPrint('Firebase initialized');
         } catch (e) {
-          debugPrint('⚠️ Firebase init error (non-fatal): $e');
+          debugPrint('Firebase init error (non-fatal): $e');
           // Không crash app nếu Firebase lỗi, chỉ bỏ qua push notification
         }
       }
@@ -96,8 +96,8 @@ void main() async {
       runApp(const MedHubApp());
     },
     (error, stackTrace) {
-      debugPrint('🔴 Unhandled error: $error');
-      debugPrint('🔴 Stack: $stackTrace');
+      debugPrint('Unhandled error: $error');
+      debugPrint('Stack: $stackTrace');
     },
   );
 }

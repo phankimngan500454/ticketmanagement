@@ -248,7 +248,7 @@ class TicketEndpoint extends Endpoint {
         await FcmService.sendToUser(
           session,
           targetUserId: ticket.requesterId,
-          title: '❌ Yêu cầu mở bệnh án đã bị từ chối',
+          title: 'Yêu cầu mở bệnh án đã bị từ chối',
           body: ticket.subject,
           data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
         );
@@ -302,7 +302,7 @@ class TicketEndpoint extends Endpoint {
         await FcmService.sendToUser(
           session,
           targetUserId: ticket.assigneeId!,
-          title: '❌ Ticket đã bị hủy',
+          title: 'Ticket đã bị hủy',
           body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
           data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
         );

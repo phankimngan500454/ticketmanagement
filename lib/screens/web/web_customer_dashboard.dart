@@ -46,7 +46,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
   Future<void> _runMigrationThenLoad() async {
     try {
       final count = await _repo.migrateReopenMedicalClosed();
-      if (count > 0) debugPrint('✅ Migrated $count tickets: Cancelled → Closed');
+      if (count > 0) debugPrint('Migrated $count tickets: Cancelled → Closed');
     } catch (_) {}
     _loadData();
   }

@@ -128,7 +128,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
         // Chỉ hiện lỗi khi lần đầu tải, auto-refresh thì bỏ qua
         if (wasFirstLoad) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Không tải được danh sách góp ý!'),
+            content: const Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Không tải được danh sách góp ý!'))]),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ));
@@ -173,7 +173,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       await _loadData();
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('✅ Đã cập nhật: ${_getStatusLabel(ticket)}'),
+          content: Row(children: [const Icon(Icons.check_circle_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã cập nhật: ${_getStatusLabel(ticket)}'))]),
           backgroundColor: _statusColor(newStatus),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -182,7 +182,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     } catch (e) {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('❌ Lỗi cập nhật trạng thái!'),
+          content: const Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Lỗi cập nhật trạng thái!'))]),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ));
@@ -271,7 +271,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                   }
                   if (mounted && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('✅ Đã ghi chú!'),
+                      content: const Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã ghi chú!'))]),
                       backgroundColor: _purple,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -280,7 +280,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                 } catch (e) {
                   if (mounted && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('❌ Lỗi ghi chú!'),
+                      content: const Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Lỗi ghi chú!'))]),
                       backgroundColor: Colors.redAccent,
                       behavior: SnackBarBehavior.floating,
                     ));

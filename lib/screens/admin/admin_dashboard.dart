@@ -713,7 +713,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           _loadData();
                           if (mounted && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('✅ Đã duyệt yêu cầu mở lại bệnh án'),
+                              content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã duyệt yêu cầu mở lại bệnh án'))]),
                               backgroundColor: Color(0xFF43A047),
                               behavior: SnackBarBehavior.floating,
                             ));
@@ -721,7 +721,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         } catch (e) {
                           if (mounted && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('❌ Lỗi cập nhật trạng thái!'),
+                              content: Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Lỗi cập nhật trạng thái!'))]),
                               backgroundColor: Colors.red,
                               behavior: SnackBarBehavior.floating,
                             ));

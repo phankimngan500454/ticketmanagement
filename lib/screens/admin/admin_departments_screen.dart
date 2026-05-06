@@ -169,10 +169,10 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
         );
         await _repo.upsertDepartment(dept);
         _showSuccess(
-            existing == null ? '✅ Đã thêm phòng ban' : '✅ Đã cập nhật');
+            existing == null ? 'Đã thêm phòng ban' : 'Đã cập nhật');
         _load();
       } catch (e) {
-        _showError('❌ Đã xảy ra lỗi, vui lòng thử lại!');
+        _showError('Đã xảy ra lỗi, vui lòng thử lại!');
       }
     }
   }
@@ -219,10 +219,10 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
     if (confirmed == true) {
       try {
         await _repo.deleteDepartment(dept.deptId);
-        _showSuccess('🗑️ Đã xóa "${dept.deptName}"');
+        _showSuccess('Đã xóa "${dept.deptName}"');
         _load();
       } catch (e) {
-        _showError('❌ Lỗi khi xóa!');
+        _showError('Lỗi khi xóa!');
       }
     }
   }

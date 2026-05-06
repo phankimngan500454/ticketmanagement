@@ -163,7 +163,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ File không được vượt quá 5MB'),
+            content: Row(children: [Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('File không được vượt quá 5MB'))]),
             backgroundColor: Colors.red,
           ),
         );
@@ -189,7 +189,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('📎 Đã đính kèm: ${file.name}'),
+            content: Row(children: [const Icon(Icons.attach_file_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã đính kèm: ${file.name}'))]),
             backgroundColor: const Color(0xFF3949AB),
             behavior: SnackBarBehavior.floating,
           ),
@@ -200,7 +200,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         setState(() => _uploadingFile = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: Row(children: [const Icon(Icons.error_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
             backgroundColor: Colors.red,
           ),
         );
@@ -263,7 +263,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '📄 ${a.fileName} (${a.fileSizeLabel}) — chỉ xem trực tiếp được ảnh',
+            '${a.fileName} (${a.fileSizeLabel}) — chỉ xem trực tiếp được ảnh',
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -400,7 +400,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   if (mounted && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('✅ Đã giao việc cho ${staff.fullName}'),
+                        content: Row(children: [const Icon(Icons.check_circle_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã giao việc cho ${staff.fullName}'))]),
                         backgroundColor: const Color(0xFF43A047),
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
@@ -502,7 +502,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('🚫 Yêu cầu đã được hủy'),
+            content: const Row(children: [Icon(Icons.cancel_outlined, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Yêu cầu đã được hủy'))]),
             backgroundColor: const Color(0xFF78909C),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -515,7 +515,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: Row(children: [const Icon(Icons.error_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -566,7 +566,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (result && mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('🗑️ Đã xóa yêu cầu'),
+            content: const Row(children: [Icon(Icons.delete_outline_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã xóa yêu cầu'))]),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -578,7 +578,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       } else if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('❌ Không thể xóa (ticket đã được duyệt)'),
+            content: const Row(children: [Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Không thể xóa (ticket đã được duyệt)'))]),
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
           ),
@@ -588,7 +588,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: Row(children: [const Icon(Icons.error_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -608,7 +608,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Đã gửi yêu cầu xác nhận'),
+            content: const Row(children: [Icon(Icons.send_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã gửi yêu cầu xác nhận'))]),
             backgroundColor: const Color(0xFFF59E0B),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -621,7 +621,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: Row(children: [const Icon(Icons.error_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 10),
@@ -643,11 +643,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              confirm
-                  ? '✅ Yêu cầu đã được xác nhận hoàn thành'
-                  : '🔄 Đã mở lại yêu cầu',
-            ),
+            content: Row(children: [
+              Icon(confirm ? Icons.check_circle_outline : Icons.refresh_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(
+                confirm
+                    ? 'Yêu cầu đã được xác nhận hoàn thành'
+                    : 'Đã mở lại yêu cầu',
+              )),
+            ]),
             backgroundColor: confirm
                 ? const Color(0xFF43A047)
                 : const Color(0xFFE53935),
@@ -662,7 +666,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: Row(children: [const Icon(Icons.error_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 10),
@@ -700,7 +704,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+            content: const Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -769,7 +773,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       final comment = await _repo.addComment(
                         ticketId: _ticket.ticketId, 
                         userId: widget.currentUser.userId, 
-                        commentText: '💰 Thông báo từ Tài chính:\nPhát sinh chi phí chênh lệch: $cost VNĐ'
+                        commentText: 'Thông báo từ Tài chính:\nPhát sinh chi phí chênh lệch: $cost VNĐ'
                       );
                       if (mounted) {
                         setState(() => _comments.add(comment));
@@ -799,7 +803,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('🔒 Đã đóng bệnh án thành công!'),
+                          content: const Row(children: [Icon(Icons.lock_outline_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã đóng bệnh án thành công!'))]),
                           backgroundColor: const Color(0xFF43A047),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -811,7 +815,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     if (mounted && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'),
+                          content: const Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!'))]),
                           backgroundColor: Colors.red.shade700,
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -1077,9 +1081,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               setState(() => _ticket = updated);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text(
-                                    '📅 Đã gửi đề xuất deadline, chờ Admin phê duyệt',
-                                  ),
+                                  content: const Row(children: [
+                                    Icon(Icons.schedule_rounded, color: Colors.white, size: 18),
+                                    SizedBox(width: 8),
+                                    Expanded(child: Text('Đã gửi đề xuất deadline, chờ Admin phê duyệt')),
+                                  ]),
                                   backgroundColor: const Color(0xFF3949AB),
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(
@@ -1092,9 +1098,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             if (mounted && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    'Đã xảy ra lỗi, vui lòng thử lại!',
-                                  ),
+                                  content: Row(children: [
+                                    const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: Text('Đã xảy ra lỗi, vui lòng thử lại!')),
+                                  ]),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -1563,13 +1571,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 Builder(
                   builder: (ctx) {
                     final dept = _ticket.requesterDeptName;
-                    // Parse số phòng từ description (dòng đầu dạng "📍 Vị trí: ...")
+                    // Parse số phòng từ description (dòng đầu dạng "Địa điểm: ...")
                     final lines = _ticket.description.split('\n');
                     String? locationLine;
                     for (final line in lines) {
-                      if (line.trimLeft().startsWith('📍 Vị trí:')) {
+                      if (line.trimLeft().startsWith('Địa điểm:') || line.trimLeft().startsWith('📍 Vị trí:')) {
                         locationLine = line
-                            .replaceFirst(RegExp(r'^📍 Vị trí:\s*'), '')
+                            .replaceFirst(RegExp(r'^(📍 Vị trí|Địa điểm):\s*'), '')
                             .trim();
                         break;
                       }
@@ -2057,7 +2065,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                   .split('\n')
                                   .where(
                                     (l) =>
-                                        !l.trimLeft().startsWith('📍 Vị trí:'),
+                                        !l.trimLeft().startsWith('Địa điểm:') && !l.trimLeft().startsWith('📍 Vị trí:'),
                                   )
                                   .join('\n')
                                   .trim();
@@ -2285,9 +2293,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: const Text(
-                                      '⚡ Đã nhận xử lý ticket này!',
-                                    ),
+                                    content: const Row(children: [
+                                      Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+                                      SizedBox(width: 8),
+                                      Expanded(child: Text('Đã nhận xử lý ticket này!')),
+                                    ]),
                                     backgroundColor: const Color(0xFF00897B),
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(
@@ -2301,9 +2311,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             if (mounted && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text(
-                                    '❌ Không thể nhận việc, thử lại!',
-                                  ),
+                                  content: const Row(children: [
+                                    Icon(Icons.error_outline, color: Colors.white, size: 18),
+                                    SizedBox(width: 8),
+                                    Expanded(child: Text('Không thể nhận việc, thử lại!')),
+                                  ]),
                                   backgroundColor: Colors.red,
                                   behavior: SnackBarBehavior.floating,
                                 ),
@@ -2358,11 +2370,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     title: 'Duyệt yêu cầu mở lại bệnh án',
                     subtitle:
                         'Xác nhận duyệt yêu cầu này. Sau khi duyệt, phòng ban phụ trách sẽ nhận được thông báo để mở lại bệnh án.',
-                    buttonLabel: '✅ Duyệt yêu cầu',
+                    buttonLabel: 'Duyệt yêu cầu',
                     buttonColor: const Color(0xFF43A047),
                     onPressed: () => _updateMedicalStatus(
                       'Resolved',
-                      '✅ Đã duyệt! Phòng ban phụ trách sẽ nhận được yêu cầu mở bệnh án.',
+                      'Đã duyệt! Phòng ban phụ trách sẽ nhận được yêu cầu mở bệnh án.',
                     ),
                   ),
 
@@ -2377,11 +2389,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     title: 'Xác nhận mở lại bệnh án',
                     subtitle:
                         'Manager đã duyệt yêu cầu này. Nhấn để xác nhận đã mở lại bệnh án cho ${_ticket.requesterName ?? 'người yêu cầu'} sửa.',
-                    buttonLabel: '📂 Đã mở lại bệnh án',
+                    buttonLabel: 'Đã mở lại bệnh án',
                     buttonColor: const Color.fromARGB(255, 148, 182, 234),
                     onPressed: () => _updateMedicalStatus(
                       'Pending',
-                      '📂 Đã xác nhận mở lại bệnh án!',
+                      'Đã xác nhận mở lại bệnh án!',
                     ),
                   ),
 
@@ -2393,12 +2405,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     icon: Icons.edit_note_rounded,
                     title: 'Bệnh án đã được mở',
                     subtitle:
-                        'Phòng ban phụ trách đã mở lại bệnh án. Khi bạn sửa xong, nhấn nút bên dưới để thông báo.\n⚠️ Lưu ý: Vui lòng CHỐT LẠI sau khi sửa xong để các bộ phận khác tiếp tục xử lý!',
-                    buttonLabel: '✅ Đã sửa xong (Chốt lại)',
+                        'Phòng ban phụ trách đã mở lại bệnh án. Khi bạn sửa xong, nhấn nút bên dưới để thông báo.\nLưu ý: Vui lòng CHỐT LẠI sau khi sửa xong để các bộ phận khác tiếp tục xử lý!',
+                    buttonLabel: 'Đã sửa xong (Chốt lại)',
                     buttonColor: const Color(0xFF43A047),
                     onPressed: () => _updateMedicalStatus(
                       'WaitingConfirmation',
-                      '✅ Đã thông báo sửa xong! Chờ đóng bệnh án.',
+                      'Đã thông báo sửa xong! Chờ đóng bệnh án.',
                     ),
                   ),
 
@@ -2414,7 +2426,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         '${_ticket.requesterName ?? 'Người yêu cầu'} đã sửa xong',
                     subtitle:
                         '${_ticket.requesterName ?? 'Người yêu cầu'} đã hoàn tất chỉnh sửa. Nhấn để đóng/khóa lại bệnh án.',
-                    buttonLabel: '🔒 Đóng bệnh án',
+                    buttonLabel: 'Đóng bệnh án',
                     buttonColor: const Color(0xFF78909C),
                     onPressed: _showCloseMedicalDialog,
                   ),
@@ -3078,7 +3090,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         setState(() => _ticket = updated);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Đã phê duyệt deadline'),
+            content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã phê duyệt deadline'))]),
             backgroundColor: Color(0xFF43A047),
             behavior: SnackBarBehavior.floating,
           ),
@@ -3265,7 +3277,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               setState(() => _ticket = updated);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('📅 Đã điều chỉnh deadline'),
+                                  content: Row(children: [Icon(Icons.schedule_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã điều chỉnh deadline'))]),
                                   backgroundColor: Color(0xFF1976D2),
                                   behavior: SnackBarBehavior.floating,
                                 ),

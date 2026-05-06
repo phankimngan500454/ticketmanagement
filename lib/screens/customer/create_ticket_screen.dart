@@ -152,7 +152,7 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('⚠️ ${f.name} vượt quá 5MB, bỏ qua'),
+              content: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('${f.name} vượt quá 5MB, bỏ qua'))]),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -209,7 +209,7 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
       final finalSubject = _subjectController.text.trim();
       final finalDescription = [
         if (_locationController.text.trim().isNotEmpty)
-          '📍 Vị trí: ${_locationController.text.trim()}',
+          'Địa điểm: ${_locationController.text.trim()}',
         _descriptionController.text.trim(),
       ].join('\n\n');
 
@@ -236,9 +236,11 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text(
-                  '⚠️ Ticket đã tạo nhưng gặp lỗi gửi đề xuất',
-                ),
+                content: const Row(children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('Ticket đã tạo nhưng gặp lỗi gửi đề xuất')),
+                ]),
                 backgroundColor: Colors.orange,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -269,9 +271,11 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
         if (mounted && failedNames.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                '⚠️ $successCount/${_pendingFiles.length} file đã upload. Lỗi: ${failedNames.join(', ')}',
-              ),
+              content: Row(children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text('$successCount/${_pendingFiles.length} file đã upload. Lỗi: ${failedNames.join(', ')}')),
+              ]),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 5),
@@ -283,7 +287,7 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Gửi yêu cầu thành công!'),
+            content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Gửi yêu cầu thành công!'))]),
             backgroundColor: Color(0xFF43A047),
             behavior: SnackBarBehavior.floating,
           ),
@@ -410,9 +414,16 @@ class _CreateRepairScreenState extends State<CreateRepairScreen> {
                             color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            '🔧 Sửa chữa',
-                            style: TextStyle(fontSize: 11, color: Colors.white),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.build_outlined, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                'Sửa chữa',
+                                style: TextStyle(fontSize: 11, color: Colors.white),
+                              ),
+                            ],
                           ),
                         ),
                       ],

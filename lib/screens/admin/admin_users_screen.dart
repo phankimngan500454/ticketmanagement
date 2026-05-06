@@ -432,7 +432,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               if (result == null) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                    content: Text('❌ Lỗi: Tên đăng nhập này đã tồn tại!'),
+                                    content: Text('Lỗi: Tên đăng nhập này đã tồn tại!'),
                                     backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
                                 }
                                 return;
@@ -449,7 +449,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               } catch (e) {
                                 if (e.toString().contains('username taken') && mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                    content: Text('❌ Tên đăng nhập này đã tồn tại!'),
+                                    content: Text('Tên đăng nhập này đã tồn tại!'),
                                     backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
                                   return;
                                 }
@@ -459,14 +459,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                             _load();
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text(existing == null ? '✅ Đã tạo tài khoản $name' : '✅ Đã cập nhật thông tin'),
+                                content: Text(existing == null ? 'Đã tạo tài khoản $name' : 'Đã cập nhật thông tin'),
                                 backgroundColor: const Color(0xFF43A047),
                                 behavior: SnackBarBehavior.floating));
                             }
                           } catch (e) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
+                                content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                             }
                           }
                         },
@@ -547,13 +547,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     await _repo.resetPassword(user.userId, pw);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('🔑 Đã reset mật khẩu'),
+                        content: Text('Đã reset mật khẩu'),
                         backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating));
                     }
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('❌ Đã xảy ra lỗi!'), backgroundColor: Colors.red));
+                        content: Text('Đã xảy ra lỗi!'), backgroundColor: Colors.red));
                     }
                   }
                 },
@@ -569,7 +569,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Future<void> _deleteUser(User user) async {
     if (user.userId == widget.currentUser.userId) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('❌ Không thể xoá tài khoản đang đăng nhập'), backgroundColor: Colors.red));
+        content: Text('Không thể xoá tài khoản đang đăng nhập'), backgroundColor: Colors.red));
       return;
     }
     final confirm = await showDialog<bool>(
@@ -591,12 +591,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('🗑️ Đã xoá tài khoản'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
+          content: Text('Đã xoá tài khoản'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('❌ Đã xảy ra lỗi!'), backgroundColor: Colors.red));
+          content: Text('Đã xảy ra lỗi!'), backgroundColor: Colors.red));
       }
     }
   }

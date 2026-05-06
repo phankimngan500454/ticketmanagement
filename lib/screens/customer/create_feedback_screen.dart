@@ -63,7 +63,7 @@ class _CreateFeedbackScreenState extends State<CreateFeedbackScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('⚠️ ${f.name} vượt quá 5MB'),
+              content: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('${f.name} vượt quá 5MB'))]),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -127,7 +127,7 @@ class _CreateFeedbackScreenState extends State<CreateFeedbackScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Gửi góp ý thành công!'),
+            content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Gửi góp ý thành công!'))]),
             backgroundColor: Color(0xFF43A047),
             behavior: SnackBarBehavior.floating,
           ),
@@ -138,7 +138,7 @@ class _CreateFeedbackScreenState extends State<CreateFeedbackScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Có lỗi xảy ra, vui lòng thử lại!'),
+            content: Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Có lỗi xảy ra, vui lòng thử lại!'))]),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -209,7 +209,7 @@ class _CreateFeedbackScreenState extends State<CreateFeedbackScreen> {
                               ),
                               SizedBox(width: 4),
                               Text(
-                                '💬 Góp ý',
+                                'Góp ý',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.white,

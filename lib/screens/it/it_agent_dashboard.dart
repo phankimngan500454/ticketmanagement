@@ -109,7 +109,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
       await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('✅ Đã nhận Ticket #${ticket.ticketId}!'),
+          content: Row(children: [const Icon(Icons.check_circle_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã nhận Ticket #${ticket.ticketId}!'))]),
           backgroundColor: _green, behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
         setState(() => _navIndex = 1); // switch to "Việc của tôi"
@@ -124,7 +124,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
     await _loadData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('📬 Đã gửi xác nhận (Ticket #${ticket.ticketId})'),
+        content: Row(children: [const Icon(Icons.send_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã gửi xác nhận (Ticket #${ticket.ticketId})'))]),
         backgroundColor: const Color(0xFFF59E0B), behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
     }
@@ -448,7 +448,7 @@ class _ITAgentDashboardState extends State<ITAgentDashboard> with TickerProvider
         const SizedBox(height: 16),
         const Text('Không có yêu cầu tồn đọng!', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey)),
         const SizedBox(height: 6),
-        Text('🎉 Tất cả đã được xử lý', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+        Text('Tất cả đã được xử lý', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
       ]));
     }
 

@@ -145,7 +145,7 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
       _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('🗑️ Đã xóa "${asset.assetName}"'),
+          content: Text('Đã xóa "${asset.assetName}"'),
           backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
       }
     }
@@ -350,13 +350,13 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
                         _load();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(existing == null ? '✅ Đã thêm "$name"' : '✅ Đã cập nhật'),
+                            content: Text(existing == null ? 'Đã thêm "$name"' : 'Đã cập nhật'),
                             backgroundColor: const Color(0xFF43A047), behavior: SnackBarBehavior.floating));
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('❌ Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
+                            content: Text('Đã xảy ra lỗi, vui lòng thử lại!'), backgroundColor: Colors.red));
                         }
                       }
                     },
@@ -560,7 +560,7 @@ class _AdminAssetsScreenState extends State<AdminAssetsScreen> {
             const SizedBox(height: 6),
             Wrap(spacing: 5, runSpacing: 4, children: [
               _badge(asset.assetType, accent),
-              if (catName.isNotEmpty) _badge('📁 $catName', _blue),
+              if (catName.isNotEmpty) _badge(catName, _blue),
               if (asset.assetCode.isNotEmpty) _badge('# ${asset.assetCode}', Colors.grey),
             ]),
           ]),

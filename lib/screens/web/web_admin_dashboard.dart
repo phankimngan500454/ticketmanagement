@@ -98,6 +98,18 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
     }
   }
 
+  String _getStatusLabelForBA(String s) {
+    switch (s) {
+      case 'Open': return 'Chờ duyệt';
+      case 'Pending': return 'Đang mở BA';
+      case 'WaitingConfirmation': return 'Đã sửa xong';
+      case 'Resolved': return 'Đã duyệt';
+      case 'Cancelled': return 'Từ chối';
+      case 'Closed': return 'Đã đóng BA';
+      default: return s;
+    }
+  }
+
   String _getTicketStatusLabel(Ticket t) {
     if (t.ticketType == 'reopen_medical') {
       switch (t.status) {
@@ -366,7 +378,8 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
   Widget _statusChip(String value, Color? color) {
     final isSelected = _filterStatus == value;
     final count = value == 'Tất cả' ? _filtered.length : _countByStatus(value);
-    final displayLabel = value == 'Tất cả' ? 'Tất cả' : _statusLabel(value);
+    final isBA = _filterType == 'reopen_medical';
+    final displayLabel = value == 'Tất cả' ? 'Tất cả' : isBA ? _getStatusLabelForBA(value) : _statusLabel(value);
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: InkWell(
@@ -606,7 +619,7 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
                           _loadData();
                           if (mounted && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('✅ Đã duyệt yêu cầu mở lại bệnh án'),
+                              content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Đã duyệt yêu cầu mở lại bệnh án'))]),
                               backgroundColor: Color(0xFF43A047),
                               behavior: SnackBarBehavior.floating,
                             ));
@@ -614,7 +627,7 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
                         } catch (e) {
                           if (mounted && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('❌ Lỗi cập nhật trạng thái!'),
+                              content: Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Lỗi cập nhật trạng thái!'))]),
                               backgroundColor: Colors.red,
                               behavior: SnackBarBehavior.floating,
                             ));

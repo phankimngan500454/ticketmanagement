@@ -78,7 +78,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('⚠️ ${f.name} vượt quá 5MB'),
+              content: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('${f.name} vượt quá 5MB'))]),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -115,12 +115,12 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       final subject =
           'Mở lại bệnh án - MVP: ${_medicalRecordController.text.trim()}';
       final description = [
-        '🏥 Mã viện phí của bệnh nhân: ${_medicalRecordController.text.trim()}',
-        '👤 Tên người yêu cầu: ${_nameController.text.trim()}',
-        '📞 SĐT: ${_phoneController.text.trim()}',
-        '💰 Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
+        'Mã viện phí của bệnh nhân: ${_medicalRecordController.text.trim()}',
+        'Tên người yêu cầu: ${_nameController.text.trim()}',
+        'SĐT: ${_phoneController.text.trim()}',
+        'Ảnh hưởng tài chính: ${_affectsFinance ? "CÓ" : "KHÔNG"}',
         '',
-        '📝 Lý do mở lại:',
+        'Lý do mở lại:',
         _reopenReasonController.text.trim(),
       ].join('\n');
 
@@ -155,7 +155,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Gửi yêu cầu mở lại bệnh án thành công!'),
+            content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Gửi yêu cầu mở lại bệnh án thành công!'))]),
             backgroundColor: Color(0xFF43A047),
             behavior: SnackBarBehavior.floating,
           ),
@@ -166,7 +166,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Có lỗi xảy ra, vui lòng thử lại!'),
+            content: Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Có lỗi xảy ra, vui lòng thử lại!'))]),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),

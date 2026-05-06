@@ -3,10 +3,10 @@ import 'package:ticketmanagement_server_client/ticketmanagement_server_client.da
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 // ── Cấu hình server ────────────────────────────────────────────
-// 🔧 ĐỔI DÒNG NÀY ĐỂ CHUYỂN SERVER:
+// ĐỔI DÒNG NÀY ĐỂ CHUYỂN SERVER:
 //   true  = kết nối localhost (dev local)
 //   false = kết nối Cloud/LAN (production)
-const bool _useLocal = false;
+const bool _useLocal = true;
 
 const String _localHost = 'http://127.0.0.1:8080/';
 const String _lanHost = 'http://172.16.3.27:8080/';

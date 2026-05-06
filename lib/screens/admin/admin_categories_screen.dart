@@ -137,9 +137,9 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
           categoryName: nameCtrl.text.trim(),
         );
         await _repo.upsertCategory(cat);
-        _showSuccess(existing == null ? '✅ Đã thêm danh mục' : '✅ Đã cập nhật');
+        _showSuccess(existing == null ? 'Đã thêm danh mục' : 'Đã cập nhật');
         _load();
-      } catch (e) { _showError('❌ Đã xảy ra lỗi, vui lòng thử lại!'); }
+      } catch (e) { _showError('Đã xảy ra lỗi, vui lòng thử lại!'); }
     }
   }
 
@@ -173,9 +173,9 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
     if (confirmed == true) {
       try {
         await _repo.deleteCategory(cat.categoryId);
-        _showSuccess('🗑️ Đã xóa "${cat.categoryName}"');
+        _showSuccess('Đã xóa "${cat.categoryName}"');
         _load();
-      } catch (e) { _showError('❌ Đã xảy ra lỗi, vui lòng thử lại!'); }
+      } catch (e) { _showError('Đã xảy ra lỗi, vui lòng thử lại!'); }
     }
   }
 

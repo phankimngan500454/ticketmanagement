@@ -48,7 +48,7 @@ class WindowsNotificationService {
     VoidCallback? onTap,
   }) async {
     await show(
-      title: '🎫 Ticket mới #${ticketId.toString().padLeft(4, '0')}',
+      title: 'Ticket mới #${ticketId.toString().padLeft(4, '0')}',
       body: '$subject\nGửi bởi: $requester',
       onTap: onTap,
     );

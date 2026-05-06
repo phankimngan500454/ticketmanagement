@@ -113,7 +113,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
       await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('✅ Đã nhận Ticket #${ticket.ticketId}!'),
+          content: Row(children: [const Icon(Icons.check_circle_outline, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã nhận Ticket #${ticket.ticketId}!'))]),
           backgroundColor: _green, behavior: SnackBarBehavior.floating,
         ));
         setState(() {
@@ -133,7 +133,7 @@ class _WebITDashboardState extends State<WebITDashboard> {
     await _loadData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('📬 Đã gửi xác nhận (Ticket #${ticket.ticketId})'),
+        content: Row(children: [const Icon(Icons.send_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('Đã gửi xác nhận (Ticket #${ticket.ticketId})'))]),
         backgroundColor: const Color(0xFFF59E0B), behavior: SnackBarBehavior.floating,
       ));
     }

@@ -86,7 +86,8 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
                   Row(children: [
                     Expanded(child: _modeBtn(
                       ctx: ctx,
-                      label: '👤 Nhân viên IT',
+                      label: 'Nhân viên IT',
+                      icon: Icons.person_outline,
                       active: isStaffMode,
                       onTap: () => setDialog(() {
                         isStaffMode = true;
@@ -99,7 +100,8 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
                     const SizedBox(width: 8),
                     Expanded(child: _modeBtn(
                       ctx: ctx,
-                      label: '📞 Số tùy chỉnh',
+                      label: 'Số tùy chỉnh',
+                      icon: Icons.phone_outlined,
                       active: !isStaffMode,
                       onTap: () => setDialog(() {
                         isStaffMode = false;
@@ -245,7 +247,7 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
     }
   }
 
-  Widget _modeBtn({required BuildContext ctx, required String label, required bool active, required VoidCallback onTap}) {
+  Widget _modeBtn({required BuildContext ctx, required String label, required IconData icon, required bool active, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -256,8 +258,12 @@ class _AdminEmergencyContactsScreenState extends State<AdminEmergencyContactsScr
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: active ? const Color(0xFF1976D2) : Colors.grey.shade300),
         ),
-        child: Text(label, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : Colors.grey[700])),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, size: 15, color: active ? Colors.white : Colors.grey[600]),
+          const SizedBox(width: 5),
+          Text(label, textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : Colors.grey[700])),
+        ]),
       ),
     );
   }
