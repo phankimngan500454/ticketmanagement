@@ -141,6 +141,15 @@ class _ITWorkloadScreenState extends State<ITWorkloadScreen> {
                     hintText: 'Tìm kiếm...',
                     hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                     prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                    suffixIcon: _searchQuery.isNotEmpty 
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          ) 
+                        : null,
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                     filled: true, fillColor: const Color(0xFFF1F5F9),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),

@@ -33,6 +33,8 @@ import 'package:ticketmanagement_server_client/src/protocol/ticket.dart'
     as _i12;
 import 'package:ticketmanagement_server_client/src/protocol/greetings/greeting.dart'
     as _i13;
+import 'package:ticketmanagement_server_client/src/protocol/ticket_event.dart'
+    as _i15;
 import 'protocol.dart' as _i14;
 
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
@@ -624,12 +626,14 @@ class EndpointTicket extends _i2.EndpointRef {
   /// Sends push notification to the assigned IT staff.
   _i3.Future<_i12.Ticket?> assignTicket(
     int ticketId,
+    int actionUserId,
     int? assigneeId,
   ) => caller.callServerEndpoint<_i12.Ticket?>(
     'ticket',
     'assignTicket',
     {
       'ticketId': ticketId,
+      'actionUserId': actionUserId,
       'assigneeId': assigneeId,
     },
   );
@@ -637,12 +641,14 @@ class EndpointTicket extends _i2.EndpointRef {
   /// Update ticket status. Sends context-driven push notifications.
   _i3.Future<_i12.Ticket?> updateStatus(
     int ticketId,
+    int actionUserId,
     String status,
   ) => caller.callServerEndpoint<_i12.Ticket?>(
     'ticket',
     'updateStatus',
     {
       'ticketId': ticketId,
+      'actionUserId': actionUserId,
       'status': status,
     },
   );
@@ -650,12 +656,14 @@ class EndpointTicket extends _i2.EndpointRef {
   /// Update cost difference (used when finance closes medical record)
   _i3.Future<_i12.Ticket?> updateCostDifference(
     int ticketId,
+    int actionUserId,
     double costDifference,
   ) => caller.callServerEndpoint<_i12.Ticket?>(
     'ticket',
     'updateCostDifference',
     {
       'ticketId': ticketId,
+      'actionUserId': actionUserId,
       'costDifference': costDifference,
     },
   );
@@ -678,6 +686,7 @@ class EndpointTicket extends _i2.EndpointRef {
   /// Admin approves or adjusts a proposed deadline. Notifies Requester.
   _i3.Future<_i12.Ticket?> approveDeadline(
     int ticketId,
+    int actionUserId,
     String action,
     DateTime? adjustedDeadline,
     String? adminNote,
@@ -686,6 +695,7 @@ class EndpointTicket extends _i2.EndpointRef {
     'approveDeadline',
     {
       'ticketId': ticketId,
+      'actionUserId': actionUserId,
       'action': action,
       'adjustedDeadline': adjustedDeadline,
       'adminNote': adminNote,
@@ -755,6 +765,24 @@ class EndpointGreeting extends _i2.EndpointRef {
       );
 }
 
+/// Handles ticket event log (activity history).
+/// Access via `client.event` on the Flutter client.
+/// {@category Endpoint}
+class EndpointEvent extends _i2.EndpointRef {
+  EndpointEvent(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'event';
+
+  /// Get all events for a ticket, ordered by createdAt ascending.
+  _i3.Future<List<_i15.TicketEvent>> getEvents(int ticketId) =>
+      caller.callServerEndpoint<List<_i15.TicketEvent>>(
+        'event',
+        'getEvents',
+        {'ticketId': ticketId},
+      );
+}
+
 class Modules {
   Modules(Client client) {
     serverpod_auth_idp = _i1.Caller(client);
@@ -803,6 +831,7 @@ class Client extends _i2.ServerpodClientShared {
     reference = EndpointReference(this);
     ticket = EndpointTicket(this);
     greeting = EndpointGreeting(this);
+    event = EndpointEvent(this);
     modules = Modules(this);
   }
 
@@ -822,6 +851,8 @@ class Client extends _i2.ServerpodClientShared {
 
   late final EndpointGreeting greeting;
 
+  late final EndpointEvent event;
+
   late final Modules modules;
 
   @override
@@ -834,6 +865,7 @@ class Client extends _i2.ServerpodClientShared {
     'reference': reference,
     'ticket': ticket,
     'greeting': greeting,
+    'event': event,
   };
 
   @override

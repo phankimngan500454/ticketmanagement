@@ -4,6 +4,7 @@
 // =============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/ticket_comment.dart';
 import '../../models/ticket_attachment.dart';
+import '../../models/ticket_event.dart';
 import '../../models/user.dart';
 import '../../models/asset.dart';
 
@@ -56,6 +58,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   bool _uploadingFile = false; // Đang upload file?
   Asset? _linkedAsset; // Thông tin thiết bị liên kết đầy đủ
   Timer? _refreshTimer; // Auto-refresh realtime
+  List<TicketEvent> _events = []; // Nhật ký sự kiện
+  bool _loadingEvents = true; // Đang tải events?
+  bool _eventsExpanded = false; // Trạng thái mở/đóng section
 
   // ── Theme  ───────────────────────────────────────────────────
   static const Color _themeColor = Color(0xFF2563EB); // Web primary blue
@@ -95,6 +100,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             .then((t) => t ?? _ticket)
             .catchError((_) => _ticket),
         _repo.getAttachments(_ticket.ticketId),
+        _repo.getEvents(_ticket.ticketId),
       ]);
 
       if (mounted) {
@@ -103,7 +109,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           _itStaff = List<User>.from(results[1] as List);
           _ticket = results[2] as Ticket;
           _attachments = List<TicketAttachmentModel>.from(results[3] as List);
+          _events = List<TicketEvent>.from(results[4] as List);
           _loadingComments = false;
+          _loadingEvents = false;
         });
         // Load full asset info nếu ticket có assetId
         if (_ticket.assetId != null) {
@@ -1120,6 +1128,257 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   // ════════════════════════════════════════════════════════════
   // BUILD — Cấu trúc màn hình
+  // ════════════════════════════════════════════════════════════
+  // NHẬT KÝ SỰ KIỆN — Timeline hiển thị các event của ticket
+  // ════════════════════════════════════════════════════════════
+  IconData _eventIcon(String type) {
+    switch (type) {
+      case 'created':           return Icons.add_circle_outline;
+      case 'assigned':          return Icons.person_add_alt_1_outlined;
+      case 'status_changed':    return Icons.swap_horiz_rounded;
+      case 'commented':         return Icons.chat_bubble_outline;
+      case 'attachment_added':  return Icons.attach_file_rounded;
+      case 'deadline_proposed': return Icons.schedule_outlined;
+      case 'deadline_approved': return Icons.event_available_outlined;
+      case 'cost_updated':      return Icons.payments_outlined;
+      case 'deleted':           return Icons.delete_outline_rounded;
+      default:                  return Icons.info_outline;
+    }
+  }
+
+  Color _eventColor(String type) {
+    switch (type) {
+      case 'created':           return const Color(0xFF43A047);
+      case 'assigned':          return const Color(0xFF1565C0);
+      case 'status_changed':    return const Color(0xFFFF8F00);
+      case 'commented':         return const Color(0xFF5C6BC0);
+      case 'attachment_added':  return const Color(0xFF7B1FA2);
+      case 'deadline_proposed': return const Color(0xFF00897B);
+      case 'deadline_approved': return const Color(0xFF2E7D32);
+      case 'cost_updated':      return const Color(0xFFEF6C00);
+      case 'deleted':           return const Color(0xFFD32F2F);
+      default:                  return const Color(0xFF546E7A);
+    }
+  }
+
+  String _eventTypeLabel(String type) {
+    switch (type) {
+      case 'created':           return 'Tạo yêu cầu';
+      case 'assigned':          return 'Phân công';
+      case 'status_changed':    return 'Đổi trạng thái';
+      case 'commented':         return 'Bình luận';
+      case 'attachment_added':  return 'Đính kèm file';
+      case 'deadline_proposed': return 'Đề xuất deadline';
+      case 'deadline_approved': return 'Duyệt deadline';
+      case 'cost_updated':      return 'Chi phí';
+      case 'deleted':           return 'Xóa';
+      default:                  return type;
+    }
+  }
+
+  Widget _buildEventLogSection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header — tap để mở/đóng
+          InkWell(
+            onTap: () => setState(() => _eventsExpanded = !_eventsExpanded),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3949AB).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.timeline_rounded,
+                      size: 18,
+                      color: Color(0xFF3949AB),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Nhật ký sự kiện (${_events.length})',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1C1C2E),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _eventsExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.grey.shade500,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Body — timeline events
+          if (_eventsExpanded) ...[
+            Divider(height: 1, color: Colors.grey.shade200),
+            if (_loadingEvents)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_events.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    'Chưa có sự kiện nào',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  children: List.generate(_events.length, (i) {
+                    final event = _events[i];
+                    final isLast = i == _events.length - 1;
+                    final color = _eventColor(event.eventType);
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Timeline line + dot
+                        SizedBox(
+                          width: 32,
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _eventIcon(event.eventType),
+                                  size: 14,
+                                  color: color,
+                                ),
+                              ),
+                              if (!isLast)
+                                Container(
+                                  width: 2,
+                                  height: 36,
+                                  color: Colors.grey.shade200,
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Event content
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom: isLast ? 0 : 12,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: color.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        _eventTypeLabel(event.eventType),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: color,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatExactTime(event.createdAt),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                if (event.description != null && event.description!.isNotEmpty)
+                                  Text(
+                                    event.description!
+                                        .replaceAll('"Open"', '"Tạo yêu cầu"')
+                                        .replaceAll('"Pending"', '"Đang xử lý"')
+                                        .replaceAll('"Resolved"', '"Đã duyệt"')
+                                        .replaceAll('"WaitingConfirmation"', '"Chờ đóng BA"')
+                                        .replaceAll('"Closed"', '"Đã đóng"')
+                                        .replaceAll('"Cancelled"', '"Đã hủy"'),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF475569),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                Text(
+                                  event.userName ?? '',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   //
   // Layout: Column gồm 3 phần chính:
   //   [1] Header gradient  : ticket ID, priority, status, title, requester, asset
@@ -1973,20 +2232,49 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Row(
+                                  Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.edit_note_rounded,
                                         size: 16,
                                         color: Color(0xFF7C3AED),
                                       ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Lý do mở lại',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: Color(0xFF7C3AED),
+                                      const SizedBox(width: 6),
+                                      const Expanded(
+                                        child: Text(
+                                          'Lý do mở lại',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: Color(0xFF7C3AED),
+                                          ),
+                                        ),
+                                      ),
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(6),
+                                        onTap: () {
+                                          Clipboard.setData(ClipboardData(text: reasonText));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: const Row(children: [
+                                                Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
+                                                SizedBox(width: 6),
+                                                Text('Đã sao chép lý do mở lại'),
+                                              ]),
+                                              backgroundColor: const Color(0xFF2563EB),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF2563EB)),
                                         ),
                                       ),
                                     ],
@@ -2701,6 +2989,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       ],
                     ),
                   ),
+
+                // ── NHẬT KÝ SỰ KIỆN (Chỉ Admin) ─────────────────────────
+                if (widget.currentUser.role == 'Admin')
+                  _buildEventLogSection(),
 
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),

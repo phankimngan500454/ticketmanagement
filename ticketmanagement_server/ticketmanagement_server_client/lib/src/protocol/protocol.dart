@@ -20,6 +20,7 @@ import 'greetings/greeting.dart' as _i7;
 import 'ticket.dart' as _i8;
 import 'ticket_attachment.dart' as _i9;
 import 'ticket_comment.dart' as _i10;
+import 'ticket_event.dart' as _i21;
 import 'package:ticketmanagement_server_client/src/protocol/ticket_attachment.dart'
     as _i11;
 import 'package:ticketmanagement_server_client/src/protocol/app_user.dart'
@@ -35,6 +36,8 @@ import 'package:ticketmanagement_server_client/src/protocol/emergency_contact.da
     as _i17;
 import 'package:ticketmanagement_server_client/src/protocol/ticket.dart'
     as _i18;
+import 'package:ticketmanagement_server_client/src/protocol/ticket_event.dart'
+    as _i22;
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
     as _i19;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
@@ -48,6 +51,7 @@ export 'greetings/greeting.dart';
 export 'ticket.dart';
 export 'ticket_attachment.dart';
 export 'ticket_comment.dart';
+export 'ticket_event.dart';
 export 'client.dart';
 
 class Protocol extends _i1.SerializationManager {
@@ -111,6 +115,9 @@ class Protocol extends _i1.SerializationManager {
     if (t == _i10.TicketComment) {
       return _i10.TicketComment.fromJson(data) as T;
     }
+    if (t == _i21.TicketEvent) {
+      return _i21.TicketEvent.fromJson(data) as T;
+    }
     if (t == _i1.getType<_i2.AppUser?>()) {
       return (data != null ? _i2.AppUser.fromJson(data) : null) as T;
     }
@@ -137,6 +144,9 @@ class Protocol extends _i1.SerializationManager {
     }
     if (t == _i1.getType<_i10.TicketComment?>()) {
       return (data != null ? _i10.TicketComment.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i21.TicketEvent?>()) {
+      return (data != null ? _i21.TicketEvent.fromJson(data) : null) as T;
     }
     if (t == List<_i11.TicketAttachment>) {
       return (data as List)
@@ -176,6 +186,12 @@ class Protocol extends _i1.SerializationManager {
       return (data as List).map((e) => deserialize<_i18.Ticket>(e)).toList()
           as T;
     }
+    if (t == List<_i22.TicketEvent>) {
+      return (data as List)
+              .map((e) => deserialize<_i22.TicketEvent>(e))
+              .toList()
+          as T;
+    }
     try {
       return _i19.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
@@ -196,6 +212,7 @@ class Protocol extends _i1.SerializationManager {
       _i8.Ticket => 'Ticket',
       _i9.TicketAttachment => 'TicketAttachment',
       _i10.TicketComment => 'TicketComment',
+      _i21.TicketEvent => 'TicketEvent',
       _ => null,
     };
   }
@@ -231,6 +248,8 @@ class Protocol extends _i1.SerializationManager {
         return 'TicketAttachment';
       case _i10.TicketComment():
         return 'TicketComment';
+      case _i21.TicketEvent():
+        return 'TicketEvent';
     }
     className = _i19.Protocol().getClassNameForObject(data);
     if (className != null) {
@@ -275,6 +294,9 @@ class Protocol extends _i1.SerializationManager {
     }
     if (dataClassName == 'TicketComment') {
       return deserialize<_i10.TicketComment>(data['data']);
+    }
+    if (dataClassName == 'TicketEvent') {
+      return deserialize<_i21.TicketEvent>(data['data']);
     }
     if (dataClassName.startsWith('serverpod_auth_idp.')) {
       data['className'] = dataClassName.substring(19);

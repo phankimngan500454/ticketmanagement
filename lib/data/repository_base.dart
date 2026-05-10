@@ -13,6 +13,7 @@ import '../models/user.dart';
 import '../models/category.dart';
 import '../models/asset.dart';
 import '../models/department.dart';
+import '../models/ticket_event.dart';
 import '../services/sp_client.dart';
 import 'package:flutter/foundation.dart' show ChangeNotifier;
 
@@ -136,6 +137,21 @@ abstract class RepositoryBase {
         fileSize:   (a.fileSize ?? 0) as int,
         uploadedAt: a.uploadedAt as DateTime,
       );
+
+  TicketEvent mapEvent(sp.TicketEvent e) {
+    final user = userCache.where((u) => u.userId == e.userId).firstOrNull;
+    return TicketEvent(
+      eventId: e.id ?? 0,
+      ticketId: e.ticketId,
+      userId: e.userId,
+      eventType: e.eventType,
+      oldValue: e.oldValue,
+      newValue: e.newValue,
+      description: e.description,
+      createdAt: e.createdAt,
+      userName: user?.fullName ?? 'User #${e.userId}',
+    );
+  }
 
   // ── Warm cache (gọi trước mỗi query cần join tên) ──────────
   Future<void> warmCache() async {

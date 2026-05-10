@@ -41,7 +41,7 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _phoneController = TextEditingController(text: widget.currentUser.phone);
+    _phoneController = TextEditingController();
   }
 
   @override
@@ -78,7 +78,17 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18), const SizedBox(width: 8), Expanded(child: Text('${f.name} vượt quá 5MB'))]),
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('${f.name} vượt quá 5MB')),
+                ],
+              ),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -133,7 +143,9 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
         priority: 'Low',
         assetId: null,
         ticketType: 'reopen_medical',
-        patientName: _patientNameController.text.trim().isEmpty ? null : _patientNameController.text.trim(),
+        patientName: _patientNameController.text.trim().isEmpty
+            ? null
+            : _patientNameController.text.trim(),
       );
 
       // Upload attachments
@@ -155,7 +167,13 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Row(children: [Icon(Icons.check_circle_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Gửi yêu cầu mở lại bệnh án thành công!'))]),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('Gửi yêu cầu mở lại bệnh án thành công!')),
+              ],
+            ),
             backgroundColor: Color(0xFF43A047),
             behavior: SnackBarBehavior.floating,
           ),
@@ -166,7 +184,13 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Row(children: [Icon(Icons.error_outline, color: Colors.white, size: 18), SizedBox(width: 8), Expanded(child: Text('Có lỗi xảy ra, vui lòng thử lại!'))]),
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('Có lỗi xảy ra, vui lòng thử lại!')),
+              ],
+            ),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -304,11 +328,16 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
                 final isWide = constraints.maxWidth > 700;
                 return SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(
-                    isWide ? 32 : 16, 16, isWide ? 32 : 16, 32,
+                    isWide ? 32 : 16,
+                    16,
+                    isWide ? 32 : 16,
+                    32,
                   ),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: isWide ? 800 : double.infinity),
+                      constraints: BoxConstraints(
+                        maxWidth: isWide ? 800 : double.infinity,
+                      ),
                       child: Form(
                         key: _formKey,
                         child: Column(
@@ -317,6 +346,38 @@ class _CreateReopenMedicalScreenState extends State<CreateReopenMedicalScreen> {
                             RequestTypeSelector(
                               currentType: 'reopen_medical',
                               onTypeChanged: widget.onTypeChanged,
+                            ),
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.amber.shade200,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.amber.shade800,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Lưu ý: Bệnh án sẽ được đóng trong ngày, người dùng ghi rõ lí do và tích dòng ảnh hưởng đến tài chính (Nếu có).',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.amber.shade900,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 14),
                             _buildFormCard(),

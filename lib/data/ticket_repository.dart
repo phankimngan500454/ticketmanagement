@@ -22,6 +22,7 @@ export 'deadline_repository.dart';
 export 'comment_repository.dart';
 export 'attachment_repository.dart';
 export 'reference_repository.dart';
+export 'event_repository.dart';
 
 import 'repository_base.dart';
 import 'auth_repository.dart';
@@ -30,6 +31,7 @@ import 'deadline_repository.dart';
 import 'comment_repository.dart';
 import 'attachment_repository.dart';
 import 'reference_repository.dart';
+import 'event_repository.dart';
 
 class TicketRepository extends RepositoryBase
     with
@@ -38,7 +40,8 @@ class TicketRepository extends RepositoryBase
         DeadlineRepository,
         CommentRepository,
         AttachmentRepository,
-        ReferenceRepository {
+        ReferenceRepository,
+        EventRepository {
   TicketRepository._();
   static final TicketRepository instance = TicketRepository._();
 }

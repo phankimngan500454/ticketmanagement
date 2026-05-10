@@ -87,7 +87,8 @@ mixin TicketCrudRepository on RepositoryBase {
   Future<Ticket> assignTicket(int ticketId, int? assigneeId,
       [String? assigneeName]) async {
     await warmCache();
-    final t = await client.ticket.assignTicket(ticketId, assigneeId);
+    final actionUserId = currentUser?.userId ?? 0;
+    final t = await client.ticket.assignTicket(ticketId, actionUserId, assigneeId);
     if (t == null) throw Exception('Ticket not found');
     return mapTicket(t);
   }
@@ -96,7 +97,8 @@ mixin TicketCrudRepository on RepositoryBase {
   // Các trạng thái hợp lệ: Open | Pending | WaitingConfirmation | Resolved | Cancelled
   Future<Ticket> updateStatus(int ticketId, String status) async {
     await warmCache();
-    final t = await client.ticket.updateStatus(ticketId, status);
+    final actionUserId = currentUser?.userId ?? 0;
+    final t = await client.ticket.updateStatus(ticketId, actionUserId, status);
     if (t == null) throw Exception('Ticket not found');
     return mapTicket(t);
   }
@@ -164,7 +166,8 @@ mixin TicketCrudRepository on RepositoryBase {
   // ── Cập nhật Chi phí chênh lệch ──────────────────────────────
   Future<Ticket> updateCostDifference(int ticketId, double costDifference) async {
     await warmCache();
-    final t = await client.ticket.updateCostDifference(ticketId, costDifference);
+    final actionUserId = currentUser?.userId ?? 0;
+    final t = await client.ticket.updateCostDifference(ticketId, actionUserId, costDifference);
     if (t == null) throw Exception('Ticket not found');
     return mapTicket(t);
   }
@@ -190,7 +193,7 @@ mixin TicketCrudRepository on RepositoryBase {
     int count = 0;
     for (final t in targets) {
       try {
-        await client.ticket.updateStatus(t.id!, 'Closed');
+        await client.ticket.updateStatus(t.id!, user.userId, 'Closed');
         count++;
       } catch (_) {}
     }

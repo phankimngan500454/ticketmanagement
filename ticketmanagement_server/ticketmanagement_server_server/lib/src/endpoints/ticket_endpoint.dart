@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../services/fcm_service.dart';
+import 'event_endpoint.dart';
 
 /// Handles all ticket CRUD operations and workflow.
 /// Access via `client.ticket` on the Flutter client.
@@ -135,6 +136,15 @@ class TicketEndpoint extends Endpoint {
       );
     }
 
+    // 📝 Log event: ticket created
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: saved.id!,
+      userId: requesterId,
+      eventType: 'created',
+      description: 'Hệ thống đã ghi nhận yêu cầu hỗ trợ mới với tiêu đề: "$subject"',
+    );
+
     return saved;
   }
 
@@ -144,6 +154,7 @@ class TicketEndpoint extends Endpoint {
   Future<Ticket?> assignTicket(
     Session session,
     int ticketId,
+    int actionUserId,
     int? assigneeId,
   ) async {
     final ticket = await Ticket.db.findById(session, ticketId);
@@ -178,6 +189,20 @@ class TicketEndpoint extends Endpoint {
       );
     }
 
+    // 📝 Log event: ticket assigned
+    if (assigneeId != null) {
+      final assignee = await AppUser.db.findById(session, assigneeId);
+      final assigneeName = assignee?.fullName ?? 'ID $assigneeId';
+      await EventEndpoint.logEvent(
+        session,
+        ticketId: ticketId,
+        userId: actionUserId,
+        eventType: 'assigned',
+        newValue: assigneeName,
+        description: 'Yêu cầu đã được phân công xử lý cho chuyên viên: $assigneeName',
+      );
+    }
+
     return updated;
   }
 
@@ -186,14 +211,40 @@ class TicketEndpoint extends Endpoint {
   Future<Ticket?> updateStatus(
     Session session,
     int ticketId,
+    int actionUserId,
     String status,
   ) async {
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket == null) return null;
+    final oldStatus = ticket.status;
     final updated = await Ticket.db.updateRow(
       session, 
       ticket.copyWith(status: status),
       columns: (t) => [t.status],
+    );
+
+    // 📝 Log event: status changed
+    // userId = 0 vì updateStatus không nhận userId → sẽ log user từ frontend
+    String translateStatus(String s) {
+      switch (s) {
+        case 'Open': return 'Tạo yêu cầu';
+        case 'Pending': return 'Đang xử lý';
+        case 'Resolved': return 'Đã duyệt';
+        case 'WaitingConfirmation': return 'Chờ đóng BA';
+        case 'Closed': return 'Đã đóng';
+        case 'Cancelled': return 'Đã hủy';
+        default: return s;
+      }
+    }
+
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: actionUserId,
+      eventType: 'status_changed',
+      oldValue: oldStatus,
+      newValue: status,
+      description: 'Trạng thái của yêu cầu đã được cập nhật từ "${translateStatus(oldStatus)}" sang "${translateStatus(status)}"',
     );
 
     final isReopenMedical = ticket.ticketType == 'reopen_medical';
@@ -327,16 +378,29 @@ class TicketEndpoint extends Endpoint {
   Future<Ticket?> updateCostDifference(
     Session session,
     int ticketId,
+    int actionUserId,
     double costDifference,
   ) async {
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket == null) return null;
     
-    return await Ticket.db.updateRow(
+    final result = await Ticket.db.updateRow(
       session, 
       ticket.copyWith(costDifference: costDifference),
       columns: (t) => [t.costDifference],
     );
+
+    // 📝 Log event: cost updated
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: actionUserId,
+      eventType: 'cost_updated',
+      newValue: costDifference.toString(),
+      description: 'Hệ thống đã cập nhật mức chênh lệch chi phí: $costDifference',
+    );
+
+    return result;
   }
 
   // ── DEADLINE ─────────────────────────────────────────────────
@@ -368,6 +432,16 @@ class TicketEndpoint extends Endpoint {
       data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
     );
 
+    // 📝 Log event: deadline proposed
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: proposedByUserId,
+      eventType: 'deadline_proposed',
+      newValue: proposedDeadline.toIso8601String(),
+      description: 'Một thời hạn xử lý (deadline) mới đã được đề xuất vào ngày: ${proposedDeadline.toIso8601String().substring(0, 10)}',
+    );
+
     return updated;
   }
 
@@ -375,6 +449,7 @@ class TicketEndpoint extends Endpoint {
   Future<Ticket?> approveDeadline(
     Session session,
     int ticketId,
+    int actionUserId,
     String action, // 'approve' | 'adjust'
     DateTime? adjustedDeadline,
     String? adminNote,
@@ -404,6 +479,17 @@ class TicketEndpoint extends Endpoint {
       title: '📅 Deadline $actionLabel',
       body: '#${ticketId.toString().padLeft(4, '0')}: ${ticket.subject}',
       data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+    );
+
+    // 📝 Log event: deadline approved/adjusted
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: actionUserId,
+      eventType: 'deadline_approved',
+      oldValue: ticket.proposedDeadline?.toIso8601String(),
+      newValue: finalDeadline?.toIso8601String(),
+      description: 'Thời hạn xử lý (deadline) đã được cấp quản lý $actionLabel',
     );
 
     return updated;
@@ -464,6 +550,20 @@ class TicketEndpoint extends Endpoint {
       session,
       where: (c) => c.ticketId.equals(ticketId),
     );
+    // 📝 Log event: delete
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: ticket.requesterId,
+      eventType: 'deleted',
+      description: 'Yêu cầu này đã bị xóa khỏi hệ thống',
+    );
+
+    // Xóa events liên quan
+    await TicketEvent.db.deleteWhere(
+      session,
+      where: (e) => e.ticketId.equals(ticketId),
+    );
     // Xóa ticket
     await Ticket.db.deleteRow(session, ticket);
     return true;
@@ -472,6 +572,7 @@ class TicketEndpoint extends Endpoint {
   // ── DANGEROUS: CLEAR DB (For testing) ──
   Future<String> clearAllTickets(Session session) async {
     try {
+      await TicketEvent.db.deleteWhere(session, where: (e) => Constant.bool(true));
       await TicketAttachment.db.deleteWhere(session, where: (a) => Constant.bool(true));
       await TicketComment.db.deleteWhere(session, where: (c) => Constant.bool(true));
       await Ticket.db.deleteWhere(session, where: (t) => Constant.bool(true));

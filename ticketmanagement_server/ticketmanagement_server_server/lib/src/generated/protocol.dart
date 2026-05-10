@@ -25,6 +25,7 @@ import 'greetings/greeting.dart' as _i10;
 import 'ticket.dart' as _i11;
 import 'ticket_attachment.dart' as _i12;
 import 'ticket_comment.dart' as _i13;
+import 'ticket_event.dart' as _i22;
 import 'package:ticketmanagement_server_server/src/generated/ticket_attachment.dart'
     as _i14;
 import 'package:ticketmanagement_server_server/src/generated/app_user.dart'
@@ -41,6 +42,8 @@ import 'package:ticketmanagement_server_server/src/generated/emergency_contact.d
     as _i20;
 import 'package:ticketmanagement_server_server/src/generated/ticket.dart'
     as _i21;
+import 'package:ticketmanagement_server_server/src/generated/ticket_event.dart'
+    as _i23;
 export 'app_user.dart';
 export 'asset.dart';
 export 'category.dart';
@@ -50,6 +53,7 @@ export 'greetings/greeting.dart';
 export 'ticket.dart';
 export 'ticket_attachment.dart';
 export 'ticket_comment.dart';
+export 'ticket_event.dart';
 
 class Protocol extends _i1.SerializationManagerServer {
   Protocol._();
@@ -679,6 +683,101 @@ class Protocol extends _i1.SerializationManagerServer {
       ],
       managed: true,
     ),
+    _i2.TableDefinition(
+      name: 'ticket_events',
+      dartName: 'TicketEvent',
+      schema: 'public',
+      module: 'ticketmanagement_server',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'ticket_events_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'ticketId',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'userId',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'eventType',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'oldValue',
+          columnType: _i2.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'newValue',
+          columnType: _i2.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'description',
+          columnType: _i2.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'ticket_events_fk_0',
+          columns: ['ticketId'],
+          referenceTable: 'tickets',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _i2.ForeignKeyAction.noAction,
+          onDelete: _i2.ForeignKeyAction.noAction,
+          matchType: null,
+        ),
+        _i2.ForeignKeyDefinition(
+          constraintName: 'ticket_events_fk_1',
+          columns: ['userId'],
+          referenceTable: 'app_users',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _i2.ForeignKeyAction.noAction,
+          onDelete: _i2.ForeignKeyAction.noAction,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'ticket_events_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+      ],
+      managed: true,
+    ),
     ..._i3.Protocol.targetTableDefinitions,
     ..._i4.Protocol.targetTableDefinitions,
     ..._i2.Protocol.targetTableDefinitions,
@@ -738,6 +837,9 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i13.TicketComment) {
       return _i13.TicketComment.fromJson(data) as T;
     }
+    if (t == _i22.TicketEvent) {
+      return _i22.TicketEvent.fromJson(data) as T;
+    }
     if (t == _i1.getType<_i5.AppUser?>()) {
       return (data != null ? _i5.AppUser.fromJson(data) : null) as T;
     }
@@ -764,6 +866,9 @@ class Protocol extends _i1.SerializationManagerServer {
     }
     if (t == _i1.getType<_i13.TicketComment?>()) {
       return (data != null ? _i13.TicketComment.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i22.TicketEvent?>()) {
+      return (data != null ? _i22.TicketEvent.fromJson(data) : null) as T;
     }
     if (t == List<_i14.TicketAttachment>) {
       return (data as List)
@@ -803,6 +908,12 @@ class Protocol extends _i1.SerializationManagerServer {
       return (data as List).map((e) => deserialize<_i21.Ticket>(e)).toList()
           as T;
     }
+    if (t == List<_i23.TicketEvent>) {
+      return (data as List)
+              .map((e) => deserialize<_i23.TicketEvent>(e))
+              .toList()
+          as T;
+    }
     try {
       return _i3.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
@@ -826,6 +937,7 @@ class Protocol extends _i1.SerializationManagerServer {
       _i11.Ticket => 'Ticket',
       _i12.TicketAttachment => 'TicketAttachment',
       _i13.TicketComment => 'TicketComment',
+      _i22.TicketEvent => 'TicketEvent',
       _ => null,
     };
   }
@@ -861,6 +973,8 @@ class Protocol extends _i1.SerializationManagerServer {
         return 'TicketAttachment';
       case _i13.TicketComment():
         return 'TicketComment';
+      case _i22.TicketEvent():
+        return 'TicketEvent';
     }
     className = _i2.Protocol().getClassNameForObject(data);
     if (className != null) {
@@ -909,6 +1023,9 @@ class Protocol extends _i1.SerializationManagerServer {
     }
     if (dataClassName == 'TicketComment') {
       return deserialize<_i13.TicketComment>(data['data']);
+    }
+    if (dataClassName == 'TicketEvent') {
+      return deserialize<_i22.TicketEvent>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -962,6 +1079,8 @@ class Protocol extends _i1.SerializationManagerServer {
         return _i12.TicketAttachment.t;
       case _i13.TicketComment:
         return _i13.TicketComment.t;
+      case _i22.TicketEvent:
+        return _i22.TicketEvent.t;
     }
     return null;
   }

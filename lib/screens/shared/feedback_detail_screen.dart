@@ -13,6 +13,7 @@ import '../../data/ticket_repository.dart';
 import '../../models/ticket.dart';
 import '../../models/ticket_comment.dart';
 import '../../models/ticket_attachment.dart';
+import '../../models/ticket_event.dart';
 import '../../models/user.dart';
 import 'package:flutter/services.dart';
 
@@ -43,6 +44,9 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
   bool _loading = true;
   bool _uploadingFile = false;
   Timer? _refreshTimer;
+  List<TicketEvent> _events = [];
+  bool _loadingEvents = true;
+  bool _eventsExpanded = false;
 
   bool get _isReopenMedical => _ticket.ticketType == 'reopen_medical';
 
@@ -115,13 +119,16 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
         _repo.getComments(_ticket.ticketId),
         _repo.getTicketById(_ticket.ticketId).then((t) => t ?? _ticket).catchError((_) => _ticket),
         _repo.getAttachments(_ticket.ticketId),
+        _repo.getEvents(_ticket.ticketId),
       ]);
       if (mounted) {
         setState(() {
           _comments = List<TicketComment>.from(results[0] as List);
           _ticket = results[1] as Ticket;
           _attachments = List<TicketAttachmentModel>.from(results[2] as List);
+          _events = List<TicketEvent>.from(results[3] as List);
           _loading = false;
+          _loadingEvents = false;
         });
       }
     } catch (e) {
@@ -881,6 +888,180 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     return _ticket.status == 'Resolved' || _ticket.status == 'Cancelled';
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // NHẬT KÝ SỰ KIỆN — Timeline hiển thị các event của ticket
+  // ═══════════════════════════════════════════════════════════
+  IconData _eventIcon(String type) {
+    switch (type) {
+      case 'created':           return Icons.add_circle_outline;
+      case 'assigned':          return Icons.person_add_alt_1_outlined;
+      case 'status_changed':    return Icons.swap_horiz_rounded;
+      case 'commented':         return Icons.chat_bubble_outline;
+      case 'attachment_added':  return Icons.attach_file_rounded;
+      case 'deadline_proposed': return Icons.schedule_outlined;
+      case 'deadline_approved': return Icons.event_available_outlined;
+      case 'cost_updated':      return Icons.payments_outlined;
+      case 'deleted':           return Icons.delete_outline_rounded;
+      default:                  return Icons.info_outline;
+    }
+  }
+
+  Color _eventColor(String type) {
+    switch (type) {
+      case 'created':           return const Color(0xFF43A047);
+      case 'assigned':          return const Color(0xFF1565C0);
+      case 'status_changed':    return const Color(0xFFFF8F00);
+      case 'commented':         return const Color(0xFF5C6BC0);
+      case 'attachment_added':  return const Color(0xFF7B1FA2);
+      case 'deadline_proposed': return const Color(0xFF00897B);
+      case 'deadline_approved': return const Color(0xFF2E7D32);
+      case 'cost_updated':      return const Color(0xFFEF6C00);
+      case 'deleted':           return const Color(0xFFD32F2F);
+      default:                  return const Color(0xFF546E7A);
+    }
+  }
+
+  String _eventTypeLabel(String type) {
+    switch (type) {
+      case 'created':           return 'Tạo yêu cầu';
+      case 'assigned':          return 'Phân công';
+      case 'status_changed':    return 'Đổi trạng thái';
+      case 'commented':         return 'Bình luận';
+      case 'attachment_added':  return 'Đính kèm file';
+      case 'deadline_proposed': return 'Đề xuất deadline';
+      case 'deadline_approved': return 'Duyệt deadline';
+      case 'cost_updated':      return 'Chi phí';
+      case 'deleted':           return 'Xóa';
+      default:                  return type;
+    }
+  }
+
+  Widget _buildEventLogSection() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _eventsExpanded = !_eventsExpanded),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: _themeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.timeline_rounded, size: 18, color: _themeColor),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Nhật ký sự kiện (${_events.length})',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1C1C2E)),
+                    ),
+                  ),
+                  Icon(
+                    _eventsExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.grey.shade500,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_eventsExpanded) ...[
+            Divider(height: 1, color: Colors.grey.shade200),
+            if (_loadingEvents)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+              )
+            else if (_events.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(child: Text('Chưa có sự kiện nào', style: TextStyle(color: Colors.grey[500], fontSize: 13, fontStyle: FontStyle.italic))),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  children: List.generate(_events.length, (i) {
+                    final event = _events[i];
+                    final isLast = i == _events.length - 1;
+                    final color = _eventColor(event.eventType);
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 32,
+                          child: Column(children: [
+                            Container(
+                              width: 28, height: 28,
+                              decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
+                              child: Icon(_eventIcon(event.eventType), size: 14, color: color),
+                            ),
+                            if (!isLast) Container(width: 2, height: 36, color: Colors.grey.shade200),
+                          ]),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                                    child: Text(_eventTypeLabel(event.eventType), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(_formatTime(event.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                                ]),
+                                const SizedBox(height: 3),
+                                if (event.description != null && event.description!.isNotEmpty)
+                                  Text(
+                                    event.description!
+                                        .replaceAll('"Open"', '"Tạo yêu cầu"')
+                                        .replaceAll('"Pending"', '"Đang xử lý"')
+                                        .replaceAll('"Resolved"', '"Đã duyệt"')
+                                        .replaceAll('"WaitingConfirmation"', '"Chờ đóng BA"')
+                                        .replaceAll('"Closed"', '"Đã đóng"')
+                                        .replaceAll('"Cancelled"', '"Đã hủy"'),
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                Text(event.userName ?? '', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(_ticket.status);
@@ -1266,6 +1447,10 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                           }),
                         ]),
                       ),
+
+                    // ── NHẬT KÝ SỰ KIỆN ──────────────────────────────
+                    if (widget.currentUser.role == 'Admin')
+                      _buildEventLogSection(),
 
                     // ── Phản hồi / Comments ─────────────────────────
                     Padding(
@@ -1690,7 +1875,36 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
             child: const Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFF6366F1)),
           ),
           const SizedBox(width: 10),
-          const Text('Lý do mở lại', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          const Expanded(
+            child: Text('Lý do mở lại', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: reasonText.trim()));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Row(children: [
+                    Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
+                    SizedBox(width: 6),
+                    Text('Đã sao chép lý do mở lại'),
+                  ]),
+                  backgroundColor: const Color(0xFF2563EB),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF2563EB)),
+            ),
+          ),
         ]),
         const SizedBox(height: 10),
         Container(

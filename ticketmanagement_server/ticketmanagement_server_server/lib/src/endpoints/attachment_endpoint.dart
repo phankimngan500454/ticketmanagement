@@ -1,5 +1,6 @@
 import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
+import 'event_endpoint.dart';
 
 /// Handles file attachment CRUD for tickets.
 /// Files stored as base64 strings in DB.
@@ -23,7 +24,19 @@ class AttachmentEndpoint extends Endpoint {
       fileSize: fileSize,
       uploadedAt: DateTime.now().toUtc(),
     );
-    return TicketAttachment.db.insertRow(session, attachment);
+    final saved = await TicketAttachment.db.insertRow(session, attachment);
+
+    // 📝 Log event: attachment uploaded
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: uploaderId,
+      eventType: 'attachment_added',
+      newValue: fileName,
+      description: 'Tài liệu "$fileName" đã được đính kèm vào yêu cầu',
+    );
+
+    return saved;
   }
 
   /// Get all attachments for a ticket.

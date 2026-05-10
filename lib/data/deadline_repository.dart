@@ -24,8 +24,9 @@ mixin DeadlineRepository on RepositoryBase {
   Future<Ticket> approveDeadline(int ticketId, String action,
       {DateTime? finalDeadline, String? adminNote}) async {
     await warmCache();
+    final actionUserId = currentUser?.userId ?? 0;
     final t = await client.ticket
-        .approveDeadline(ticketId, action, finalDeadline, adminNote);
+        .approveDeadline(ticketId, actionUserId, action, finalDeadline, adminNote);
     if (t == null) throw Exception('Ticket not found');
     return mapTicket(t);
   }

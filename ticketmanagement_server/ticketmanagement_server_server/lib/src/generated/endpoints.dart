@@ -16,6 +16,7 @@ import '../auth/jwt_refresh_endpoint.dart' as _i3;
 import '../endpoints/attachment_endpoint.dart' as _i4;
 import '../endpoints/auth_endpoint.dart' as _i5;
 import '../endpoints/comment_endpoint.dart' as _i6;
+import '../endpoints/event_endpoint.dart' as _i16;
 import '../endpoints/reference_endpoint.dart' as _i7;
 import '../endpoints/ticket_endpoint.dart' as _i8;
 import '../greetings/greeting_endpoint.dart' as _i9;
@@ -82,6 +83,12 @@ class Endpoints extends _i1.EndpointDispatch {
         ..initialize(
           server,
           'greeting',
+          null,
+        ),
+      'event': _i16.EventEndpoint()
+        ..initialize(
+          server,
+          'event',
           null,
         ),
     };
@@ -986,6 +993,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int>(),
               nullable: false,
             ),
+            'actionUserId': _i1.ParameterDescription(
+              name: 'actionUserId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
             'assigneeId': _i1.ParameterDescription(
               name: 'assigneeId',
               type: _i1.getType<int?>(),
@@ -1000,6 +1012,7 @@ class Endpoints extends _i1.EndpointDispatch {
                   (endpoints['ticket'] as _i8.TicketEndpoint).assignTicket(
                     session,
                     params['ticketId'],
+                    params['actionUserId'],
                     params['assigneeId'],
                   ),
         ),
@@ -1008,6 +1021,11 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'ticketId': _i1.ParameterDescription(
               name: 'ticketId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'actionUserId': _i1.ParameterDescription(
+              name: 'actionUserId',
               type: _i1.getType<int>(),
               nullable: false,
             ),
@@ -1025,6 +1043,7 @@ class Endpoints extends _i1.EndpointDispatch {
                   (endpoints['ticket'] as _i8.TicketEndpoint).updateStatus(
                     session,
                     params['ticketId'],
+                    params['actionUserId'],
                     params['status'],
                   ),
         ),
@@ -1033,6 +1052,11 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'ticketId': _i1.ParameterDescription(
               name: 'ticketId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'actionUserId': _i1.ParameterDescription(
+              name: 'actionUserId',
               type: _i1.getType<int>(),
               nullable: false,
             ),
@@ -1050,6 +1074,7 @@ class Endpoints extends _i1.EndpointDispatch {
                   .updateCostDifference(
                     session,
                     params['ticketId'],
+                    params['actionUserId'],
                     params['costDifference'],
                   ),
         ),
@@ -1092,6 +1117,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int>(),
               nullable: false,
             ),
+            'actionUserId': _i1.ParameterDescription(
+              name: 'actionUserId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
             'action': _i1.ParameterDescription(
               name: 'action',
               type: _i1.getType<String>(),
@@ -1116,6 +1146,7 @@ class Endpoints extends _i1.EndpointDispatch {
                   (endpoints['ticket'] as _i8.TicketEndpoint).approveDeadline(
                     session,
                     params['ticketId'],
+                    params['actionUserId'],
                     params['action'],
                     params['adjustedDeadline'],
                     params['adminNote'],
@@ -1242,5 +1273,30 @@ class Endpoints extends _i1.EndpointDispatch {
       ..initializeEndpoints(server);
     modules['serverpod_auth_core'] = _i15.Endpoints()
       ..initializeEndpoints(server);
+    connectors['event'] = _i1.EndpointConnector(
+      name: 'event',
+      endpoint: endpoints['event']!,
+      methodConnectors: {
+        'getEvents': _i1.MethodConnector(
+          name: 'getEvents',
+          params: {
+            'ticketId': _i1.ParameterDescription(
+              name: 'ticketId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['event'] as _i16.EventEndpoint).getEvents(
+                    session,
+                    params['ticketId'],
+                  ),
+        ),
+      },
+    );
   }
 }

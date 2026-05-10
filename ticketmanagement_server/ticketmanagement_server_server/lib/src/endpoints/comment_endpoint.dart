@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../services/fcm_service.dart';
+import 'event_endpoint.dart';
 
 /// Handles ticket comments.
 /// Access via `client.comment` on the Flutter client.
@@ -29,6 +30,18 @@ class CommentEndpoint extends Endpoint {
     );
     final saved = await TicketComment.db.insertRow(session, comment);
 
+    // 📝 Log event: comment added
+    final preview = commentText.length > 40
+        ? '${commentText.substring(0, 40)}...'
+        : commentText;
+    await EventEndpoint.logEvent(
+      session,
+      ticketId: ticketId,
+      userId: userId,
+      eventType: 'commented',
+      description: 'Đã thêm một bình luận mới: "$preview"',
+    );
+
     // 🔔 Notify the other party in this ticket
     final ticket = await Ticket.db.findById(session, ticketId);
     if (ticket != null) {
@@ -38,26 +51,62 @@ class CommentEndpoint extends Endpoint {
           ? '${commentText.substring(0, 50)}...'
           : commentText;
 
-      // If sender is the requester → notify IT assignee and Admin
+      // If sender is the requester -> notify people handling it
       if (userId == ticket.requesterId) {
-        if (ticket.assigneeId != null) {
+        if ((ticket.ticketType ?? 'ticket') == 'feedback' || (ticket.ticketType ?? 'ticket') == 'reopen_medical') {
+          await FcmService.sendToRole(
+            session,
+            roleId: 4, // Manager
+            title: '💬 $senderName đã thêm phản hồi',
+            body: preview,
+            data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+          );
+        } else {
+          if (ticket.assigneeId != null) {
+            await FcmService.sendToUser(
+              session,
+              targetUserId: ticket.assigneeId!,
+              title: '💬 $senderName đã trả lời',
+              body: preview,
+              data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+            );
+          } else {
+            await FcmService.sendToRole(
+              session,
+              roleId: 1, // Admin
+              title: '💬 $senderName đã thêm bình luận',
+              body: preview,
+              data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+            );
+            await FcmService.sendToRole(
+              session,
+              roleId: 2, // IT
+              title: '💬 $senderName đã thêm bình luận',
+              body: preview,
+              data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+            );
+          }
+        }
+      } else {
+        // Sender is someone else (Admin/IT/Manager) -> notify requester
+        await FcmService.sendToUser(
+          session,
+          targetUserId: ticket.requesterId,
+          title: '💬 $senderName đã phản hồi',
+          body: preview,
+          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
+        );
+
+        // Also notify assignee if the sender is not the assignee
+        if (ticket.assigneeId != null && userId != ticket.assigneeId) {
           await FcmService.sendToUser(
             session,
             targetUserId: ticket.assigneeId!,
-            title: '💬 $senderName đã trả lời',
+            title: '💬 $senderName đã bình luận vào ticket',
             body: preview,
             data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
           );
         }
-      } else {
-        // Sender is IT/Admin → notify requester
-        await FcmService.sendToUser(
-          session,
-          targetUserId: ticket.requesterId,
-          title: '💬 IT phản hồi ticket của bạn',
-          body: preview,
-          data: {'ticketId': '$ticketId', 'screen': 'ticket_detail'},
-        );
       }
     }
 

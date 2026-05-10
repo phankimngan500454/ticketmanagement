@@ -26,6 +26,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
   String? _typeFilter; // null=Tất cả, 'feedback', 'reopen_medical'
   Ticket? _selectedTicket;
   Timer? _refreshTimer;
+  final TextEditingController _searchController = TextEditingController();
   int _currentPage = 1;
   final int _itemsPerPage = 10;
   final Map<int, String> _knownTicketStates = {};
@@ -47,6 +48,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -136,6 +138,7 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
           t.subject.toLowerCase().contains(q) ||
           (t.requesterName ?? '').toLowerCase().contains(q) ||
           (t.requesterDeptName ?? '').toLowerCase().contains(q) ||
+          (t.patientName ?? '').toLowerCase().contains(q) ||
           t.ticketId.toString().contains(q);
       return matchStatus && matchDept && matchSearch;
     }).toList();
@@ -283,13 +286,14 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
                   SizedBox(
                     width: 200,
                     child: TextField(
+                      controller: _searchController,
                       onChanged: (v) => setState(() {
                         _searchQuery = v;
                         _currentPage = 1;
                       }),
                       style: const TextStyle(fontSize: 13),
                       decoration: InputDecoration(
-                        hintText: 'Tìm kiếm ID, tiêu đề...',
+                        hintText: 'Tìm kiếm tên BN, tiêu đề...',
                         hintStyle: TextStyle(
                           fontSize: 13,
                           color: Colors.grey.shade400,
@@ -299,6 +303,15 @@ class _WebManagerDashboardState extends State<WebManagerDashboard> {
                           size: 18,
                           color: Colors.grey.shade400,
                         ),
+                        suffixIcon: _searchQuery.isNotEmpty 
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() { _searchQuery = ''; _currentPage = 1; });
+                                },
+                              ) 
+                            : null,
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 0,
                           horizontal: 12,

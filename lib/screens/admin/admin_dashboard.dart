@@ -31,6 +31,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentPage = 1;
   final int _itemsPerPage = 10;
   double _leftPaneWidth = 500.0; // Chiều rộng kéo được cho cột danh sách
+  final TextEditingController _searchController = TextEditingController();
 
   // Real-time: track new tickets since last bell-tap
   final Set<int> _knownTicketIds = {};
@@ -45,6 +46,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -340,12 +342,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   width: 220,
                   height: 36,
                   child: TextField(
+                    controller: _searchController,
                     onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 1; }),
                     style: const TextStyle(fontSize: 13),
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm...',
                       hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                       prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                      suffixIcon: _searchQuery.isNotEmpty 
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 16),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() { _searchQuery = ''; _currentPage = 1; });
+                              },
+                            ) 
+                          : null,
                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),

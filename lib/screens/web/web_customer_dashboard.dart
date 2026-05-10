@@ -28,6 +28,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
   String _searchQuery = '';
   Ticket? _selectedTicket;
   Timer? _refreshTimer;
+  final TextEditingController _searchController = TextEditingController();
   final Map<int, String> _knownTicketStates = {};
   int _newNotifCount = 0;
 
@@ -54,6 +55,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -261,6 +263,7 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
           .where(
             (t) =>
                 t.subject.toLowerCase().contains(q) ||
+                (t.patientName ?? '').toLowerCase().contains(q) ||
                 t.ticketId.toString().contains(q),
           )
           .toList();
@@ -496,12 +499,22 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                   SizedBox(
                     height: 36,
                     child: TextField(
+                      controller: _searchController,
                       onChanged: (v) => setState(() => _searchQuery = v),
                       style: const TextStyle(fontSize: 13),
                       decoration: InputDecoration(
-                        hintText: 'Tìm kiếm yêu cầu...',
+                        hintText: 'Tìm kiếm tên BN, tiêu đề...',
                         hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                         prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                        suffixIcon: _searchQuery.isNotEmpty 
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              ) 
+                            : null,
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                         filled: true,
                         fillColor: const Color(0xFFF1F5F9),
@@ -523,12 +536,22 @@ class _WebCustomerDashboardState extends State<WebCustomerDashboard> {
                     width: 220,
                     height: 36,
                     child: TextField(
+                      controller: _searchController,
                       onChanged: (v) => setState(() => _searchQuery = v),
                       style: const TextStyle(fontSize: 13),
                       decoration: InputDecoration(
-                        hintText: 'Tìm kiếm yêu cầu...',
+                        hintText: 'Tìm kiếm tên BN, tiêu đề...',
                         hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                         prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
+                        suffixIcon: _searchQuery.isNotEmpty 
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              ) 
+                            : null,
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                         filled: true,
                         fillColor: const Color(0xFFF1F5F9),

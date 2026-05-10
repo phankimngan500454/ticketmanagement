@@ -91,8 +91,8 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
       if (_tabCtrl.indexIsChanging) return;
       setState(() => _currentTab = _tabCtrl.index);
     });
-    _nameCtrl = TextEditingController(text: widget.currentUser.fullName);
-    _phoneCtrl = TextEditingController(text: widget.currentUser.phone);
+    _nameCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
     _loadOptions();
   }
 
@@ -736,6 +736,32 @@ class _CreateTicketDialogState extends State<CreateTicketDialog> with SingleTick
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber.shade200),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Lưu ý: Bệnh án sẽ được đóng trong ngày, người dùng ghi rõ lí do và tích dòng ảnh hưởng đến tài chính (Nếu có).',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.amber.shade900,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         _sectionHeader('Thông tin người yêu cầu', Icons.person_outline_rounded),
         const SizedBox(height: 10),
         _formCard(
