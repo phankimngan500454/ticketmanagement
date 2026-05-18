@@ -34,7 +34,7 @@ class CommentEndpoint extends Endpoint {
     final preview = commentText.length > 40
         ? '${commentText.substring(0, 40)}...'
         : commentText;
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: userId,

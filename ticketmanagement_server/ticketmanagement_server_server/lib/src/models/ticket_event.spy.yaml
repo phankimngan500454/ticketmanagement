@@ -1,8 +1,8 @@
 class: TicketEvent
 table: ticket_events
 fields:
-  ticketId: int, relation(parent=tickets)
-  userId: int, relation(parent=app_users)
+  ticketId: int
+  userId: int
   eventType: String
   oldValue: String?
   newValue: String?

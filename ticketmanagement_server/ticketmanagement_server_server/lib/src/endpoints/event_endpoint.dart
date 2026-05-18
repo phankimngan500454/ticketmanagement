@@ -12,7 +12,9 @@ class EventEndpoint extends Endpoint {
       orderBy: (e) => e.createdAt,
     );
   }
+}
 
+class EventLogHelper {
   /// Helper: log an event for a ticket.
   /// Called internally from other endpoints.
   static Future<void> logEvent(

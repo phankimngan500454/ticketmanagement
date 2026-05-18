@@ -25,6 +25,8 @@ auth:
 comment:
   - getComments:
   - addComment:
+event:
+  - getEvents:
 reference:
   - getCategories:
   - upsertCategory:
@@ -49,9 +51,8 @@ ticket:
   - proposeDeadline:
   - approveDeadline:
   - confirmDeadline:
+  - updateTicketInfo:
   - deleteTicket:
   - clearAllTickets:
-event:
-  - getEvents:
 greeting:
   - hello:

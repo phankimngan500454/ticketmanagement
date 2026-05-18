@@ -137,7 +137,7 @@ class TicketEndpoint extends Endpoint {
     }
 
     // 📝 Log event: ticket created
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: saved.id!,
       userId: requesterId,
@@ -193,7 +193,7 @@ class TicketEndpoint extends Endpoint {
     if (assigneeId != null) {
       final assignee = await AppUser.db.findById(session, assigneeId);
       final assigneeName = assignee?.fullName ?? 'ID $assigneeId';
-      await EventEndpoint.logEvent(
+      await EventLogHelper.logEvent(
         session,
         ticketId: ticketId,
         userId: actionUserId,
@@ -237,7 +237,7 @@ class TicketEndpoint extends Endpoint {
       }
     }
 
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: actionUserId,
@@ -391,7 +391,7 @@ class TicketEndpoint extends Endpoint {
     );
 
     // 📝 Log event: cost updated
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: actionUserId,
@@ -433,7 +433,7 @@ class TicketEndpoint extends Endpoint {
     );
 
     // 📝 Log event: deadline proposed
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: proposedByUserId,
@@ -482,7 +482,7 @@ class TicketEndpoint extends Endpoint {
     );
 
     // 📝 Log event: deadline approved/adjusted
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: actionUserId,
@@ -551,7 +551,7 @@ class TicketEndpoint extends Endpoint {
       where: (c) => c.ticketId.equals(ticketId),
     );
     // 📝 Log event: delete
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: ticket.requesterId,

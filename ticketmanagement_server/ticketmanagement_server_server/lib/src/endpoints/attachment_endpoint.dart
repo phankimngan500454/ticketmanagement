@@ -27,7 +27,7 @@ class AttachmentEndpoint extends Endpoint {
     final saved = await TicketAttachment.db.insertRow(session, attachment);
 
     // 📝 Log event: attachment uploaded
-    await EventEndpoint.logEvent(
+    await EventLogHelper.logEvent(
       session,
       ticketId: ticketId,
       userId: uploaderId,

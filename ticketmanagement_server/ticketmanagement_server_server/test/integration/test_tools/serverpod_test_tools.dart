@@ -22,17 +22,20 @@ import 'package:ticketmanagement_server_server/src/generated/app_user.dart'
     as _i6;
 import 'package:ticketmanagement_server_server/src/generated/ticket_comment.dart'
     as _i7;
-import 'package:ticketmanagement_server_server/src/generated/category.dart'
+import 'package:ticketmanagement_server_server/src/generated/ticket_event.dart'
     as _i8;
-import 'package:ticketmanagement_server_server/src/generated/asset.dart' as _i9;
-import 'package:ticketmanagement_server_server/src/generated/department.dart'
+import 'package:ticketmanagement_server_server/src/generated/category.dart'
+    as _i9;
+import 'package:ticketmanagement_server_server/src/generated/asset.dart'
     as _i10;
-import 'package:ticketmanagement_server_server/src/generated/emergency_contact.dart'
+import 'package:ticketmanagement_server_server/src/generated/department.dart'
     as _i11;
-import 'package:ticketmanagement_server_server/src/generated/ticket.dart'
+import 'package:ticketmanagement_server_server/src/generated/emergency_contact.dart'
     as _i12;
-import 'package:ticketmanagement_server_server/src/generated/greetings/greeting.dart'
+import 'package:ticketmanagement_server_server/src/generated/ticket.dart'
     as _i13;
+import 'package:ticketmanagement_server_server/src/generated/greetings/greeting.dart'
+    as _i14;
 import 'package:ticketmanagement_server_server/src/generated/protocol.dart';
 import 'package:ticketmanagement_server_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -157,6 +160,8 @@ class TestEndpoints {
 
   late final _CommentEndpoint comment;
 
+  late final _EventEndpoint event;
+
   late final _ReferenceEndpoint reference;
 
   late final _TicketEndpoint ticket;
@@ -188,6 +193,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     comment = _CommentEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    event = _EventEndpoint(
       endpoints,
       serializationManager,
     );
@@ -1016,6 +1025,48 @@ class _CommentEndpoint {
   }
 }
 
+class _EventEndpoint {
+  _EventEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _i2.EndpointDispatch _endpointDispatch;
+
+  final _i2.SerializationManager _serializationManager;
+
+  _i3.Future<List<_i8.TicketEvent>> getEvents(
+    _i1.TestSessionBuilder sessionBuilder,
+    int ticketId,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'event',
+            method: 'getEvents',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'event',
+          methodName: 'getEvents',
+          parameters: _i1.testObjectToJson({'ticketId': ticketId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<List<_i8.TicketEvent>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
 class _ReferenceEndpoint {
   _ReferenceEndpoint(
     this._endpointDispatch,
@@ -1026,7 +1077,7 @@ class _ReferenceEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<List<_i8.Category>> getCategories(
+  _i3.Future<List<_i9.Category>> getCategories(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1048,7 +1099,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<_i8.Category>>);
+                as _i3.Future<List<_i9.Category>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1056,9 +1107,9 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<_i8.Category> upsertCategory(
+  _i3.Future<_i9.Category> upsertCategory(
     _i1.TestSessionBuilder sessionBuilder,
-    _i8.Category cat,
+    _i9.Category cat,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1079,7 +1130,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i8.Category>);
+                as _i3.Future<_i9.Category>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1118,7 +1169,7 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<List<_i9.Asset>> getAssets(
+  _i3.Future<List<_i10.Asset>> getAssets(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1140,7 +1191,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<_i9.Asset>>);
+                as _i3.Future<List<_i10.Asset>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1148,9 +1199,9 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<_i9.Asset> upsertAsset(
+  _i3.Future<_i10.Asset> upsertAsset(
     _i1.TestSessionBuilder sessionBuilder,
-    _i9.Asset asset,
+    _i10.Asset asset,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1171,7 +1222,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i9.Asset>);
+                as _i3.Future<_i10.Asset>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1210,7 +1261,7 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<List<_i10.Department>> getDepartments(
+  _i3.Future<List<_i11.Department>> getDepartments(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1232,7 +1283,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<_i10.Department>>);
+                as _i3.Future<List<_i11.Department>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1240,9 +1291,9 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<_i10.Department> upsertDepartment(
+  _i3.Future<_i11.Department> upsertDepartment(
     _i1.TestSessionBuilder sessionBuilder,
-    _i10.Department dept,
+    _i11.Department dept,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1263,7 +1314,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i10.Department>);
+                as _i3.Future<_i11.Department>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1302,7 +1353,7 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<List<_i11.EmergencyContact>> getEmergencyContacts(
+  _i3.Future<List<_i12.EmergencyContact>> getEmergencyContacts(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1324,7 +1375,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<_i11.EmergencyContact>>);
+                as _i3.Future<List<_i12.EmergencyContact>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1332,9 +1383,9 @@ class _ReferenceEndpoint {
     });
   }
 
-  _i3.Future<_i11.EmergencyContact> upsertEmergencyContact(
+  _i3.Future<_i12.EmergencyContact> upsertEmergencyContact(
     _i1.TestSessionBuilder sessionBuilder,
-    _i11.EmergencyContact contact,
+    _i12.EmergencyContact contact,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1355,7 +1406,7 @@ class _ReferenceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i11.EmergencyContact>);
+                as _i3.Future<_i12.EmergencyContact>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1405,7 +1456,7 @@ class _TicketEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<List<_i12.Ticket>> getTickets(
+  _i3.Future<List<_i13.Ticket>> getTickets(
     _i1.TestSessionBuilder sessionBuilder,
     int userId,
     int roleId,
@@ -1432,7 +1483,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<_i12.Ticket>>);
+                as _i3.Future<List<_i13.Ticket>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1440,7 +1491,7 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<List<_i12.Ticket>> getUnassignedTickets(
+  _i3.Future<List<_i13.Ticket>> getUnassignedTickets(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1462,7 +1513,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<_i12.Ticket>>);
+                as _i3.Future<List<_i13.Ticket>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1470,7 +1521,7 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> getTicketById(
+  _i3.Future<_i13.Ticket?> getTicketById(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
   ) async {
@@ -1493,7 +1544,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1501,7 +1552,7 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket> createTicket(
+  _i3.Future<_i13.Ticket> createTicket(
     _i1.TestSessionBuilder sessionBuilder,
     int requesterId,
     int categoryId,
@@ -1540,7 +1591,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket>);
+                as _i3.Future<_i13.Ticket>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1548,9 +1599,10 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> assignTicket(
+  _i3.Future<_i13.Ticket?> assignTicket(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
+    int actionUserId,
     int? assigneeId,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1566,6 +1618,7 @@ class _TicketEndpoint {
           methodName: 'assignTicket',
           parameters: _i1.testObjectToJson({
             'ticketId': ticketId,
+            'actionUserId': actionUserId,
             'assigneeId': assigneeId,
           }),
           serializationManager: _serializationManager,
@@ -1575,7 +1628,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1583,9 +1636,10 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> updateStatus(
+  _i3.Future<_i13.Ticket?> updateStatus(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
+    int actionUserId,
     String status,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1601,6 +1655,7 @@ class _TicketEndpoint {
           methodName: 'updateStatus',
           parameters: _i1.testObjectToJson({
             'ticketId': ticketId,
+            'actionUserId': actionUserId,
             'status': status,
           }),
           serializationManager: _serializationManager,
@@ -1610,7 +1665,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1618,9 +1673,10 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> updateCostDifference(
+  _i3.Future<_i13.Ticket?> updateCostDifference(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
+    int actionUserId,
     double costDifference,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -1636,6 +1692,7 @@ class _TicketEndpoint {
           methodName: 'updateCostDifference',
           parameters: _i1.testObjectToJson({
             'ticketId': ticketId,
+            'actionUserId': actionUserId,
             'costDifference': costDifference,
           }),
           serializationManager: _serializationManager,
@@ -1645,7 +1702,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1653,7 +1710,7 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> proposeDeadline(
+  _i3.Future<_i13.Ticket?> proposeDeadline(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
     int proposedByUserId,
@@ -1682,7 +1739,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1690,9 +1747,10 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> approveDeadline(
+  _i3.Future<_i13.Ticket?> approveDeadline(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
+    int actionUserId,
     String action,
     DateTime? adjustedDeadline,
     String? adminNote,
@@ -1710,6 +1768,7 @@ class _TicketEndpoint {
           methodName: 'approveDeadline',
           parameters: _i1.testObjectToJson({
             'ticketId': ticketId,
+            'actionUserId': actionUserId,
             'action': action,
             'adjustedDeadline': adjustedDeadline,
             'adminNote': adminNote,
@@ -1721,7 +1780,7 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1729,7 +1788,7 @@ class _TicketEndpoint {
     });
   }
 
-  _i3.Future<_i12.Ticket?> confirmDeadline(
+  _i3.Future<_i13.Ticket?> confirmDeadline(
     _i1.TestSessionBuilder sessionBuilder,
     int ticketId,
     bool confirmed,
@@ -1756,7 +1815,46 @@ class _TicketEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i12.Ticket?>);
+                as _i3.Future<_i13.Ticket?>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i13.Ticket?> updateTicketInfo(
+    _i1.TestSessionBuilder sessionBuilder,
+    int ticketId,
+    String subject,
+    String description,
+    String? patientName,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'ticket',
+            method: 'updateTicketInfo',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'ticket',
+          methodName: 'updateTicketInfo',
+          parameters: _i1.testObjectToJson({
+            'ticketId': ticketId,
+            'subject': subject,
+            'description': description,
+            'patientName': patientName,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i13.Ticket?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1836,7 +1934,7 @@ class _GreetingEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i13.Greeting> hello(
+  _i3.Future<_i14.Greeting> hello(
     _i1.TestSessionBuilder sessionBuilder,
     String name,
   ) async {
@@ -1859,7 +1957,7 @@ class _GreetingEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i13.Greeting>);
+                as _i3.Future<_i14.Greeting>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

@@ -22,20 +22,20 @@ import 'package:ticketmanagement_server_client/src/protocol/app_user.dart'
     as _i6;
 import 'package:ticketmanagement_server_client/src/protocol/ticket_comment.dart'
     as _i7;
-import 'package:ticketmanagement_server_client/src/protocol/category.dart'
-    as _i8;
-import 'package:ticketmanagement_server_client/src/protocol/asset.dart' as _i9;
-import 'package:ticketmanagement_server_client/src/protocol/department.dart'
-    as _i10;
-import 'package:ticketmanagement_server_client/src/protocol/emergency_contact.dart'
-    as _i11;
-import 'package:ticketmanagement_server_client/src/protocol/ticket.dart'
-    as _i12;
-import 'package:ticketmanagement_server_client/src/protocol/greetings/greeting.dart'
-    as _i13;
 import 'package:ticketmanagement_server_client/src/protocol/ticket_event.dart'
-    as _i15;
-import 'protocol.dart' as _i14;
+    as _i8;
+import 'package:ticketmanagement_server_client/src/protocol/category.dart'
+    as _i9;
+import 'package:ticketmanagement_server_client/src/protocol/asset.dart' as _i10;
+import 'package:ticketmanagement_server_client/src/protocol/department.dart'
+    as _i11;
+import 'package:ticketmanagement_server_client/src/protocol/emergency_contact.dart'
+    as _i12;
+import 'package:ticketmanagement_server_client/src/protocol/ticket.dart'
+    as _i13;
+import 'package:ticketmanagement_server_client/src/protocol/greetings/greeting.dart'
+    as _i14;
+import 'protocol.dart' as _i15;
 
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
 /// are made available on the server and enable the corresponding sign-in widget
@@ -457,6 +457,24 @@ class EndpointComment extends _i2.EndpointRef {
   );
 }
 
+/// Handles ticket event log (activity history).
+/// Access via `client.event` on the Flutter client.
+/// {@category Endpoint}
+class EndpointEvent extends _i2.EndpointRef {
+  EndpointEvent(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'event';
+
+  /// Get all events for a ticket, ordered by createdAt ascending.
+  _i3.Future<List<_i8.TicketEvent>> getEvents(int ticketId) =>
+      caller.callServerEndpoint<List<_i8.TicketEvent>>(
+        'event',
+        'getEvents',
+        {'ticketId': ticketId},
+      );
+}
+
 /// Handles reference data: categories, assets, departments, emergency contacts.
 /// Access via `client.reference` on the Flutter client.
 /// {@category Endpoint}
@@ -466,16 +484,16 @@ class EndpointReference extends _i2.EndpointRef {
   @override
   String get name => 'reference';
 
-  _i3.Future<List<_i8.Category>> getCategories() =>
-      caller.callServerEndpoint<List<_i8.Category>>(
+  _i3.Future<List<_i9.Category>> getCategories() =>
+      caller.callServerEndpoint<List<_i9.Category>>(
         'reference',
         'getCategories',
         {},
       );
 
   /// Admin: create or update a category.
-  _i3.Future<_i8.Category> upsertCategory(_i8.Category cat) =>
-      caller.callServerEndpoint<_i8.Category>(
+  _i3.Future<_i9.Category> upsertCategory(_i9.Category cat) =>
+      caller.callServerEndpoint<_i9.Category>(
         'reference',
         'upsertCategory',
         {'cat': cat},
@@ -488,16 +506,16 @@ class EndpointReference extends _i2.EndpointRef {
     {'id': id},
   );
 
-  _i3.Future<List<_i9.Asset>> getAssets() =>
-      caller.callServerEndpoint<List<_i9.Asset>>(
+  _i3.Future<List<_i10.Asset>> getAssets() =>
+      caller.callServerEndpoint<List<_i10.Asset>>(
         'reference',
         'getAssets',
         {},
       );
 
   /// Admin: create or update an asset.
-  _i3.Future<_i9.Asset> upsertAsset(_i9.Asset asset) =>
-      caller.callServerEndpoint<_i9.Asset>(
+  _i3.Future<_i10.Asset> upsertAsset(_i10.Asset asset) =>
+      caller.callServerEndpoint<_i10.Asset>(
         'reference',
         'upsertAsset',
         {'asset': asset},
@@ -510,16 +528,16 @@ class EndpointReference extends _i2.EndpointRef {
     {'id': id},
   );
 
-  _i3.Future<List<_i10.Department>> getDepartments() =>
-      caller.callServerEndpoint<List<_i10.Department>>(
+  _i3.Future<List<_i11.Department>> getDepartments() =>
+      caller.callServerEndpoint<List<_i11.Department>>(
         'reference',
         'getDepartments',
         {},
       );
 
   /// Admin: create or update a department.
-  _i3.Future<_i10.Department> upsertDepartment(_i10.Department dept) =>
-      caller.callServerEndpoint<_i10.Department>(
+  _i3.Future<_i11.Department> upsertDepartment(_i11.Department dept) =>
+      caller.callServerEndpoint<_i11.Department>(
         'reference',
         'upsertDepartment',
         {'dept': dept},
@@ -533,17 +551,17 @@ class EndpointReference extends _i2.EndpointRef {
   );
 
   /// Public: any authenticated user can fetch Emergency Contacts.
-  _i3.Future<List<_i11.EmergencyContact>> getEmergencyContacts() =>
-      caller.callServerEndpoint<List<_i11.EmergencyContact>>(
+  _i3.Future<List<_i12.EmergencyContact>> getEmergencyContacts() =>
+      caller.callServerEndpoint<List<_i12.EmergencyContact>>(
         'reference',
         'getEmergencyContacts',
         {},
       );
 
   /// Admin only: create or update an EmergencyContact.
-  _i3.Future<_i11.EmergencyContact> upsertEmergencyContact(
-    _i11.EmergencyContact contact,
-  ) => caller.callServerEndpoint<_i11.EmergencyContact>(
+  _i3.Future<_i12.EmergencyContact> upsertEmergencyContact(
+    _i12.EmergencyContact contact,
+  ) => caller.callServerEndpoint<_i12.EmergencyContact>(
     'reference',
     'upsertEmergencyContact',
     {'contact': contact},
@@ -569,10 +587,10 @@ class EndpointTicket extends _i2.EndpointRef {
 
   /// Get tickets filtered by userId and roleId.
   /// roleId: 1=Admin, 2=IT Staff, 3=Customer
-  _i3.Future<List<_i12.Ticket>> getTickets(
+  _i3.Future<List<_i13.Ticket>> getTickets(
     int userId,
     int roleId,
-  ) => caller.callServerEndpoint<List<_i12.Ticket>>(
+  ) => caller.callServerEndpoint<List<_i13.Ticket>>(
     'ticket',
     'getTickets',
     {
@@ -582,23 +600,23 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Get unassigned (Open, no assignee) tickets.
-  _i3.Future<List<_i12.Ticket>> getUnassignedTickets() =>
-      caller.callServerEndpoint<List<_i12.Ticket>>(
+  _i3.Future<List<_i13.Ticket>> getUnassignedTickets() =>
+      caller.callServerEndpoint<List<_i13.Ticket>>(
         'ticket',
         'getUnassignedTickets',
         {},
       );
 
   /// Get a single ticket by ID.
-  _i3.Future<_i12.Ticket?> getTicketById(int ticketId) =>
-      caller.callServerEndpoint<_i12.Ticket?>(
+  _i3.Future<_i13.Ticket?> getTicketById(int ticketId) =>
+      caller.callServerEndpoint<_i13.Ticket?>(
         'ticket',
         'getTicketById',
         {'ticketId': ticketId},
       );
 
   /// Create a new ticket. Sends push notification to all Admins.
-  _i3.Future<_i12.Ticket> createTicket(
+  _i3.Future<_i13.Ticket> createTicket(
     int requesterId,
     int categoryId,
     String subject,
@@ -607,7 +625,7 @@ class EndpointTicket extends _i2.EndpointRef {
     int? assetId,
     String? ticketType,
     String? patientName,
-  ) => caller.callServerEndpoint<_i12.Ticket>(
+  ) => caller.callServerEndpoint<_i13.Ticket>(
     'ticket',
     'createTicket',
     {
@@ -624,11 +642,11 @@ class EndpointTicket extends _i2.EndpointRef {
 
   /// Assign (or unassign) a ticket to an IT staff member.
   /// Sends push notification to the assigned IT staff.
-  _i3.Future<_i12.Ticket?> assignTicket(
+  _i3.Future<_i13.Ticket?> assignTicket(
     int ticketId,
     int actionUserId,
     int? assigneeId,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'assignTicket',
     {
@@ -639,11 +657,11 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Update ticket status. Sends context-driven push notifications.
-  _i3.Future<_i12.Ticket?> updateStatus(
+  _i3.Future<_i13.Ticket?> updateStatus(
     int ticketId,
     int actionUserId,
     String status,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'updateStatus',
     {
@@ -654,11 +672,11 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Update cost difference (used when finance closes medical record)
-  _i3.Future<_i12.Ticket?> updateCostDifference(
+  _i3.Future<_i13.Ticket?> updateCostDifference(
     int ticketId,
     int actionUserId,
     double costDifference,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'updateCostDifference',
     {
@@ -669,11 +687,11 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Propose a deadline for a ticket. Notifies Admins.
-  _i3.Future<_i12.Ticket?> proposeDeadline(
+  _i3.Future<_i13.Ticket?> proposeDeadline(
     int ticketId,
     int proposedByUserId,
     DateTime proposedDeadline,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'proposeDeadline',
     {
@@ -684,13 +702,13 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Admin approves or adjusts a proposed deadline. Notifies Requester.
-  _i3.Future<_i12.Ticket?> approveDeadline(
+  _i3.Future<_i13.Ticket?> approveDeadline(
     int ticketId,
     int actionUserId,
     String action,
     DateTime? adjustedDeadline,
     String? adminNote,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'approveDeadline',
     {
@@ -703,10 +721,10 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Requester confirms or rejects the approved deadline.
-  _i3.Future<_i12.Ticket?> confirmDeadline(
+  _i3.Future<_i13.Ticket?> confirmDeadline(
     int ticketId,
     bool confirmed,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'confirmDeadline',
     {
@@ -716,12 +734,12 @@ class EndpointTicket extends _i2.EndpointRef {
   );
 
   /// Update ticket subject, description, patientName. Only allowed when status = 'Open'.
-  _i3.Future<_i12.Ticket?> updateTicketInfo(
+  _i3.Future<_i13.Ticket?> updateTicketInfo(
     int ticketId,
     String subject,
     String description,
     String? patientName,
-  ) => caller.callServerEndpoint<_i12.Ticket?>(
+  ) => caller.callServerEndpoint<_i13.Ticket?>(
     'ticket',
     'updateTicketInfo',
     {
@@ -757,29 +775,11 @@ class EndpointGreeting extends _i2.EndpointRef {
   String get name => 'greeting';
 
   /// Returns a personalized greeting message: "Hello {name}".
-  _i3.Future<_i13.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i13.Greeting>(
+  _i3.Future<_i14.Greeting> hello(String name) =>
+      caller.callServerEndpoint<_i14.Greeting>(
         'greeting',
         'hello',
         {'name': name},
-      );
-}
-
-/// Handles ticket event log (activity history).
-/// Access via `client.event` on the Flutter client.
-/// {@category Endpoint}
-class EndpointEvent extends _i2.EndpointRef {
-  EndpointEvent(_i2.EndpointCaller caller) : super(caller);
-
-  @override
-  String get name => 'event';
-
-  /// Get all events for a ticket, ordered by createdAt ascending.
-  _i3.Future<List<_i15.TicketEvent>> getEvents(int ticketId) =>
-      caller.callServerEndpoint<List<_i15.TicketEvent>>(
-        'event',
-        'getEvents',
-        {'ticketId': ticketId},
       );
 }
 
@@ -814,7 +814,7 @@ class Client extends _i2.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i14.Protocol(),
+         _i15.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -828,10 +828,10 @@ class Client extends _i2.ServerpodClientShared {
     attachment = EndpointAttachment(this);
     auth = EndpointAuth(this);
     comment = EndpointComment(this);
+    event = EndpointEvent(this);
     reference = EndpointReference(this);
     ticket = EndpointTicket(this);
     greeting = EndpointGreeting(this);
-    event = EndpointEvent(this);
     modules = Modules(this);
   }
 
@@ -845,13 +845,13 @@ class Client extends _i2.ServerpodClientShared {
 
   late final EndpointComment comment;
 
+  late final EndpointEvent event;
+
   late final EndpointReference reference;
 
   late final EndpointTicket ticket;
 
   late final EndpointGreeting greeting;
-
-  late final EndpointEvent event;
 
   late final Modules modules;
 
@@ -862,10 +862,10 @@ class Client extends _i2.ServerpodClientShared {
     'attachment': attachment,
     'auth': auth,
     'comment': comment,
+    'event': event,
     'reference': reference,
     'ticket': ticket,
     'greeting': greeting,
-    'event': event,
   };
 
   @override

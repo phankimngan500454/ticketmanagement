@@ -16,22 +16,22 @@ import '../auth/jwt_refresh_endpoint.dart' as _i3;
 import '../endpoints/attachment_endpoint.dart' as _i4;
 import '../endpoints/auth_endpoint.dart' as _i5;
 import '../endpoints/comment_endpoint.dart' as _i6;
-import '../endpoints/event_endpoint.dart' as _i16;
-import '../endpoints/reference_endpoint.dart' as _i7;
-import '../endpoints/ticket_endpoint.dart' as _i8;
-import '../greetings/greeting_endpoint.dart' as _i9;
+import '../endpoints/event_endpoint.dart' as _i7;
+import '../endpoints/reference_endpoint.dart' as _i8;
+import '../endpoints/ticket_endpoint.dart' as _i9;
+import '../greetings/greeting_endpoint.dart' as _i10;
 import 'package:ticketmanagement_server_server/src/generated/category.dart'
-    as _i10;
-import 'package:ticketmanagement_server_server/src/generated/asset.dart'
     as _i11;
-import 'package:ticketmanagement_server_server/src/generated/department.dart'
+import 'package:ticketmanagement_server_server/src/generated/asset.dart'
     as _i12;
-import 'package:ticketmanagement_server_server/src/generated/emergency_contact.dart'
+import 'package:ticketmanagement_server_server/src/generated/department.dart'
     as _i13;
-import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
+import 'package:ticketmanagement_server_server/src/generated/emergency_contact.dart'
     as _i14;
-import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
+import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _i15;
+import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
+    as _i16;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -67,28 +67,28 @@ class Endpoints extends _i1.EndpointDispatch {
           'comment',
           null,
         ),
-      'reference': _i7.ReferenceEndpoint()
+      'event': _i7.EventEndpoint()
+        ..initialize(
+          server,
+          'event',
+          null,
+        ),
+      'reference': _i8.ReferenceEndpoint()
         ..initialize(
           server,
           'reference',
           null,
         ),
-      'ticket': _i8.TicketEndpoint()
+      'ticket': _i9.TicketEndpoint()
         ..initialize(
           server,
           'ticket',
           null,
         ),
-      'greeting': _i9.GreetingEndpoint()
+      'greeting': _i10.GreetingEndpoint()
         ..initialize(
           server,
           'greeting',
-          null,
-        ),
-      'event': _i16.EventEndpoint()
-        ..initialize(
-          server,
-          'event',
           null,
         ),
     };
@@ -669,6 +669,30 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
+    connectors['event'] = _i1.EndpointConnector(
+      name: 'event',
+      endpoint: endpoints['event']!,
+      methodConnectors: {
+        'getEvents': _i1.MethodConnector(
+          name: 'getEvents',
+          params: {
+            'ticketId': _i1.ParameterDescription(
+              name: 'ticketId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['event'] as _i7.EventEndpoint).getEvents(
+                session,
+                params['ticketId'],
+              ),
+        ),
+      },
+    );
     connectors['reference'] = _i1.EndpointConnector(
       name: 'reference',
       endpoint: endpoints['reference']!,
@@ -680,7 +704,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .getCategories(session),
         ),
         'upsertCategory': _i1.MethodConnector(
@@ -688,7 +712,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'cat': _i1.ParameterDescription(
               name: 'cat',
-              type: _i1.getType<_i10.Category>(),
+              type: _i1.getType<_i11.Category>(),
               nullable: false,
             ),
           },
@@ -696,7 +720,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .upsertCategory(
                     session,
                     params['cat'],
@@ -715,7 +739,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .deleteCategory(
                     session,
                     params['id'],
@@ -728,7 +752,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .getAssets(session),
         ),
         'upsertAsset': _i1.MethodConnector(
@@ -736,7 +760,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'asset': _i1.ParameterDescription(
               name: 'asset',
-              type: _i1.getType<_i11.Asset>(),
+              type: _i1.getType<_i12.Asset>(),
               nullable: false,
             ),
           },
@@ -745,7 +769,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['reference'] as _i7.ReferenceEndpoint).upsertAsset(
+                  (endpoints['reference'] as _i8.ReferenceEndpoint).upsertAsset(
                     session,
                     params['asset'],
                   ),
@@ -764,7 +788,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['reference'] as _i7.ReferenceEndpoint).deleteAsset(
+                  (endpoints['reference'] as _i8.ReferenceEndpoint).deleteAsset(
                     session,
                     params['id'],
                   ),
@@ -776,7 +800,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .getDepartments(session),
         ),
         'upsertDepartment': _i1.MethodConnector(
@@ -784,7 +808,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dept': _i1.ParameterDescription(
               name: 'dept',
-              type: _i1.getType<_i12.Department>(),
+              type: _i1.getType<_i13.Department>(),
               nullable: false,
             ),
           },
@@ -792,7 +816,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .upsertDepartment(
                     session,
                     params['dept'],
@@ -811,7 +835,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .deleteDepartment(
                     session,
                     params['id'],
@@ -824,7 +848,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .getEmergencyContacts(session),
         ),
         'upsertEmergencyContact': _i1.MethodConnector(
@@ -832,7 +856,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'contact': _i1.ParameterDescription(
               name: 'contact',
-              type: _i1.getType<_i13.EmergencyContact>(),
+              type: _i1.getType<_i14.EmergencyContact>(),
               nullable: false,
             ),
           },
@@ -840,7 +864,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .upsertEmergencyContact(
                     session,
                     params['contact'],
@@ -859,7 +883,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['reference'] as _i7.ReferenceEndpoint)
+              ) async => (endpoints['reference'] as _i8.ReferenceEndpoint)
                   .deleteEmergencyContact(
                     session,
                     params['id'],
@@ -889,7 +913,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['ticket'] as _i8.TicketEndpoint).getTickets(
+              ) async => (endpoints['ticket'] as _i9.TicketEndpoint).getTickets(
                 session,
                 params['userId'],
                 params['roleId'],
@@ -902,7 +926,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['ticket'] as _i8.TicketEndpoint)
+              ) async => (endpoints['ticket'] as _i9.TicketEndpoint)
                   .getUnassignedTickets(session),
         ),
         'getTicketById': _i1.MethodConnector(
@@ -919,7 +943,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).getTicketById(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).getTicketById(
                     session,
                     params['ticketId'],
                   ),
@@ -973,7 +997,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).createTicket(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).createTicket(
                     session,
                     params['requesterId'],
                     params['categoryId'],
@@ -1009,7 +1033,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).assignTicket(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).assignTicket(
                     session,
                     params['ticketId'],
                     params['actionUserId'],
@@ -1040,7 +1064,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).updateStatus(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).updateStatus(
                     session,
                     params['ticketId'],
                     params['actionUserId'],
@@ -1070,7 +1094,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['ticket'] as _i8.TicketEndpoint)
+              ) async => (endpoints['ticket'] as _i9.TicketEndpoint)
                   .updateCostDifference(
                     session,
                     params['ticketId'],
@@ -1102,7 +1126,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).proposeDeadline(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).proposeDeadline(
                     session,
                     params['ticketId'],
                     params['proposedByUserId'],
@@ -1143,7 +1167,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).approveDeadline(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).approveDeadline(
                     session,
                     params['ticketId'],
                     params['actionUserId'],
@@ -1171,7 +1195,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).confirmDeadline(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).confirmDeadline(
                     session,
                     params['ticketId'],
                     params['confirmed'],
@@ -1206,7 +1230,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).updateTicketInfo(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).updateTicketInfo(
                     session,
                     params['ticketId'],
                     params['subject'],
@@ -1228,7 +1252,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['ticket'] as _i8.TicketEndpoint).deleteTicket(
+                  (endpoints['ticket'] as _i9.TicketEndpoint).deleteTicket(
                     session,
                     params['ticketId'],
                   ),
@@ -1240,7 +1264,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['ticket'] as _i8.TicketEndpoint)
+              ) async => (endpoints['ticket'] as _i9.TicketEndpoint)
                   .clearAllTickets(session),
         ),
       },
@@ -1262,41 +1286,16 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['greeting'] as _i9.GreetingEndpoint).hello(
+              ) async => (endpoints['greeting'] as _i10.GreetingEndpoint).hello(
                 session,
                 params['name'],
               ),
         ),
       },
     );
-    modules['serverpod_auth_idp'] = _i14.Endpoints()
+    modules['serverpod_auth_idp'] = _i15.Endpoints()
       ..initializeEndpoints(server);
-    modules['serverpod_auth_core'] = _i15.Endpoints()
+    modules['serverpod_auth_core'] = _i16.Endpoints()
       ..initializeEndpoints(server);
-    connectors['event'] = _i1.EndpointConnector(
-      name: 'event',
-      endpoint: endpoints['event']!,
-      methodConnectors: {
-        'getEvents': _i1.MethodConnector(
-          name: 'getEvents',
-          params: {
-            'ticketId': _i1.ParameterDescription(
-              name: 'ticketId',
-              type: _i1.getType<int>(),
-              nullable: false,
-            ),
-          },
-          call:
-              (
-                _i1.Session session,
-                Map<String, dynamic> params,
-              ) async =>
-                  (endpoints['event'] as _i16.EventEndpoint).getEvents(
-                    session,
-                    params['ticketId'],
-                  ),
-        ),
-      },
-    );
   }
 }
